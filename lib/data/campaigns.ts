@@ -1,0 +1,44 @@
+import type { Campaign } from "./types";
+
+export const initialCampaigns: Campaign[] = [
+  {
+    id: "cam-1",
+    name: "Mutirão Zona Norte",
+    type: "door-to-door",
+    regionId: "reg-1",
+    startDate: "2026-06-15",
+    endDate: "2026-06-20",
+    status: "em andamento",
+    description: "Visita porta a porta nos bairros de Santana e Tucuruvi",
+  },
+  {
+    id: "cam-2",
+    name: "Comício Praça da Sé",
+    type: "comício",
+    regionId: "reg-4",
+    startDate: "2026-07-01",
+    endDate: "2026-07-01",
+    status: "planejada",
+    description: "Grande comício com presença de lideranças regionais",
+  },
+  {
+    id: "cam-3",
+    name: "Campanha Digital #FuturoSP",
+    type: "digital",
+    regionId: "reg-4",
+    startDate: "2026-05-01",
+    endDate: "2026-10-05",
+    status: "em andamento",
+    description: "Anúncios segmentados em redes sociais por região",
+  },
+  {
+    id: "cam-4",
+    name: "Programa Rádio Interior",
+    type: "rádio",
+    regionId: "reg-3",
+    startDate: "2026-06-01",
+    endDate: "2026-08-30",
+    status: "planejada",
+    description: "Inserções em rádios do interior oeste",
+  },
+];

@@ -1,0 +1,22 @@
+/** Re-exporta tipos do domínio para compatibilidade com imports existentes. */
+export type {
+  UserStatus,
+  DashboardUser,
+  Role,
+  PartnerType,
+  Partner,
+  LocationType,
+  Location,
+  Region,
+  CampaignType,
+  CampaignStatus,
+  Campaign,
+  ReportCategory,
+  ReportTemplate,
+  TRESituacao,
+  TRECandidate,
+  NavGroup,
+  NavItem,
+  CampaignKPIs,
+  ReportResultRow,
+} from "@/lib/domain/types";
