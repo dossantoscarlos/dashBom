@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { BarChart } from "@/components/dashboard/BarChart";
-import { RoleHint } from "@/components/dashboard/RoleHint";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { CampaignWorkflow } from "@/components/dashboard/CampaignWorkflow";
 import { useDashboard } from "@/contexts/DashboardProvider";
@@ -28,146 +27,109 @@ export function DashboardHome({ userName }: { userName: string }) {
   );
 
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-8">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
-          Olá, {userName}
-        </h1>
-        <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-          Painel operacional da campanha — indicadores, cobertura e execução
-        </p>
+    <div className="flex flex-col gap-4">
+      <div className="flex items-end justify-between border-b border-zinc-200 pb-3 dark:border-zinc-800">
+        <div>
+          <h1 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
+            Console Principal
+          </h1>
+          <p className="text-[11px] font-medium text-zinc-500 uppercase tracking-wide">
+            Bem-vindo, {userName} · Status operacional do sistema
+          </p>
+        </div>
       </div>
 
-      <RoleHint />
-
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           label="Meta de votos"
           value={kpis.metaVotos.toLocaleString("pt-BR")}
-          change={`${kpis.progressoMetaPct}% projetado (${kpis.votosProjetados.toLocaleString("pt-BR")})`}
+          change={`${kpis.progressoMetaPct}% projetado`}
           trend={kpis.progressoMetaPct >= 60 ? "up" : "neutral"}
           icon="🎯"
         />
         <StatCard
-          label="Cobertura territorial"
+          label="Cobertura"
           value={`${kpis.coberturaTerritorialPct}%`}
-          change={`${regions.length} regiões mapeadas`}
+          change={`${regions.length} regiões`}
           trend={kpis.coberturaTerritorialPct >= 75 ? "up" : "neutral"}
           icon="🗺"
         />
         <StatCard
-          label="Campanhas ativas"
+          label="Ativas"
           value={kpis.campanhasAtivas}
-          change={`${campaigns.length} no total`}
+          change="Campanhas"
           trend="up"
           icon="📣"
         />
         <StatCard
-          label="Intenção de voto"
+          label="Intenção"
           value={`${kpis.intencaoVotoAgregada}%`}
-          change="Média dos deferidos (mock)"
+          change="Média geral"
           trend="up"
           icon="📈"
         />
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        <StatCard
-          label="Parceiros ativos"
-          value={kpis.parceirosAtivos}
-          change={`${partners.length} cadastrados`}
-          trend="neutral"
-          icon="🤝"
-        />
-        <StatCard
-          label="Comitês"
-          value={kpis.comites}
-          change="Pontos de operação"
-          trend="neutral"
-          icon="📍"
-        />
-        <StatCard
-          label="Progresso da meta"
-          value={`${kpis.progressoMetaPct}%`}
-          change="Projeção regional agregada"
-          trend={kpis.progressoMetaPct >= 60 ? "up" : "down"}
-          icon="✓"
-        />
-      </div>
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        <BarChart
-          title="Projeção de votos por região"
-          data={regions.map((r) => ({
-            label: r.name,
-            value: r.votesProjected ?? 0,
-          }))}
-        />
-        <div className="rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-950">
-          <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
-            Campanhas em execução
+      <div className="grid gap-4 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <BarChart
+            title="Projeção de votos por região"
+            data={regions.map((r) => ({
+              label: r.name,
+              value: r.votesProjected ?? 0,
+            }))}
+          />
+        </div>
+        
+        <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
+          <h2 className="text-xs font-bold uppercase tracking-widest text-zinc-400 mb-3">
+            Execução em Tempo Real
           </h2>
           {activeCampaigns.length === 0 ? (
-            <p className="mt-4 text-sm text-zinc-500">
-              Nenhuma campanha em execução no momento.
+            <p className="text-[11px] text-zinc-500">
+              Nenhuma atividade em execução.
             </p>
           ) : (
-            <ul className="mt-4 divide-y divide-zinc-100 dark:divide-zinc-800">
+            <ul className="divide-y divide-zinc-100 dark:divide-zinc-800">
               {activeCampaigns.map((c) => (
-                <li key={c.id} className="py-4">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="font-medium text-zinc-900 dark:text-zinc-50">
-                        {c.name}
-                      </p>
-                      <p className="text-xs text-zinc-500">
-                        {CAMPAIGN_TYPE_LABELS[c.type]} ·{" "}
-                        {c.startDate} — {c.endDate}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="mt-2">
+                <li key={c.id} className="py-2 first:pt-0">
+                  <p className="text-xs font-bold text-zinc-900 dark:text-zinc-50 truncate">
+                    {c.name}
+                  </p>
+                  <p className="text-[10px] text-zinc-500">
+                    {CAMPAIGN_TYPE_LABELS[c.type]}
+                  </p>
+                  <div className="mt-1">
                     <CampaignWorkflow status={c.status} compact />
                   </div>
                 </li>
               ))}
             </ul>
           )}
-          <Link
-            href="/dashboard/campanhas"
-            className="mt-4 inline-block text-sm font-medium text-zinc-900 hover:underline dark:text-zinc-50"
-          >
-            Gerenciar campanhas →
-          </Link>
         </div>
       </div>
 
-      <div>
-        <h2 className="mb-4 text-lg font-semibold text-zinc-900 dark:text-zinc-50">
-          Acesso rápido
+      <section>
+        <h2 className="mb-2 text-[10px] font-bold uppercase tracking-widest text-zinc-400">
+          Acesso Rápido aos Módulos
         </h2>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-6">
           {visibleNav.map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              className="flex items-center gap-3 rounded-2xl border border-zinc-200 bg-white p-4 transition hover:border-zinc-300 hover:shadow-sm dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-zinc-700"
+              className="flex flex-col items-center justify-center gap-1 rounded-lg border border-zinc-200 bg-white p-3 transition hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:bg-zinc-900"
             >
-              <span className="text-2xl" aria-hidden>
+              <span className="text-xl" aria-hidden>
                 {item.icon}
               </span>
-              <div>
-                <p className="font-medium text-zinc-900 dark:text-zinc-50">
-                  {item.label}
-                </p>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                  Acessar módulo
-                </p>
-              </div>
+              <span className="text-[10px] font-bold text-zinc-600 dark:text-zinc-400 text-center">
+                {item.label}
+              </span>
             </Link>
           ))}
         </div>
-      </div>
+      </section>
     </div>
   );
 }

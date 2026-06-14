@@ -32,29 +32,29 @@ export function Sidebar({
 
   return (
     <aside
-      className={`fixed inset-y-0 left-0 z-50 flex w-64 shrink-0 flex-col border-r border-zinc-200 bg-white transition-transform lg:static lg:translate-x-0 dark:border-zinc-800 dark:bg-zinc-950 ${
+      className={`fixed inset-y-0 left-0 z-50 flex w-60 shrink-0 flex-col border-r border-zinc-200 bg-white transition-transform lg:static lg:translate-x-0 dark:border-zinc-800 dark:bg-zinc-950 ${
         open ? "translate-x-0" : "-translate-x-full"
       }`}
     >
-      <div className="border-b border-zinc-200 px-5 py-5 dark:border-zinc-800">
-        <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+      <div className="border-b border-zinc-200 px-4 py-4 dark:border-zinc-800">
+        <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">
           CampanhaPro
         </p>
-        <p className="mt-1 text-sm font-medium text-zinc-900 dark:text-zinc-50">
+        <p className="mt-1 text-sm font-semibold text-zinc-900 dark:text-zinc-50">
           {userName}
         </p>
-        <p className="truncate text-xs text-zinc-500 dark:text-zinc-400">
+        <p className="truncate text-[11px] text-zinc-500 dark:text-zinc-400">
           {userEmail}
         </p>
       </div>
 
-      <nav className="flex-1 overflow-y-auto px-3 py-4">
+      <nav className="flex-1 overflow-y-auto px-2 py-3">
         {navGroupOrder.map((group) => {
           const items = visibleItems.filter((item) => item.group === group);
           if (items.length === 0) return null;
           return (
-            <div key={group} className="mb-5">
-              <p className="mb-2 px-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
+            <div key={group} className="mb-4">
+              <p className="mb-1 px-2 text-[10px] font-bold uppercase tracking-wider text-zinc-400">
                 {navGroups[group]}
               </p>
               <ul className="space-y-0.5">
@@ -63,13 +63,13 @@ export function Sidebar({
                     <Link
                       href={item.href}
                       onClick={onClose}
-                      className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition ${
+                      className={`flex items-center gap-2 rounded-md px-2 py-1.5 text-[13px] font-medium transition ${
                         isActive(item.href)
-                          ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
-                          : "text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900"
+                          ? "bg-zinc-100 text-zinc-900 dark:bg-zinc-900 dark:text-zinc-50"
+                          : "text-zinc-600 hover:bg-zinc-50 dark:text-zinc-400 dark:hover:bg-zinc-900/50"
                       }`}
                     >
-                      <span className="text-base" aria-hidden>
+                      <span className="text-sm opacity-70" aria-hidden>
                         {item.icon}
                       </span>
                       {item.label}

@@ -18,10 +18,10 @@ export function Breadcrumbs() {
   });
 
   return (
-    <nav aria-label="Navegação estrutural" className="mb-4">
-      <ol className="flex flex-wrap items-center gap-1.5 text-sm text-zinc-500 dark:text-zinc-400">
+    <nav aria-label="Navegação estrutural">
+      <ol className="flex flex-wrap items-center gap-1 text-[11px] text-zinc-500 dark:text-zinc-400">
         {crumbs.map((crumb, i) => (
-          <li key={crumb.href} className="flex items-center gap-1.5">
+          <li key={crumb.href} className="flex items-center gap-1">
             {i > 0 && (
               <span aria-hidden className="text-zinc-300 dark:text-zinc-600">
                 /

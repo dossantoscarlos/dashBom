@@ -22,11 +22,11 @@ function ShellContent({
   const { currentRole } = useDashboard();
 
   return (
-    <div className="flex min-h-full bg-zinc-50 dark:bg-black">
+    <div className="flex h-screen w-full overflow-hidden bg-zinc-50 dark:bg-black select-none">
       {sidebarOpen && (
         <button
           type="button"
-          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+          className="fixed inset-0 z-40 bg-black/40 lg:hidden"
           aria-label="Fechar menu"
           onClick={() => setSidebarOpen(false)}
         />
@@ -40,16 +40,16 @@ function ShellContent({
       />
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center justify-between border-b border-zinc-200 bg-white/95 px-4 backdrop-blur sm:px-6 dark:border-zinc-800 dark:bg-zinc-950/95">
-          <div className="flex items-center gap-3">
+        <header className="sticky top-0 z-30 flex h-10 shrink-0 items-center justify-between border-b border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-950">
+          <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={() => setSidebarOpen(true)}
-              className="rounded-lg p-2 text-zinc-600 hover:bg-zinc-100 lg:hidden dark:text-zinc-400 dark:hover:bg-zinc-900"
+              className="rounded p-1 text-zinc-600 hover:bg-zinc-100 lg:hidden dark:text-zinc-400 dark:hover:bg-zinc-900"
               aria-label="Abrir menu"
             >
               <svg
-                className="h-5 w-5"
+                className="h-4 w-4"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -63,13 +63,12 @@ function ShellContent({
                 />
               </svg>
             </button>
-            <div>
-              <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-bold uppercase tracking-tight text-zinc-400">
                 CampanhaPro
-              </p>
-              <p className="hidden text-xs text-zinc-500 sm:block dark:text-zinc-400">
-                Gestão de Campanha Eleitoral
-              </p>
+              </span>
+              <span className="h-3 w-[1px] bg-zinc-200 dark:bg-zinc-800" />
+              <Breadcrumbs />
             </div>
           </div>
           <UserMenu
@@ -78,9 +77,10 @@ function ShellContent({
             roleName={currentRole?.name}
           />
         </header>
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6">
-          <Breadcrumbs />
-          {children}
+        <main className="flex-1 overflow-auto bg-zinc-100/50 p-3 dark:bg-zinc-900/20">
+          <div className="mx-auto w-full h-full">
+            {children}
+          </div>
         </main>
       </div>
     </div>

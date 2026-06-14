@@ -3,6 +3,7 @@ type Column<T> = {
   header: string;
   render: (row: T) => React.ReactNode;
   className?: string;
+  hiddenOn?: "mobile" | "tablet"; // Sugestão para CRM denso
 };
 
 type DataTableProps<T> = {
@@ -26,16 +27,22 @@ export function DataTable<T>({
     );
   }
 
+  const getResponsiveClass = (hiddenOn?: string) => {
+    if (hiddenOn === "mobile") return "hidden sm:table-cell";
+    if (hiddenOn === "tablet") return "hidden lg:table-cell";
+    return "";
+  };
+
   return (
     <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[640px] text-left text-sm">
+        <table className="w-full text-left text-sm">
           <thead>
             <tr className="border-b border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900/50">
               {columns.map((col) => (
                 <th
                   key={col.key}
-                  className={`px-4 py-3 font-medium text-zinc-600 dark:text-zinc-400 ${col.className ?? ""}`}
+                  className={`px-4 py-3 font-medium text-zinc-600 dark:text-zinc-400 ${getResponsiveClass(col.hiddenOn)} ${col.className ?? ""}`}
                 >
                   {col.header}
                 </th>
@@ -51,7 +58,7 @@ export function DataTable<T>({
                 {columns.map((col) => (
                   <td
                     key={col.key}
-                    className={`px-4 py-3 text-zinc-700 dark:text-zinc-300 ${col.className ?? ""}`}
+                    className={`px-4 py-3 text-zinc-700 dark:text-zinc-300 ${getResponsiveClass(col.hiddenOn)} ${col.className ?? ""}`}
                   >
                     {col.render(row)}
                   </td>
