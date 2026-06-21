@@ -465,12 +465,12 @@ export function ExtJSWorkspace({ userName, userEmail }: ExtJSWorkspaceProps) {
 
           <div className="flex items-center gap-2">
             {can('dashboard:visualizar') && (
-              <Link
+              <a
                 href="/modulos"
                 className="flex h-8 items-center gap-1.5 rounded border border-white/20 dark:border-white/10 bg-white/10 dark:bg-white/5 px-3 font-semibold text-white transition hover:bg-white/25 dark:hover:bg-white/15 active:scale-95 text-[10px] uppercase tracking-wide"
               >
                 📊 Dashboard
-              </Link>
+              </a>
             )}
             <button
               onClick={() => {
