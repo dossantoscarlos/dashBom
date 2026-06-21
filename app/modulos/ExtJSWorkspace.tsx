@@ -19,6 +19,7 @@ import { ProfilePanel } from "@/CoreModules/Profile";
 // Import dashboard components for ExtJS portal home
 import { CampaignWorkflow } from "@/components/dashboard/CampaignWorkflow";
 import { CAMPAIGN_TYPE_LABELS } from "@/lib/domain/constants";
+import Link from "next/link";
 
 type ExtJSWorkspaceProps = {
   userName: string;
@@ -463,12 +464,14 @@ export function ExtJSWorkspace({ userName, userEmail }: ExtJSWorkspaceProps) {
           </div>
 
           <div className="flex items-center gap-2">
-            <a
-              href="/dashboard"
-              className="flex h-8 items-center gap-1.5 rounded border border-white/20 dark:border-white/10 bg-white/10 dark:bg-white/5 px-3 font-semibold text-white transition hover:bg-white/25 dark:hover:bg-white/15 active:scale-95 text-[10px] uppercase tracking-wide"
-            >
-              📊 Console Geral
-            </a>
+            {can('dashboard:visualizar') && (
+              <Link
+                href="/modulos?tab=dashboard"
+                className="flex h-8 items-center gap-1.5 rounded border border-white/20 dark:border-white/10 bg-white/10 dark:bg-white/5 px-3 font-semibold text-white transition hover:bg-white/25 dark:hover:bg-white/15 active:scale-95 text-[10px] uppercase tracking-wide"
+              >
+                📊 Dashboard
+              </Link>
+            )}
             <button
               onClick={() => {
                 if (confirm("Deseja sair do sistema?")) {
