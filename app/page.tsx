@@ -24,7 +24,7 @@ export default async function Home() {
         <div className="flex w-full flex-col gap-3 sm:flex-row sm:justify-center">
           {session ? (
             <Link
-              href="/dashboard"
+              href="/modulos?tab=dashboard"
               className="flex h-11 items-center justify-center rounded-lg bg-zinc-900 px-6 text-sm font-medium text-white transition hover:bg-zinc-700 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
             >
               Abrir painel
