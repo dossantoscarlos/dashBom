@@ -5,7 +5,7 @@ import { getSession } from "@/lib/session";
 
 export default async function LoginPage() {
   const session = await getSession();
-  if (session) redirect("/dashboard");
+  if (session) redirect("/modulos");
 
   return (
     <div className="flex flex-1 items-center justify-center bg-zinc-50 px-4 dark:bg-black">
