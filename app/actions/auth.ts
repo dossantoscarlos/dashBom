@@ -44,7 +44,7 @@ export async function login(
     path: "/",
   });
 
-  redirect("/dashboard");
+  redirect("/modulos");
 }
 
 export async function logout(): Promise<void> {
