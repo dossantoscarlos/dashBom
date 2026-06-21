@@ -15,20 +15,33 @@ export const ROLE_IDS = {
 } as const;
 
 export const PERMISSIONS = {
+  // Dashboard
+  DASHBOARD_VISUALIZAR: "dashboard:visualizar",
+  // Usuários
   USUARIOS_GERENCIAR: "usuarios:gerenciar",
+  USUARIOS_VISUALIZAR: "usuarios:visualizar",
+  // Permissões
   PERMISSOES_GERENCIAR: "permissoes:gerenciar",
+  // Parceiros
   PARCEIROS_GERENCIAR: "parceiros:gerenciar",
   PARCEIROS_VISUALIZAR: "parceiros:visualizar",
+  // Locais
   LOCAIS_GERENCIAR: "locais:gerenciar",
   LOCAIS_VISUALIZAR: "locais:visualizar",
+  // Regiões
   REGIOES_GERENCIAR: "regioes:gerenciar",
   REGIOES_VISUALIZAR: "regioes:visualizar",
+  // Relatórios
   RELATORIOS_VISUALIZAR: "relatorios:visualizar",
   RELATORIOS_EXPORTAR: "relatorios:exportar",
+  // TRE
   TRE_CONSULTAR: "tre:consultar",
+  // Campanhas
   CAMPANHAS_GERENCIAR: "campanhas:gerenciar",
   CAMPANHAS_VISUALIZAR: "campanhas:visualizar",
   CAMPANHAS_EXECUTAR: "campanhas:executar",
+  // Perfil
+  PERFIL_VISUALIZAR: "perfil:visualizar",
 } as const;
 
 export const USER_STATUS_LABELS: Record<UserStatus, string> = {

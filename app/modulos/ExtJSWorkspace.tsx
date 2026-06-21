@@ -5,6 +5,7 @@ import { useDashboard } from "@/contexts/DashboardProvider";
 import { logout } from "@/app/actions/auth";
 
 // Import modules from CoreModules
+import { DashboardPanel } from "@/CoreModules/Dashboard";
 import { CampaignsPanel } from "@/CoreModules/Campaigns";
 import { UsersPanel } from "@/CoreModules/Users";
 import { PartnersPanel } from "@/CoreModules/Partners";
@@ -82,11 +83,34 @@ export function ExtJSWorkspace({ userName, userEmail }: ExtJSWorkspaceProps) {
     mode: "light",
   });
 
-  // Tab Panel State
-  const [openTabs, setOpenTabs] = useState<TabItem[]>([
-    { id: "home", title: "Área de Trabalho", icon: "💻", closable: false },
-  ]);
-  const [activeTab, setActiveTab] = useState<string>("home");
+  // Tab Panel State — 'home' e 'dashboard' são fixas e não podem ser fechadas
+  const canViewDashboard = can("dashboard:visualizar");
+
+  const [openTabs, setOpenTabs] = useState<TabItem[]>(() => {
+    const tabs: TabItem[] = [
+      {
+        id: "home",
+        title: "Área de Trabalho",
+        icon: "💻",
+        closable: false,
+      },
+    ];
+
+    if (canViewDashboard) {
+      tabs.push({
+        id: "dashboard",
+        title: "Dashboard",
+        icon: "📊",
+        closable: false,
+      });
+    }
+
+    return tabs;
+  });
+
+  const [activeTab, setActiveTab] = useState<string>(
+    canViewDashboard ? "dashboard" : "home",
+  );
 
   // Carousel State
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -152,13 +176,20 @@ export function ExtJSWorkspace({ userName, userEmail }: ExtJSWorkspaceProps) {
 
   // Parse initial tab from URL parameter if present
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      const tabParam = params.get("tab");
-      if (tabParam && tabParam !== "home") {
-        handleOpenTab(tabParam);
-      }
+    if (typeof window === "undefined") return;
+
+    const params = new URLSearchParams(window.location.search);
+    const tabParam = params.get("tab");
+
+    if (!tabParam || tabParam === "home") {
+      return;
     }
+
+    if (tabParam === "dashboard" && !can("dashboard:visualizar")) {
+      return;
+    }
+
+    handleOpenTab(tabParam);
   }, []);
 
   const handleUpdateProfile = (newSettings: ProfileSettings) => {
@@ -179,6 +210,7 @@ export function ExtJSWorkspace({ userName, userEmail }: ExtJSWorkspaceProps) {
       title: "Operações",
       icon: "⚙️",
       items: [
+        { id: "dashboard", label: "Dashboard", icon: "📊", permission: "dashboard:visualizar" },
         { id: "campanhas", label: "Campanhas", icon: "📣", permission: "campanhas:gerenciar" },
       ],
     },
@@ -214,14 +246,55 @@ export function ExtJSWorkspace({ userName, userEmail }: ExtJSWorkspaceProps) {
   ];
 
   const panelDefinitions: Record<string, { title: string; icon: string; component: React.ReactNode }> = {
-    campanhas: { title: "Gestão de Campanhas", icon: "📣", component: <CampaignsPanel /> },
-    usuarios: { title: "Equipe Operacional", icon: "👤", component: <UsersPanel /> },
-    parceiros: { title: "Gestão de Parceiros", icon: "🤝", component: <PartnersPanel /> },
-    locais: { title: "Locais e Comitês", icon: "📍", component: <LocationsPanel /> },
-    regioes: { title: "Regiões Eleitorais", icon: "🗺", component: <RegionsPanel /> },
-    relatorios: { title: "Relatórios e Estatísticas", icon: "📊", component: <ReportsPanel /> },
-    tre: { title: "Consulta Oficial TRE", icon: "⚖", component: <TrePanel /> },
-    permissoes: { title: "Matriz de Permissões", icon: "🔐", component: <PermissionsPanel /> },
+    dashboard: {
+      title: "Dashboard",
+      icon: "📊",
+      component: can("dashboard:visualizar")
+        ? <DashboardPanel />
+        : <div>Acesso negado</div>
+    },
+    campanhas: {
+      title: "Gestão de Campanhas", icon: "📣", component: can("campanhas:gerenciar") ? <CampaignsPanel /> : <div>Acesso negado</div>
+    },
+    usuarios: {
+      title: "Equipe Operacional", icon: "👤", component: can("usuarios:gerenciar") ? <UsersPanel /> : <div>Acesso negado</div>
+    },
+    parceiros: {
+      title: "Gestão de Parceiros", icon: "🤝", component: can("parceiros:gerenciar") ? <PartnersPanel /> : <div>Acesso negado</div>
+    },
+    locais: {
+      title: "Locais e Comitês", icon: "📍", component: can("locais:gerenciar") ? <LocationsPanel /> : <div>Acesso negado</div>
+    },
+    regioes: {
+      title: "Regiões Eleitorais", icon: "🗺", component: can("regioes:gerenciar") ? <RegionsPanel /> : <div>Acesso negado</div>
+    },
+    relatorios: {
+      title: "Relatórios e Estatísticas",
+      icon: "📊",
+      component: can("relatorios:visualizar") ? (
+        <ReportsPanel
+          onOpenTab={(id, title, icon, component) => {
+            setOpenTabs((prev) => {
+              if (prev.find((t) => t.id === id)) return prev;
+              return [...prev, { id, title, icon, closable: true }];
+            });
+            // Store the dynamic component
+            setPanelExtras((prev) => ({ ...prev, [id]: { title, icon, component } }));
+            setActiveTab(id);
+          }}
+        />
+      ) : (
+        <div>Acesso negado</div>
+      ),
+    },
+    tre: {
+      title: "Consulta Oficial TRE", icon: "⚖",
+      component: can("tre:consultar") ? <TrePanel /> : <div>Acesso negado</div>
+    },
+    permissoes: {
+      title: "Matriz de Permissões", icon: "🔐",
+      component: can("permissoes:gerenciar") ? <PermissionsPanel /> : <div>Acesso negado</div>
+    },
     perfil: {
       title: "Configurações de Perfil",
       icon: "👤",
@@ -229,8 +302,15 @@ export function ExtJSWorkspace({ userName, userEmail }: ExtJSWorkspaceProps) {
     },
   };
 
+  // Extra dynamic panels (e.g. individual report tabs)
+  const [panelExtras, setPanelExtras] = useState<Record<string, { title: string; icon: string; component: React.ReactNode }>>({});
+  const allPanels = { ...panelDefinitions, ...panelExtras };
+
   const handleOpenTab = (id: string) => {
-    const tabDef = panelDefinitions[id];
+    if (id === "dashboard" && !can("dashboard:visualizar")) {
+      return;
+    }
+    const tabDef = allPanels[id];
     if (!tabDef) return;
 
     // Verify permission
@@ -252,14 +332,18 @@ export function ExtJSWorkspace({ userName, userEmail }: ExtJSWorkspaceProps) {
     // Update query param
     if (typeof window !== "undefined") {
       const url = new URL(window.location.href);
-      url.searchParams.set("tab", id);
+      if (id === "home" || id === "dashboard") {
+        url.searchParams.delete("tab");
+      } else {
+        url.searchParams.set("tab", id);
+      }
       window.history.pushState({}, "", url.toString());
     }
   };
 
   const handleCloseTab = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (id === "home") return;
+    if (id === "home" || id === "dashboard") return;
 
     const index = openTabs.findIndex((t) => t.id === id);
     const updatedTabs = openTabs.filter((t) => t.id !== id);
@@ -285,7 +369,7 @@ export function ExtJSWorkspace({ userName, userEmail }: ExtJSWorkspaceProps) {
     setActiveTab(id);
     if (typeof window !== "undefined") {
       const url = new URL(window.location.href);
-      if (id === "home") {
+      if (id === "home" || id === "dashboard") {
         url.searchParams.delete("tab");
       } else {
         url.searchParams.set("tab", id);
@@ -353,7 +437,7 @@ export function ExtJSWorkspace({ userName, userEmail }: ExtJSWorkspaceProps) {
 
   return (
     <div className="flex h-screen w-screen flex-col overflow-hidden bg-[#eef2f7] dark:bg-[#0a0f14] font-sans text-xs text-[#333] dark:text-[#ccd3db] select-none antialiased">
-      
+
       {/* ---------------- NORTH REGION: HEADER ---------------- */}
       <header className={`flex h-12 w-full shrink-0 items-center justify-between border-b ${themeConfig.headerBorder} bg-gradient-to-r ${themeConfig.headerBg} px-4 text-white shadow-md`}>
         <div className="flex items-center gap-3">
@@ -404,12 +488,11 @@ export function ExtJSWorkspace({ userName, userEmail }: ExtJSWorkspaceProps) {
 
       {/* MAIN LAYOUT WRAPPER (WEST & CENTER) */}
       <div className="flex flex-1 w-full overflow-hidden">
-        
+
         {/* ---------------- WEST REGION: NAVIGATION TREE ---------------- */}
         <aside
-          className={`flex shrink-0 flex-col border-r border-[#c0c7d0] dark:border-[#2b3e51] bg-[#f5f5f5] dark:bg-[#121c26] transition-all duration-300 ${
-            isSidebarCollapsed ? "w-7" : "w-60"
-          }`}
+          className={`flex shrink-0 flex-col border-r border-[#c0c7d0] dark:border-[#2b3e51] bg-[#f5f5f5] dark:bg-[#121c26] transition-all duration-300 ${isSidebarCollapsed ? "w-7" : "w-60"
+            }`}
         >
           {isSidebarCollapsed ? (
             // Collapsed narrow vertical bar
@@ -482,11 +565,10 @@ export function ExtJSWorkspace({ userName, userEmail }: ExtJSWorkspaceProps) {
                               <li key={item.id}>
                                 <button
                                   onClick={() => handleOpenTab(item.id)}
-                                  className={`flex w-full h-7 items-center gap-2 px-3 transition-colors text-left rounded-sm font-medium ${
-                                    isTabActive
-                                      ? themeConfig.sidebarActiveNode
-                                      : "text-[#555] dark:text-zinc-400 hover:bg-[#f0f4f8] dark:hover:bg-[#1a2533] hover:text-[#111] dark:hover:text-zinc-200"
-                                  }`}
+                                  className={`flex w-full h-7 items-center gap-2 px-3 transition-colors text-left rounded-sm font-medium ${isTabActive
+                                    ? themeConfig.sidebarActiveNode
+                                    : "text-[#555] dark:text-zinc-400 hover:bg-[#f0f4f8] dark:hover:bg-[#1a2533] hover:text-[#111] dark:hover:text-zinc-200"
+                                    }`}
                                 >
                                   <span className="text-xs">{item.icon}</span>
                                   <span>{item.label}</span>
@@ -506,7 +588,7 @@ export function ExtJSWorkspace({ userName, userEmail }: ExtJSWorkspaceProps) {
 
         {/* ---------------- CENTER REGION: TAB PANEL ---------------- */}
         <main className="flex flex-1 flex-col overflow-hidden bg-[#eef2f7] dark:bg-[#0a0f14] p-2">
-          
+
           {/* Tab Strip */}
           <div className="flex w-full border-b border-[#c0c7d0] dark:border-[#2b3e51] px-1 flex-wrap gap-0.5 items-end h-8 shrink-0">
             {openTabs.map((tab) => {
@@ -515,11 +597,10 @@ export function ExtJSWorkspace({ userName, userEmail }: ExtJSWorkspaceProps) {
                 <div
                   key={tab.id}
                   onClick={() => handleSelectTab(tab.id)}
-                  className={`group flex h-7 items-center gap-2 px-3 border-t rounded-t cursor-pointer transition-all ${
-                    isActive
-                      ? `bg-white dark:bg-zinc-950 border-t-2 ${themeConfig.activeTabBorder} border-x border-x-[#c0c7d0] dark:border-x-[#2b3e51] font-bold ${themeConfig.textHighlight} z-10 -mb-[1px]`
-                      : "bg-[#e1e5eb] dark:bg-[#131b24] border-t border-t-[#c8cfd6] dark:border-t-[#2b3e51] border-x border-x-[#c8cfd6] dark:border-x-[#2b3e51] text-[#555] dark:text-zinc-400 hover:bg-[#f0f2f5] dark:hover:bg-[#1a2530] hover:text-[#111] dark:hover:text-zinc-200 -mb-[1px]"
-                  }`}
+                  className={`group flex h-7 items-center gap-2 px-3 border-t rounded-t cursor-pointer transition-all ${isActive
+                    ? `bg-white dark:bg-zinc-950 border-t-2 ${themeConfig.activeTabBorder} border-x border-x-[#c0c7d0] dark:border-x-[#2b3e51] font-bold ${themeConfig.textHighlight} z-10 -mb-[1px]`
+                    : "bg-[#e1e5eb] dark:bg-[#131b24] border-t border-t-[#c8cfd6] dark:border-t-[#2b3e51] border-x border-x-[#c8cfd6] dark:border-x-[#2b3e51] text-[#555] dark:text-zinc-400 hover:bg-[#f0f2f5] dark:hover:bg-[#1a2530] hover:text-[#111] dark:hover:text-zinc-200 -mb-[1px]"
+                    }`}
                   style={{ minWidth: "100px", maxWidth: "200px" }}
                 >
                   <span className="text-xs shrink-0">{tab.icon}</span>
@@ -542,19 +623,19 @@ export function ExtJSWorkspace({ userName, userEmail }: ExtJSWorkspaceProps) {
 
           {/* Active Tab Body Panel */}
           <div className="flex-1 w-full overflow-hidden border-x border-b border-[#c0c7d0] dark:border-[#2b3e51] bg-white dark:bg-zinc-950 shadow-sm flex flex-col">
-            
+
             {/* Inner Content Area */}
             <div className="flex-1 overflow-auto p-4 bg-white dark:bg-zinc-950">
               {activeTab === "home" ? (
                 // ExtJS Portal Dashboard Home Tab
                 <div className="flex flex-col gap-5 h-full">
-                  
+
                   {/* Grid Portal Layout */}
                   <div className="grid gap-4 md:grid-cols-3">
-                    
+
                     {/* Portal Column 1 (News Area with Carousel Banner) */}
                     <div className="md:col-span-2 flex flex-col gap-4">
-                      
+
                       {/* Carousel Container */}
                       <div className="border border-[#c0c7d0] dark:border-zinc-800 rounded bg-[#fafafa] dark:bg-zinc-900 shadow-xs overflow-hidden flex flex-col h-64">
                         <div className="bg-[#e9eef4] dark:bg-[#1a2d3e] border-b border-[#c0c7d0] dark:border-[#2b3e51] px-3 py-1.5 font-bold text-[#2c3e50] dark:text-zinc-300 text-[10px] uppercase flex justify-between items-center">
@@ -586,9 +667,8 @@ export function ExtJSWorkspace({ userName, userEmail }: ExtJSWorkspaceProps) {
                               <button
                                 key={idx}
                                 onClick={() => setCurrentSlide(idx)}
-                                className={`h-2 w-2 rounded-full transition-all ${
-                                  currentSlide === idx ? "bg-[#157fcc] w-4" : "bg-[#cbd5e1] dark:bg-zinc-700 hover:bg-[#a1a1a1]"
-                                }`}
+                                className={`h-2 w-2 rounded-full transition-all ${currentSlide === idx ? "bg-[#157fcc] w-4" : "bg-[#cbd5e1] dark:bg-zinc-700 hover:bg-[#a1a1a1]"
+                                  }`}
                               />
                             ))}
                           </div>
@@ -640,7 +720,7 @@ export function ExtJSWorkspace({ userName, userEmail }: ExtJSWorkspaceProps) {
 
                     {/* Portal Column 2 (Active execution and shortcuts - KEEP UNCHANGED) */}
                     <div className="flex flex-col gap-4">
-                      
+
                       {/* Active Actions */}
                       <div className="border border-[#c0c7d0] dark:border-[#2b3e51] rounded bg-[#fafafa] dark:bg-zinc-900 shadow-xs">
                         <div className="bg-[#e9eef4] dark:bg-[#1a2d3e] border-b border-[#c0c7d0] dark:border-[#2b3e51] px-3 py-1.5 font-bold text-[#2c3e50] dark:text-zinc-300 text-[10px] uppercase">

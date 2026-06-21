@@ -7,6 +7,7 @@ export const navItems: NavItem[] = [
     label: "Visão Geral",
     icon: "◉",
     group: "operacao",
+    permission: PERMISSIONS.DASHBOARD_VISUALIZAR,
   },
   {
     href: "/modulos",
