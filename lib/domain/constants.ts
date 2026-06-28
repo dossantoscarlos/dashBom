@@ -12,6 +12,9 @@ export const ROLE_IDS = {
   COORDENADOR: "role-coordenador",
   AGENTE: "role-agente",
   ANALISTA: "role-analista",
+  SUPORTE_N1: "role-suporte-n1",
+  SUPORTE_N2: "role-suporte-n2",
+  SUPORTE_N3: "role-suporte-n3",
 } as const;
 
 export const PERMISSIONS = {
@@ -22,6 +25,7 @@ export const PERMISSIONS = {
   USUARIOS_VISUALIZAR: "usuarios:visualizar",
   // Permissões
   PERMISSOES_GERENCIAR: "permissoes:gerenciar",
+  PERMISSOES_VISUALIZAR: "permissoes:visualizar",
   // Parceiros
   PARCEIROS_GERENCIAR: "parceiros:gerenciar",
   PARCEIROS_VISUALIZAR: "parceiros:visualizar",

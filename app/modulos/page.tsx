@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { DashboardProvider } from "@/contexts/DashboardProvider";
+import { prepareUserServerState } from "@/lib/user-server";
 import { ExtJSWorkspace } from "./ExtJSWorkspace";
 
 export const metadata = {
@@ -14,8 +15,20 @@ export default async function ModulosPage() {
     redirect("/login");
   }
 
+  const userState = await prepareUserServerState(session);
+
   return (
-    <DashboardProvider userEmail={session.email}>
+    <DashboardProvider
+      userEmail={session.email}
+      initialUser={userState.user}
+      initialRegions={userState.regions}
+      initialCampaigns={userState.campaigns}
+      initialPartners={userState.partners}
+      initialLocations={userState.locations}
+      initialUsers={userState.users}
+      initialRoles={userState.roles}
+      initialPermissions={userState.availablePermissions}
+    >
       <ExtJSWorkspace userName={session.name} userEmail={session.email} />
     </DashboardProvider>
   );

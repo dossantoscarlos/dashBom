@@ -9,6 +9,10 @@ import { ModuleBlock } from "@/components/dashboard/ModuleBlock";
 import { RoleHint } from "@/components/dashboard/RoleHint";
 import { Wizard } from "@/components/dashboard/Wizard";
 import { useToast } from "@/components/dashboard/Toast";
+import {
+  deleteCampaign,
+  saveCampaign,
+} from "@/app/actions/dashboard-crud";
 import { buttonPrimaryClass, inputClass, labelClass } from "@/components/dashboard/form-styles";
 import { useDashboard } from "@/contexts/DashboardProvider";
 import { CAMPAIGN_STATUS_LABELS, CAMPAIGN_TYPE_LABELS } from "@/lib/domain/constants";
@@ -35,24 +39,35 @@ export function CampaignsPanel() {
     setEditingId(null); setShowForm(false); setCurrentStep(0);
   }
 
-  function handleFinish() {
+  async function handleFinish() {
     const validation = combineValidations(validateRequired(form.name, "Nome"), validateDateRange(form.startDate, form.endDate));
     if (!validation.ok) { toast(validation.message, "error"); return; }
-    if (editingId) {
-      setCampaigns((prev) => prev.map((c) => (c.id === editingId ? { ...c, ...form } : c)));
-      toast("Campanha atualizada.");
-    } else {
-      setCampaigns((prev) => [...prev, { id: `cam-${Date.now()}`, ...form }]);
-      toast("Campanha criada com sucesso.");
+    try {
+      if (editingId) {
+        const saved = await saveCampaign({ id: editingId, ...form }, true);
+        setCampaigns((prev) => prev.map((c) => (c.id === editingId ? saved : c)));
+        toast("Campanha atualizada.");
+      } else {
+        const saved = await saveCampaign({ id: `cam-${Date.now()}`, ...form }, false);
+        setCampaigns((prev) => [...prev, saved]);
+        toast("Campanha criada com sucesso.");
+      }
+      resetForm();
+    } catch {
+      toast("Não foi possível salvar a campanha.", "error");
     }
-    resetForm();
   }
 
-  function advanceStatus(campaign: Campaign) {
+  async function advanceStatus(campaign: Campaign) {
     const next = getNextCampaignStatus(campaign.status);
     if (!next) return;
-    setCampaigns((prev) => prev.map((c) => (c.id === campaign.id ? { ...c, status: next } : c)));
-    toast(`Campanha avançou para: ${CAMPAIGN_STATUS_LABELS[next]}.`);
+    try {
+      const saved = await saveCampaign({ ...campaign, status: next }, true);
+      setCampaigns((prev) => prev.map((c) => (c.id === campaign.id ? saved : c)));
+      toast(`Campanha avançou para: ${CAMPAIGN_STATUS_LABELS[next]}.`);
+    } catch {
+      toast("Não foi possível avançar a campanha.", "error");
+    }
   }
 
   const steps = [
@@ -139,7 +154,7 @@ export function CampaignsPanel() {
             ) : <span className="text-xs text-zinc-400">Visualização</span> },
           ]} />
         <ConfirmDialog open={deleteId !== null} title="Excluir campanha" message="Deseja remover esta campanha?"
-          onConfirm={() => { if (deleteId) { setCampaigns((p) => p.filter((c) => c.id !== deleteId)); setDeleteId(null); toast("Campanha excluída."); } }}
+          onConfirm={async () => { if (deleteId) { try { await deleteCampaign(deleteId); setCampaigns((p) => p.filter((c) => c.id !== deleteId)); setDeleteId(null); toast("Campanha excluída."); } catch { toast("Não foi possível excluir a campanha.", "error"); } } }}
           onCancel={() => setDeleteId(null)} />
       </div>
     </ModuleBlock>

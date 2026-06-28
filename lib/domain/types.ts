@@ -16,6 +16,12 @@ export type Role = {
   permissions: string[];
 };
 
+export type PermissionDefinition = {
+  id: string;
+  label: string;
+  group: string;
+};
+
 export type PartnerType = "fornecedor" | "mídia" | "institucional" | "voluntário";
 
 export type Partner = {

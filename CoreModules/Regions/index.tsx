@@ -11,6 +11,7 @@ import {
 import { ConfirmDialog } from "@/components/dashboard/ConfirmDialog";
 import { RoleHint } from "@/components/dashboard/RoleHint";
 import { useToast } from "@/components/dashboard/Toast";
+import { deleteRegion, saveRegion } from "@/app/actions/dashboard-crud";
 import { useDashboard } from "@/contexts/DashboardProvider";
 
 import { ModuleBlock } from "@/components/dashboard/ModuleBlock";
@@ -41,20 +42,23 @@ export function RegionsPanel() {
     setShowForm(false);
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (editingId) {
-      setRegions((prev) =>
-        prev.map((r) => (r.id === editingId ? { ...r, ...form } : r)),
-      );
-    } else {
-      setRegions((prev) => [
-        ...prev,
-        { id: `reg-${Date.now()}`, ...form },
-      ]);
+    try {
+      if (editingId) {
+        const saved = await saveRegion({ id: editingId, ...form }, true);
+        setRegions((prev) =>
+          prev.map((r) => (r.id === editingId ? saved : r)),
+        );
+      } else {
+        const saved = await saveRegion({ id: `reg-${Date.now()}`, ...form }, false);
+        setRegions((prev) => [...prev, saved]);
+      }
+      resetForm();
+      toast(editingId ? "Região atualizada." : "Região cadastrada.");
+    } catch {
+      toast("Não foi possível salvar a região.", "error");
     }
-    resetForm();
-    toast(editingId ? "Região atualizada." : "Região cadastrada.");
   }
 
   return (
@@ -222,11 +226,16 @@ export function RegionsPanel() {
           open={deleteId !== null}
           title="Excluir região"
           message="Parceiros e campanhas vinculados podem ficar órfãos. Continuar?"
-          onConfirm={() => {
+          onConfirm={async () => {
             if (deleteId) {
-              setRegions((prev) => prev.filter((x) => x.id !== deleteId));
-              setDeleteId(null);
-              toast("Região removida.");
+              try {
+                await deleteRegion(deleteId);
+                setRegions((prev) => prev.filter((x) => x.id !== deleteId));
+                setDeleteId(null);
+                toast("Região removida.");
+              } catch {
+                toast("Não foi possível remover a região.", "error");
+              }
             }
           }}
           onCancel={() => setDeleteId(null)}

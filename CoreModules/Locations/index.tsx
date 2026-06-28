@@ -11,6 +11,7 @@ import {
 import { ConfirmDialog } from "@/components/dashboard/ConfirmDialog";
 import { RoleHint } from "@/components/dashboard/RoleHint";
 import { useToast } from "@/components/dashboard/Toast";
+import { deleteLocation, saveLocation } from "@/app/actions/dashboard-crud";
 import { useDashboard } from "@/contexts/DashboardProvider";
 import type { LocationType } from "@/lib/domain/types";
 
@@ -44,20 +45,23 @@ export function LocationsPanel() {
     setShowForm(false);
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (editingId) {
-      setLocations((prev) =>
-        prev.map((l) => (l.id === editingId ? { ...l, ...form } : l)),
-      );
-    } else {
-      setLocations((prev) => [
-        ...prev,
-        { id: `loc-${Date.now()}`, ...form },
-      ]);
+    try {
+      if (editingId) {
+        const saved = await saveLocation({ id: editingId, ...form }, true);
+        setLocations((prev) =>
+          prev.map((l) => (l.id === editingId ? saved : l)),
+        );
+      } else {
+        const saved = await saveLocation({ id: `loc-${Date.now()}`, ...form }, false);
+        setLocations((prev) => [...prev, saved]);
+      }
+      resetForm();
+      toast(editingId ? "Local atualizado." : "Local cadastrado.");
+    } catch {
+      toast("Não foi possível salvar o local.", "error");
     }
-    resetForm();
-    toast(editingId ? "Local atualizado." : "Local cadastrado.");
   }
 
   return (
@@ -225,11 +229,16 @@ export function LocationsPanel() {
           open={deleteId !== null}
           title="Excluir local"
           message="Deseja remover este comitê ou ponto de apoio?"
-          onConfirm={() => {
+          onConfirm={async () => {
             if (deleteId) {
-              setLocations((prev) => prev.filter((x) => x.id !== deleteId));
-              setDeleteId(null);
-              toast("Local removido.");
+              try {
+                await deleteLocation(deleteId);
+                setLocations((prev) => prev.filter((x) => x.id !== deleteId));
+                setDeleteId(null);
+                toast("Local removido.");
+              } catch {
+                toast("Não foi possível remover o local.", "error");
+              }
             }
           }}
           onCancel={() => setDeleteId(null)}

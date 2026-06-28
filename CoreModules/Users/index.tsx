@@ -8,6 +8,10 @@ import { FormCard } from "@/components/dashboard/FormCard";
 import { RoleHint } from "@/components/dashboard/RoleHint";
 import { useToast } from "@/components/dashboard/Toast";
 import {
+  deleteDashboardUser,
+  saveDashboardUser,
+} from "@/app/actions/dashboard-crud";
+import {
   buttonPrimaryClass,
   buttonSecondaryClass,
   inputClass,
@@ -45,7 +49,7 @@ export function UsersPanel() {
     crud.closeForm();
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const validation = combineValidations(
       validateRequired(form.name, "Nome"),
@@ -56,25 +60,37 @@ export function UsersPanel() {
       return;
     }
 
-    if (crud.editingId) {
-      const updated = crud.items.map((u) =>
-        u.id === crud.editingId ? { ...u, ...form } : u,
-      );
-      crud.setItems(updated);
-      setUsers(updated);
-      toast("Usuário atualizado com sucesso.");
-    } else {
-      const newUser: DashboardUser = {
-        id: `user-${Date.now()}`,
-        ...form,
-        createdAt: new Date().toISOString().slice(0, 10),
-      };
-      const updated = [...crud.items, newUser];
-      crud.setItems(updated);
-      setUsers(updated);
-      toast("Usuário cadastrado com sucesso.");
+    try {
+      if (crud.editingId) {
+        const current = crud.items.find((user) => user.id === crud.editingId);
+        const saved = await saveDashboardUser(
+          { id: crud.editingId, createdAt: current?.createdAt ?? new Date().toISOString().slice(0, 10), ...form },
+          true,
+        );
+        const updated = crud.items.map((u) =>
+          u.id === crud.editingId ? saved : u,
+        );
+        crud.setItems(updated);
+        setUsers(updated);
+        toast("Usuário atualizado com sucesso.");
+      } else {
+        const saved = await saveDashboardUser(
+          {
+            id: `user-${Date.now()}`,
+            ...form,
+            createdAt: new Date().toISOString().slice(0, 10),
+          },
+          false,
+        );
+        const updated = [...crud.items, saved];
+        crud.setItems(updated);
+        setUsers(updated);
+        toast("Usuário cadastrado com sucesso.");
+      }
+      resetForm();
+    } catch {
+      toast("Não foi possível salvar o usuário.", "error");
     }
-    resetForm();
   }
 
   function startEdit(user: DashboardUser) {
@@ -87,13 +103,18 @@ export function UsersPanel() {
     crud.openEdit(user.id);
   }
 
-  function confirmDelete() {
+  async function confirmDelete() {
     if (!deleteId) return;
-    const updated = crud.items.filter((u) => u.id !== deleteId);
-    crud.setItems(updated);
-    setUsers(updated);
-    setDeleteId(null);
-    toast("Usuário removido.");
+    try {
+      await deleteDashboardUser(deleteId);
+      const updated = crud.items.filter((u) => u.id !== deleteId);
+      crud.setItems(updated);
+      setUsers(updated);
+      setDeleteId(null);
+      toast("Usuário removido.");
+    } catch {
+      toast("Não foi possível remover o usuário.", "error");
+    }
   }
 
   return (

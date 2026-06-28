@@ -12,6 +12,7 @@ import {
 import { ConfirmDialog } from "@/components/dashboard/ConfirmDialog";
 import { RoleHint } from "@/components/dashboard/RoleHint";
 import { useToast } from "@/components/dashboard/Toast";
+import { deletePartner, savePartner } from "@/app/actions/dashboard-crud";
 import { useDashboard } from "@/contexts/DashboardProvider";
 import type { PartnerType, UserStatus } from "@/lib/domain/types";
 
@@ -45,20 +46,23 @@ export function PartnersPanel() {
     setShowForm(false);
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (editingId) {
-      setPartners((prev) =>
-        prev.map((p) => (p.id === editingId ? { ...p, ...form } : p)),
-      );
-    } else {
-      setPartners((prev) => [
-        ...prev,
-        { id: `par-${Date.now()}`, ...form },
-      ]);
+    try {
+      if (editingId) {
+        const saved = await savePartner({ id: editingId, ...form }, true);
+        setPartners((prev) =>
+          prev.map((p) => (p.id === editingId ? saved : p)),
+        );
+      } else {
+        const saved = await savePartner({ id: `par-${Date.now()}`, ...form }, false);
+        setPartners((prev) => [...prev, saved]);
+      }
+      resetForm();
+      toast(editingId ? "Parceiro atualizado." : "Parceiro cadastrado.");
+    } catch {
+      toast("Não foi possível salvar o parceiro.", "error");
     }
-    resetForm();
-    toast(editingId ? "Parceiro atualizado." : "Parceiro cadastrado.");
   }
 
   return (
@@ -223,11 +227,16 @@ export function PartnersPanel() {
           open={deleteId !== null}
           title="Excluir parceiro"
           message="Deseja remover este parceiro do cadastro?"
-          onConfirm={() => {
+          onConfirm={async () => {
             if (deleteId) {
-              setPartners((prev) => prev.filter((x) => x.id !== deleteId));
-              setDeleteId(null);
-              toast("Parceiro removido.");
+              try {
+                await deletePartner(deleteId);
+                setPartners((prev) => prev.filter((x) => x.id !== deleteId));
+                setDeleteId(null);
+                toast("Parceiro removido.");
+              } catch {
+                toast("Não foi possível remover o parceiro.", "error");
+              }
             }
           }}
           onCancel={() => setDeleteId(null)}

@@ -7,11 +7,51 @@ import {
   SESSION_COOKIE,
   SESSION_MAX_AGE,
 } from "@/lib/auth";
-import { validateCredentials } from "@/lib/users";
 
 export type LoginState = {
   error?: string;
 };
+
+type LaravelLoginResponse = {
+  user: {
+    id: string;
+    email: string;
+    name: string;
+    roleId?: string;
+    roleName?: string;
+    supportLevel?: string | null;
+    permissions?: string[];
+  };
+};
+
+function getLaravelApiUrl(): string {
+  const url = process.env.LARAVEL_API_URL ?? "http://127.0.0.1:8000";
+  return url.endsWith("/") ? url.slice(0, -1) : url;
+}
+
+async function authenticateWithLaravel(
+  email: string,
+  password: string,
+): Promise<LaravelLoginResponse["user"] | null> {
+  const response = await fetch(getLaravelApiUrl() + "/api/auth/login", {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ email, password }),
+    cache: "no-store",
+  });
+
+  if (response.status === 401 || response.status === 422) return null;
+
+  if (!response.ok) {
+    throw new Error("Laravel auth failed with status " + response.status);
+  }
+
+  const data = (await response.json()) as LaravelLoginResponse;
+  return data.user;
+}
 
 export async function login(
   _prevState: LoginState,
@@ -24,7 +64,13 @@ export async function login(
     return { error: "Preencha e-mail e senha." };
   }
 
-  const user = validateCredentials(email, password);
+  let user: LaravelLoginResponse["user"] | null;
+  try {
+    user = await authenticateWithLaravel(email, password);
+  } catch {
+    return { error: "Não foi possível validar o login no servidor." };
+  }
+
   if (!user) {
     return { error: "E-mail ou senha incorretos." };
   }
@@ -33,6 +79,10 @@ export async function login(
     sub: user.id,
     email: user.email,
     name: user.name,
+    roleId: user.roleId,
+    roleName: user.roleName,
+    supportLevel: user.supportLevel,
+    permissions: user.permissions ?? [],
   });
 
   const cookieStore = await cookies();

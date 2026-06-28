@@ -14,17 +14,10 @@ import type {
   DashboardUser,
   Location,
   Partner,
+  PermissionDefinition,
   Region,
   Role,
 } from "@/lib/domain/types";
-import {
-  campaignsRepo,
-  locationsRepo,
-  partnersRepo,
-  regionsRepo,
-  rolesRepo,
-  usersRepo,
-} from "@/lib/data/repositories";
 
 type DashboardContextValue = {
   regions: Region[];
@@ -33,6 +26,7 @@ type DashboardContextValue = {
   locations: Location[];
   users: DashboardUser[];
   roles: Role[];
+  availablePermissions: PermissionDefinition[];
   currentRole: Role | null;
   getRegionName: (id: string) => string;
   getRoleName: (roleId: string) => string;
@@ -49,30 +43,62 @@ const DashboardContext = createContext<DashboardContextValue | null>(null);
 
 type DashboardProviderProps = {
   userEmail: string;
+  initialUser?: DashboardUser;
+  initialRegions?: Region[];
+  initialCampaigns?: Campaign[];
+  initialPartners?: Partner[];
+  initialLocations?: Location[];
+  initialUsers?: DashboardUser[];
+  initialRoles?: Role[];
+  initialPermissions?: PermissionDefinition[];
   children: React.ReactNode;
 };
 
 export function DashboardProvider({
   userEmail,
+  initialUser,
+  initialRegions,
+  initialCampaigns,
+  initialPartners,
+  initialLocations,
+  initialUsers,
+  initialRoles,
+  initialPermissions,
   children,
 }: DashboardProviderProps) {
-  const [regions, setRegions] = useState<Region[]>(() => regionsRepo.getAll());
+  const [regions, setRegions] = useState<Region[]>(() =>
+    initialRegions ?? [],
+  );
   const [campaigns, setCampaigns] = useState<Campaign[]>(() =>
-    campaignsRepo.getAll(),
+    initialCampaigns ?? [],
   );
   const [partners, setPartners] = useState<Partner[]>(() =>
-    partnersRepo.getAll(),
+    initialPartners ?? [],
   );
   const [locations, setLocations] = useState<Location[]>(() =>
-    locationsRepo.getAll(),
+    initialLocations ?? [],
   );
-  const [users, setUsers] = useState<DashboardUser[]>(() =>
-    usersRepo.getAll(),
+  const [users, setUsers] = useState<DashboardUser[]>(() => {
+    const users = initialUsers ?? [];
+    if (!initialUser) return users;
+
+    const hasUser = users.some((user) => user.email === initialUser.email);
+    return hasUser
+      ? users.map((user) =>
+          user.email === initialUser.email ? initialUser : user,
+        )
+      : [initialUser, ...users];
+  });
+  const [roles, setRoles] = useState<Role[]>(() =>
+    initialRoles ?? [],
   );
-  const [roles, setRoles] = useState<Role[]>(() => rolesRepo.getAll());
+  const [availablePermissions] = useState<PermissionDefinition[]>(() =>
+    initialPermissions ?? [],
+  );
 
   const currentUser = useMemo(
-    () => users.find((u) => u.email === userEmail) ?? usersRepo.getByEmail(userEmail),
+    () =>
+      users.find((user) => user.email === userEmail) ?? null,
     [userEmail, users],
   );
 
@@ -105,6 +131,7 @@ export function DashboardProvider({
       locations,
       users,
       roles,
+      availablePermissions,
       currentRole,
       getRegionName,
       getRoleName,
@@ -123,6 +150,7 @@ export function DashboardProvider({
       locations,
       users,
       roles,
+      availablePermissions,
       currentRole,
       getRegionName,
       getRoleName,

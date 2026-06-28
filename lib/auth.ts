@@ -40,6 +40,10 @@ export type SessionPayload = {
   sub: string;
   email: string;
   name: string;
+  roleId?: string;
+  roleName?: string;
+  supportLevel?: string | null;
+  permissions?: string[];
   exp: number;
 };
 

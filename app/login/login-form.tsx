@@ -61,7 +61,7 @@ export function LoginForm() {
       </button>
 
       <p className="text-center text-xs text-zinc-500 dark:text-zinc-500">
-        Demo: admin@example.com / password123
+        Suporte: suporte.n1@vertis.com.local / password123
       </p>
     </form>
   );

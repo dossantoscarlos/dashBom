@@ -10,14 +10,14 @@ import {
 } from "@/components/dashboard/form-styles";
 import { RoleHint } from "@/components/dashboard/RoleHint";
 import { useToast } from "@/components/dashboard/Toast";
+import { saveRole } from "@/app/actions/dashboard-crud";
 import { useDashboard } from "@/contexts/DashboardProvider";
-import { allPermissions } from "@/lib/data/roles";
 import type { Role } from "@/lib/domain/types";
 
 import { ModuleBlock } from "@/components/dashboard/ModuleBlock";
 
 export function PermissionsPanel() {
-  const { roles, setRoles } = useDashboard();
+  const { roles, setRoles, availablePermissions } = useDashboard();
   const { toast } = useToast();
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -32,24 +32,27 @@ export function PermissionsPanel() {
     }));
   }
 
-  function saveRole(e: React.FormEvent) {
+  async function handleSaveRole(e: React.FormEvent) {
     e.preventDefault();
-    if (selectedRole) {
-      setRoles((prev) =>
-        prev.map((r) =>
-          r.id === selectedRole.id ? { ...r, ...form } : r,
-        ),
-      );
-    } else {
-      setRoles((prev) => [
-        ...prev,
-        { id: `role-${Date.now()}`, ...form },
-      ]);
+    try {
+      if (selectedRole) {
+        const saved = await saveRole({ id: selectedRole.id, ...form }, true);
+        setRoles((prev) =>
+          prev.map((r) =>
+            r.id === selectedRole.id ? saved : r,
+          ),
+        );
+      } else {
+        const saved = await saveRole({ id: `role-${Date.now()}`, ...form }, false);
+        setRoles((prev) => [...prev, saved]);
+      }
+      setShowForm(false);
+      setSelectedRole(null);
+      setForm({ name: "", description: "", permissions: [] });
+      toast(selectedRole ? "Perfil atualizado." : "Perfil criado.");
+    } catch {
+      toast("Não foi possível salvar o perfil.", "error");
     }
-    setShowForm(false);
-    setSelectedRole(null);
-    setForm({ name: "", description: "", permissions: [] });
-    toast(selectedRole ? "Perfil atualizado." : "Perfil criado.");
   }
 
   function editRole(role: Role) {
@@ -87,7 +90,7 @@ export function PermissionsPanel() {
 
         {showForm && (
           <form
-            onSubmit={saveRole}
+            onSubmit={handleSaveRole}
             className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950"
           >
             <h3 className="mb-3 text-sm font-bold text-zinc-900 dark:text-zinc-50">
@@ -115,7 +118,7 @@ export function PermissionsPanel() {
             <div className="mt-4">
               <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-2">Permissões</p>
               <div className="mt-2 grid gap-2 sm:grid-cols-3">
-                {allPermissions.map((perm) => (
+                {availablePermissions.map((perm) => (
                   <label
                     key={perm.id}
                     className="flex cursor-pointer items-center gap-2 rounded border border-zinc-100 bg-zinc-50/50 px-2 py-1.5 text-xs transition hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900/30 dark:hover:bg-zinc-800"

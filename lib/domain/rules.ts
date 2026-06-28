@@ -106,6 +106,12 @@ export function getRoleHint(roleName: string): string {
       "Foco em execução: visualize campanhas ativas e registre atividades de campo.",
     Analista:
       "Acesso prioritário a relatórios, TRE e indicadores de intenção de voto.",
+    "Suporte N1":
+      "Acesso padrão para triagem e execução operacional básica.",
+    "Suporte N2":
+      "Acesso avançado para cadastros, operação e apoio analítico.",
+    "Suporte N3":
+      "Acesso total para suporte, permissões e administração do sistema.",
   };
   return hints[roleName] ?? "Acesso conforme perfil atribuído pela coordenação.";
 }
