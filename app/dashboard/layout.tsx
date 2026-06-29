@@ -24,6 +24,7 @@ export default async function DashboardLayout({
       initialUsers={userState.users}
       initialRoles={userState.roles}
       initialPermissions={userState.availablePermissions}
+      initialFinances={userState.finances}
     >
       <DashboardShell userName={session.name} userEmail={session.email}>
         {children}

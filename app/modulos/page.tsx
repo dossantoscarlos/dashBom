@@ -28,6 +28,7 @@ export default async function ModulosPage() {
       initialUsers={userState.users}
       initialRoles={userState.roles}
       initialPermissions={userState.availablePermissions}
+      initialFinances={userState.finances}
     >
       <ExtJSWorkspace userName={session.name} userEmail={session.email} />
     </DashboardProvider>

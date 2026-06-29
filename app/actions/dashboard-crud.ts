@@ -8,6 +8,8 @@ import type {
   Partner,
   Region,
   Role,
+  FinancialTransaction,
+  Survey,
 } from "@/lib/domain/types";
 
 const resources = {
@@ -17,6 +19,8 @@ const resources = {
   locations: "/api/locations",
   users: "/api/users",
   roles: "/api/roles",
+  finances: "/api/finances",
+  surveys: "/api/surveys",
 } as const;
 
 async function saveResource<T extends { id: string }>(
@@ -39,7 +43,10 @@ async function deleteResource(
   });
 }
 
-export async function saveRegion(region: Region, exists: boolean): Promise<Region> {
+export async function saveRegion(
+  region: Region,
+  exists: boolean,
+): Promise<Region> {
   return saveResource("regions", region, exists);
 }
 
@@ -58,7 +65,10 @@ export async function deleteCampaign(id: string): Promise<void> {
   return deleteResource("campaigns", id);
 }
 
-export async function savePartner(partner: Partner, exists: boolean): Promise<Partner> {
+export async function savePartner(
+  partner: Partner,
+  exists: boolean,
+): Promise<Partner> {
   return saveResource("partners", partner, exists);
 }
 
@@ -94,4 +104,26 @@ export async function saveRole(role: Role, exists: boolean): Promise<Role> {
 
 export async function deleteRole(id: string): Promise<void> {
   return deleteResource("roles", id);
+}
+
+export async function saveFinancialTransaction(
+  tx: FinancialTransaction,
+  exists: boolean,
+): Promise<FinancialTransaction> {
+  return saveResource("finances", tx, exists);
+}
+
+export async function deleteFinancialTransaction(id: string): Promise<void> {
+  return deleteResource("finances", id);
+}
+
+export async function saveSurvey(
+  survey: Survey,
+  exists: boolean,
+): Promise<Survey> {
+  return saveResource("surveys", survey, exists);
+}
+
+export async function deleteSurvey(id: string): Promise<void> {
+  return deleteResource("surveys", id);
 }
