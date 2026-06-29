@@ -75,11 +75,11 @@ export function FinanceiroPanel() {
     const final = parseFloat(form.finalCost);
 
     if (isNaN(projected) || projected < 0) {
-      toast("Informe um custo previsto válido.", "error");
+      toast("Informe um valor previsto válido.", "error");
       return;
     }
     if (isNaN(final) || final < 0) {
-      toast("Informe um custo final válido.", "error");
+      toast("Informe um valor final válido.", "error");
       return;
     }
 
@@ -87,7 +87,7 @@ export function FinanceiroPanel() {
       id: `fin-${Date.now()}`,
       type: form.type,
       transactionDate: form.transactionDate,
-      competencyDate: form.competencyDate,
+      competencyDate: form.transactionDate,
       projectedCost: projected,
       finalCost: final,
       entityType: form.entityType,
@@ -223,19 +223,7 @@ export function FinanceiroPanel() {
               </div>
 
               <div className="flex flex-col gap-1">
-                <label htmlFor="tx-comp" className={labelClass}>Data de Competência</label>
-                <input
-                  id="tx-comp"
-                  type="date"
-                  className={inputClass}
-                  value={form.competencyDate}
-                  onChange={(e) => setForm({ ...form, competencyDate: e.target.value })}
-                  required
-                />
-              </div>
-
-              <div className="flex flex-col gap-1">
-                <label htmlFor="tx-projected" className={labelClass}>Custo Previsto (R$)</label>
+                <label htmlFor="tx-projected" className={labelClass}>Valor Previsto (R$)</label>
                 <input
                   id="tx-projected"
                   type="number"
@@ -250,7 +238,7 @@ export function FinanceiroPanel() {
               </div>
 
               <div className="flex flex-col gap-1">
-                <label htmlFor="tx-final" className={labelClass}>Custo Final (R$)</label>
+                <label htmlFor="tx-final" className={labelClass}>Valor Final (R$)</label>
                 <input
                   id="tx-final"
                   type="number"
@@ -453,12 +441,9 @@ export function FinanceiroPanel() {
             },
             {
               key: "dates",
-              header: "Lançamento / Competência",
+              header: "Data",
               render: (t) => (
-                <div className="flex flex-col text-[11px] font-mono">
-                  <span>Lançado: {t.transactionDate}</span>
-                  <span className="text-zinc-400">Compet.: {t.competencyDate}</span>
-                </div>
+                <span className="text-[11px] font-mono">{t.transactionDate}</span>
               ),
             },
             {
