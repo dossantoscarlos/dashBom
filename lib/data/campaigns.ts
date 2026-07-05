@@ -10,6 +10,7 @@ export const initialCampaigns: Campaign[] = [
     endDate: "2026-06-20",
     status: "em andamento",
     description: "Visita porta a porta nos bairros de Santana e Tucuruvi",
+    responsible: "Maria Silva",
   },
   {
     id: "cam-2",
@@ -20,6 +21,7 @@ export const initialCampaigns: Campaign[] = [
     endDate: "2026-07-01",
     status: "planejada",
     description: "Grande comício com presença de lideranças regionais",
+    responsible: "Administrador",
   },
   {
     id: "cam-3",
@@ -30,6 +32,7 @@ export const initialCampaigns: Campaign[] = [
     endDate: "2026-10-05",
     status: "em andamento",
     description: "Anúncios segmentados em redes sociais por região",
+    responsible: "Administrador",
   },
   {
     id: "cam-4",
@@ -40,5 +43,6 @@ export const initialCampaigns: Campaign[] = [
     endDate: "2026-08-30",
     status: "planejada",
     description: "Inserções em rádios do interior oeste",
+    responsible: "Maria Silva",
   },
 ];
