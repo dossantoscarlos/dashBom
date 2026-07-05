@@ -17,6 +17,8 @@ import { PermissionsPanel } from "@/CoreModules/Permissions";
 import { ProfilePanel } from "@/CoreModules/Profile";
 import { FinanceiroPanel } from "@/CoreModules/Financeiro";
 import { SurveysPanel } from "@/CoreModules/Surveys";
+import { ParecerPanel } from "@/CoreModules/Parecer";
+import { RedeSocialPanel } from "@/CoreModules/RedeSocial";
 
 // Import dashboard components for ExtJS portal home
 import { CampaignWorkflow } from "@/components/dashboard/CampaignWorkflow";
@@ -216,6 +218,7 @@ export function ExtJSWorkspace({ userName, userEmail }: ExtJSWorkspaceProps) {
         { id: "dashboard", label: "Dashboard", icon: "📊", permission: "dashboard:visualizar" },
         { id: "campanhas", label: "Campanhas", icon: "📣", permission: "campanhas:gerenciar" },
         { id: "financeiro", label: "Área Financeira", icon: "💰", permission: "financeiro:gerenciar" },
+        { id: "parecer", label: "Parecer", icon: "⚖️", permission: "parecer:visualizar" },
       ],
     },
     {
@@ -237,6 +240,14 @@ export function ExtJSWorkspace({ userName, userEmail }: ExtJSWorkspaceProps) {
         { id: "relatorios", label: "Relatórios", icon: "📊", permission: "relatorios:visualizar" },
         { id: "tre", label: "Consulta TRE", icon: "⚖", permission: "tre:consultar" },
         { id: "pesquisas", label: "Pesquisas", icon: "🔍", permission: "" },
+      ],
+    },
+    {
+      id: "comunicacao",
+      title: "Comunicação",
+      icon: "💬",
+      items: [
+        { id: "redesocial", label: "Rede Social", icon: "💬", permission: "" },
       ],
     },
     {
@@ -263,6 +274,9 @@ export function ExtJSWorkspace({ userName, userEmail }: ExtJSWorkspaceProps) {
     },
     financeiro: {
       title: "Área Financeira", icon: "💰", component: can("financeiro:gerenciar") ? <FinanceiroPanel /> : <div>Acesso negado</div>
+    },
+    parecer: {
+      title: "Parecer de Lançamentos", icon: "⚖️", component: can("parecer:visualizar") ? <ParecerPanel /> : <div>Acesso negado</div>
     },
     usuarios: {
       title: "Equipe Operacional", icon: "👤", component: can("usuarios:gerenciar") ? <UsersPanel /> : <div>Acesso negado</div>
@@ -312,6 +326,11 @@ export function ExtJSWorkspace({ userName, userEmail }: ExtJSWorkspaceProps) {
       title: "Gestão de Pesquisas",
       icon: "🔍",
       component: <SurveysPanel />,
+    },
+    redesocial: {
+      title: "Rede Social",
+      icon: "💬",
+      component: <RedeSocialPanel />,
     },
   };
 

@@ -10,6 +10,7 @@ import type {
   Role,
   FinancialTransaction,
   Survey,
+  FinancialAudit,
 } from "@/lib/domain/types";
 
 const resources = {
@@ -126,4 +127,8 @@ export async function saveSurvey(
 
 export async function deleteSurvey(id: string): Promise<void> {
   return deleteResource("surveys", id);
+}
+
+export async function getFinancialAudits(): Promise<FinancialAudit[]> {
+  return laravelApi<FinancialAudit[]>("/api/audits");
 }

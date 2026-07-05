@@ -1,3 +1,5 @@
+import { getSession } from "@/lib/session";
+
 type LaravelRequestInit = Omit<RequestInit, "body" | "headers"> & {
   body?: unknown;
   headers?: Record<string, string>;
@@ -22,6 +24,17 @@ export async function laravelApi<T>(
 
   if (process.env.ACL_INTERNAL_SECRET) {
     headers["X-Internal-Secret"] = process.env.ACL_INTERNAL_SECRET;
+  }
+
+  try {
+    const session = await getSession();
+    if (session) {
+      headers["X-User-Email"] = session.email;
+      headers["X-User-Name"] = session.name;
+      headers["X-User-Id"] = session.sub;
+    }
+  } catch {
+    // Ignored in non-browser context or without cookies
   }
 
   const response = await fetch(`${getLaravelApiUrl()}${path}`, {

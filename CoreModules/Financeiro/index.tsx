@@ -17,7 +17,7 @@ import type { FinancialTransaction } from "@/lib/domain/types";
 
 export function FinanceiroPanel() {
   const { toast } = useToast();
-  const { finances, setFinances, campaigns, locations, users, can } = useDashboard();
+  const { finances, setFinances, campaigns, locations, users, can, getRoleName } = useDashboard();
   const [showForm, setShowForm] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [subTab, setSubTab] = useState<"todos" | "receber" | "pagar">("todos");
@@ -35,6 +35,13 @@ export function FinanceiroPanel() {
   });
 
   const canManage = can("financeiro:gerenciar");
+
+  const financeUsers = users.filter((u) => {
+    const keywords = ["root", "admin", "administrador", "super usuario", "super-usuario", "suporte", "support"];
+    const roleName = getRoleName ? getRoleName(u.roleId) : "";
+    const text = `${u.name} ${u.email} ${u.roleId || ""} ${roleName || ""}`.toLowerCase();
+    return !keywords.some((kw) => text.includes(kw));
+  });
 
   // Synchronize responsible from entity selection reactively
   useEffect(() => {
@@ -71,15 +78,10 @@ export function FinanceiroPanel() {
       return;
     }
 
-    const projected = parseFloat(form.projectedCost);
     const final = parseFloat(form.finalCost);
 
-    if (isNaN(projected) || projected < 0) {
-      toast("Informe um valor previsto válido.", "error");
-      return;
-    }
     if (isNaN(final) || final < 0) {
-      toast("Informe um valor final válido.", "error");
+      toast("Informe um valor válido.", "error");
       return;
     }
 
@@ -88,7 +90,7 @@ export function FinanceiroPanel() {
       type: form.type,
       transactionDate: form.transactionDate,
       competencyDate: form.transactionDate,
-      projectedCost: projected,
+      projectedCost: final,
       finalCost: final,
       entityType: form.entityType,
       entityExternalId: form.entityExternalId,
@@ -223,22 +225,7 @@ export function FinanceiroPanel() {
               </div>
 
               <div className="flex flex-col gap-1">
-                <label htmlFor="tx-projected" className={labelClass}>Valor Previsto (R$)</label>
-                <input
-                  id="tx-projected"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  className={inputClass}
-                  value={form.projectedCost}
-                  onChange={(e) => setForm({ ...form, projectedCost: e.target.value })}
-                  placeholder="0,00"
-                  required
-                />
-              </div>
-
-              <div className="flex flex-col gap-1">
-                <label htmlFor="tx-final" className={labelClass}>Valor Final (R$)</label>
+                <label htmlFor="tx-final" className={labelClass}>Valor (R$)</label>
                 <input
                   id="tx-final"
                   type="number"
@@ -325,7 +312,7 @@ export function FinanceiroPanel() {
                     required
                   >
                     <option value="">Selecione o Responsável</option>
-                    {users.map((u) => (
+                    {financeUsers.map((u) => (
                       <option key={u.id} value={u.name}>{u.name}</option>
                     ))}
                   </select>
@@ -352,7 +339,7 @@ export function FinanceiroPanel() {
                   required
                 >
                   <option value="">Selecione o Aprovador</option>
-                  {users.map((u) => (
+                  {financeUsers.map((u) => (
                     <option key={u.id} value={u.name}>{u.name}</option>
                   ))}
                 </select>
@@ -448,14 +435,11 @@ export function FinanceiroPanel() {
             },
             {
               key: "costs",
-              header: "Previsto / Final",
+              header: "Valor",
               render: (t) => (
-                <div className="flex flex-col font-mono text-[11px]">
-                  <span>P: R$ {t.projectedCost.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
-                  <span className="font-bold text-zinc-950 dark:text-zinc-50">
-                    F: R$ {t.finalCost.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                  </span>
-                </div>
+                <span className="font-mono text-[11px] font-bold text-zinc-950 dark:text-zinc-50">
+                  R$ {t.finalCost.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                </span>
               ),
             },
             {
