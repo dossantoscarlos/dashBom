@@ -183,3 +183,20 @@ export type Survey = {
   targetAudience: string;
   link: string | null;
 };
+
+export type FinancialAudit = {
+  id: number;
+  lancamentoId: string;
+  tipoLancamento: string;
+  valor: number;
+  tipoEntidade: string;
+  entidadeId: string;
+  entidadeDescricao: string | null;
+  usuarioLogadoId: string | number | null;
+  usuarioLogadoNome: string | null;
+  aprovadoPorId: string | number | null;
+  aprovadoPorNome: string | null;
+  descricaoCurta: string;
+  payload: Record<string, any>;
+  criadoEm: string;
+};
