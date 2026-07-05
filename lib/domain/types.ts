@@ -80,6 +80,7 @@ export type Campaign = {
   endDate: string;
   status: CampaignStatus;
   description: string;
+  responsible: string;
   voteGoal?: number;
 };
 
@@ -155,3 +156,30 @@ export type CampaignKPIs = {
 };
 
 export type ReportResultRow = Record<string, string | number>;
+
+export type FinancialTransaction = {
+  id: string;
+  type: "receita" | "despesa";
+  transactionDate: string;
+  competencyDate: string;
+  projectedCost: number;
+  finalCost: number;
+  entityType: "campanha" | "locais" | "eventos";
+  entityExternalId: string;
+  responsible: string;
+  approver: string | null;
+};
+
+export type SurveyType = "online" | "porta";
+
+export type Survey = {
+  id: string;
+  name: string;
+  description: string;
+  startDate: string;
+  endDate: string;
+  type: SurveyType;
+  responsible: string;
+  targetAudience: string;
+  link: string | null;
+};

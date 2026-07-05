@@ -2,11 +2,13 @@ import { laravelApi } from "@/lib/laravel-api";
 import type {
   Campaign,
   DashboardUser,
+  FinancialTransaction,
   Location,
   Partner,
   PermissionDefinition,
   Region,
   Role,
+  Survey,
 } from "@/lib/domain/types";
 import type { SessionPayload } from "@/lib/auth";
 
@@ -19,6 +21,8 @@ export type PreparedUserServerState = {
   users: DashboardUser[];
   roles: Role[];
   availablePermissions: PermissionDefinition[];
+  finances: FinancialTransaction[];
+  surveys: Survey[];
 };
 
 type LaravelDashboardData = Omit<PreparedUserServerState, "user">;

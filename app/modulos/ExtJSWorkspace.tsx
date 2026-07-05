@@ -15,6 +15,8 @@ import { ReportsPanel } from "@/CoreModules/Reports";
 import { TrePanel } from "@/CoreModules/Tre";
 import { PermissionsPanel } from "@/CoreModules/Permissions";
 import { ProfilePanel } from "@/CoreModules/Profile";
+import { FinanceiroPanel } from "@/CoreModules/Financeiro";
+import { SurveysPanel } from "@/CoreModules/Surveys";
 
 // Import dashboard components for ExtJS portal home
 import { CampaignWorkflow } from "@/components/dashboard/CampaignWorkflow";
@@ -213,6 +215,7 @@ export function ExtJSWorkspace({ userName, userEmail }: ExtJSWorkspaceProps) {
       items: [
         { id: "dashboard", label: "Dashboard", icon: "📊", permission: "dashboard:visualizar" },
         { id: "campanhas", label: "Campanhas", icon: "📣", permission: "campanhas:gerenciar" },
+        { id: "financeiro", label: "Área Financeira", icon: "💰", permission: "financeiro:gerenciar" },
       ],
     },
     {
@@ -233,6 +236,7 @@ export function ExtJSWorkspace({ userName, userEmail }: ExtJSWorkspaceProps) {
       items: [
         { id: "relatorios", label: "Relatórios", icon: "📊", permission: "relatorios:visualizar" },
         { id: "tre", label: "Consulta TRE", icon: "⚖", permission: "tre:consultar" },
+        { id: "pesquisas", label: "Pesquisas", icon: "🔍", permission: "" },
       ],
     },
     {
@@ -256,6 +260,9 @@ export function ExtJSWorkspace({ userName, userEmail }: ExtJSWorkspaceProps) {
     },
     campanhas: {
       title: "Gestão de Campanhas", icon: "📣", component: can("campanhas:gerenciar") ? <CampaignsPanel /> : <div>Acesso negado</div>
+    },
+    financeiro: {
+      title: "Área Financeira", icon: "💰", component: can("financeiro:gerenciar") ? <FinanceiroPanel /> : <div>Acesso negado</div>
     },
     usuarios: {
       title: "Equipe Operacional", icon: "👤", component: can("usuarios:gerenciar") ? <UsersPanel /> : <div>Acesso negado</div>
@@ -300,6 +307,11 @@ export function ExtJSWorkspace({ userName, userEmail }: ExtJSWorkspaceProps) {
       title: "Configurações de Perfil",
       icon: "👤",
       component: <ProfilePanel settings={profileSettings} onUpdate={handleUpdateProfile} />,
+    },
+    pesquisas: {
+      title: "Gestão de Pesquisas",
+      icon: "🔍",
+      component: <SurveysPanel />,
     },
   };
 
@@ -783,7 +795,7 @@ export function ExtJSWorkspace({ userName, userEmail }: ExtJSWorkspaceProps) {
               ) : (
                 // Dynamic Tab Panel Content
                 <div className="w-full h-full bg-white dark:bg-zinc-950">
-                  {panelDefinitions[activeTab]?.component || (
+                  {allPanels[activeTab]?.component || (
                     <div className="p-4 text-[#e74c3c] font-bold">
                       Erro: Módulo não encontrado ou falha de carregamento.
                     </div>

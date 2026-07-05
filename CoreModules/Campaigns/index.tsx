@@ -21,7 +21,7 @@ import { combineValidations, validateDateRange, validateRequired } from "@/lib/d
 import type { Campaign, CampaignStatus, CampaignType } from "@/lib/domain/types";
 
 export function CampaignsPanel() {
-  const { campaigns, regions, setCampaigns, getRegionName, can } = useDashboard();
+  const { campaigns, regions, users, setCampaigns, getRegionName, can } = useDashboard();
   const { toast } = useToast();
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -29,19 +29,42 @@ export function CampaignsPanel() {
   const [currentStep, setCurrentStep] = useState(0);
 
   const [form, setForm] = useState({
-    name: "", type: "door-to-door" as CampaignType, regionId: regions[0]?.id ?? "",
-    startDate: "", endDate: "", status: "planejada" as CampaignStatus, description: "",
+    name: "",
+    type: "door-to-door" as CampaignType,
+    regionId: regions[0]?.id ?? "",
+    startDate: "",
+    endDate: "",
+    status: "planejada" as CampaignStatus,
+    description: "",
+    responsible: users[0]?.name ?? "Administrador",
   });
   const canManage = can("campanhas:gerenciar");
 
   function resetForm() {
-    setForm({ name: "", type: "door-to-door", regionId: regions[0]?.id ?? "", startDate: "", endDate: "", status: "planejada", description: "" });
-    setEditingId(null); setShowForm(false); setCurrentStep(0);
+    setForm({
+      name: "",
+      type: "door-to-door",
+      regionId: regions[0]?.id ?? "",
+      startDate: "",
+      endDate: "",
+      status: "planejada",
+      description: "",
+      responsible: users[0]?.name ?? "Administrador",
+    });
+    setEditingId(null);
+    setShowForm(false);
+    setCurrentStep(0);
   }
 
   async function handleFinish() {
-    const validation = combineValidations(validateRequired(form.name, "Nome"), validateDateRange(form.startDate, form.endDate));
-    if (!validation.ok) { toast(validation.message, "error"); return; }
+    const validation = combineValidations(
+      validateRequired(form.name, "Nome"),
+      validateDateRange(form.startDate, form.endDate)
+    );
+    if (!validation.ok) {
+      toast(validation.message, "error");
+      return;
+    }
     try {
       if (editingId) {
         const saved = await saveCampaign({ id: editingId, ...form }, true);
@@ -78,10 +101,23 @@ export function CampaignsPanel() {
   ];
 
   return (
-    <ModuleBlock 
-      title="Gestão de Campanhas" 
+    <ModuleBlock
+      title="Gestão de Campanhas"
       icon="📣"
-      action={canManage && !showForm ? <button type="button" onClick={() => { resetForm(); setShowForm(true); }} className={buttonPrimaryClass}>Nova campanha</button> : undefined}
+      action={
+        canManage && !showForm ? (
+          <button
+            type="button"
+            onClick={() => {
+              resetForm();
+              setShowForm(true);
+            }}
+            className={buttonPrimaryClass}
+          >
+            Nova campanha
+          </button>
+        ) : undefined
+      }
     >
       <div className="flex flex-col gap-4">
         <RoleHint />
@@ -98,12 +134,26 @@ export function CampaignsPanel() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="flex flex-col gap-1.5 sm:col-span-2">
                   <label htmlFor="cam-name" className={labelClass}>Nome da Campanha</label>
-                  <input id="cam-name" className={inputClass} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required autoFocus />
+                  <input
+                    id="cam-name"
+                    className={inputClass}
+                    value={form.name}
+                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    required
+                    autoFocus
+                  />
                 </div>
                 <div className="flex flex-col gap-1.5 sm:col-span-2">
                   <label htmlFor="cam-type" className={labelClass}>Tipo de Atividade</label>
-                  <select id="cam-type" className={inputClass} value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value as CampaignType })}>
-                    {Object.entries(CAMPAIGN_TYPE_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                  <select
+                    id="cam-type"
+                    className={inputClass}
+                    value={form.type}
+                    onChange={(e) => setForm({ ...form, type: e.target.value as CampaignType })}
+                  >
+                    {Object.entries(CAMPAIGN_TYPE_LABELS).map(([v, l]) => (
+                      <option key={v} value={v}>{l}</option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -111,8 +161,15 @@ export function CampaignsPanel() {
             {currentStep === 1 && (
               <div className="flex flex-col gap-1.5">
                 <label htmlFor="cam-region" className={labelClass}>Região Alvo</label>
-                <select id="cam-region" className={inputClass} value={form.regionId} onChange={(e) => setForm({ ...form, regionId: e.target.value })}>
-                  {regions.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
+                <select
+                  id="cam-region"
+                  className={inputClass}
+                  value={form.regionId}
+                  onChange={(e) => setForm({ ...form, regionId: e.target.value })}
+                >
+                  {regions.map((r) => (
+                    <option key={r.id} value={r.id}>{r.name}</option>
+                  ))}
                 </select>
               </div>
             )}
@@ -120,42 +177,138 @@ export function CampaignsPanel() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="flex flex-col gap-1.5">
                   <label htmlFor="cam-start" className={labelClass}>Data de Início</label>
-                  <input id="cam-start" type="date" className={inputClass} value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} required />
+                  <input
+                    id="cam-start"
+                    type="date"
+                    className={inputClass}
+                    value={form.startDate}
+                    onChange={(e) => setForm({ ...form, startDate: e.target.value })}
+                    required
+                  />
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <label htmlFor="cam-end" className={labelClass}>Data de Término</label>
-                  <input id="cam-end" type="date" className={inputClass} value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} required />
+                  <input
+                    id="cam-end"
+                    type="date"
+                    className={inputClass}
+                    value={form.endDate}
+                    onChange={(e) => setForm({ ...form, endDate: e.target.value })}
+                    required
+                  />
                 </div>
               </div>
             )}
             {currentStep === 3 && (
-              <div className="flex flex-col gap-1.5">
-                <label htmlFor="cam-desc" className={labelClass}>Descrição da Atividade</label>
-                <textarea id="cam-desc" className={inputClass} rows={4} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Ex: Metas específicas, contatos principais, observações..." />
+              <div className="flex flex-col gap-3">
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="cam-responsible" className={labelClass}>Responsável</label>
+                  <select
+                    id="cam-responsible"
+                    className={inputClass}
+                    value={form.responsible}
+                    onChange={(e) => setForm({ ...form, responsible: e.target.value })}
+                  >
+                    {users.map((u) => (
+                      <option key={u.id} value={u.name}>{u.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="cam-desc" className={labelClass}>Descrição da Atividade</label>
+                  <textarea
+                    id="cam-desc"
+                    className={inputClass}
+                    rows={4}
+                    value={form.description}
+                    onChange={(e) => setForm({ ...form, description: e.target.value })}
+                    placeholder="Ex: Metas específicas, contatos principais, observações..."
+                  />
+                </div>
               </div>
             )}
           </Wizard>
         )}
-        
-        <DataTable data={campaigns} keyExtractor={(c) => c.id} emptyMessage="Nenhuma campanha cadastrada."
+
+        <DataTable
+          data={campaigns}
+          keyExtractor={(c) => c.id}
+          emptyMessage="Nenhuma campanha cadastrada."
           columns={[
             { key: "name", header: "Campanha", render: (c) => c.name },
             { key: "type", header: "Tipo", render: (c) => CAMPAIGN_TYPE_LABELS[c.type], hiddenOn: "mobile" },
             { key: "region", header: "Região", render: (c) => getRegionName(c.regionId), hiddenOn: "tablet" },
+            { key: "responsible", header: "Responsável", render: (c) => c.responsible ?? "Administrador", hiddenOn: "tablet" },
             { key: "workflow", header: "Fluxo", render: (c) => <CampaignWorkflow status={c.status} compact />, hiddenOn: "mobile" },
             { key: "dates", header: "Período", render: (c) => `${c.startDate} — ${c.endDate}`, hiddenOn: "tablet" },
             { key: "status", header: "Status", render: (c) => <Badge label={CAMPAIGN_STATUS_LABELS[c.status]} variant={c.status} /> },
-            { key: "actions", header: "Ações", render: (c) => canManage ? (
-              <div className="flex flex-wrap gap-2">
-                {canAdvanceCampaign(c.status) && <button type="button" onClick={() => advanceStatus(c)} className="text-xs font-medium text-blue-600 hover:underline">Avançar</button>}
-                <button type="button" onClick={() => { setForm(c); setEditingId(c.id); setShowForm(true); }} className="text-xs font-medium text-zinc-600 hover:underline">Editar</button>
-                <button type="button" onClick={() => setDeleteId(c.id)} className="text-xs font-medium text-red-600 hover:underline">Excluir</button>
-              </div>
-            ) : <span className="text-xs text-zinc-400">Visualização</span> },
-          ]} />
-        <ConfirmDialog open={deleteId !== null} title="Excluir campanha" message="Deseja remover esta campanha?"
-          onConfirm={async () => { if (deleteId) { try { await deleteCampaign(deleteId); setCampaigns((p) => p.filter((c) => c.id !== deleteId)); setDeleteId(null); toast("Campanha excluída."); } catch { toast("Não foi possível excluir a campanha.", "error"); } } }}
-          onCancel={() => setDeleteId(null)} />
+            {
+              key: "actions",
+              header: "Ações",
+              render: (c) =>
+                canManage ? (
+                  <div className="flex flex-wrap gap-2">
+                    {canAdvanceCampaign(c.status) && (
+                      <button
+                        type="button"
+                        onClick={() => advanceStatus(c)}
+                        className="text-xs font-medium text-blue-600 hover:underline"
+                      >
+                        Avançar
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setForm({
+                          name: c.name,
+                          type: c.type,
+                          regionId: c.regionId,
+                          startDate: c.startDate,
+                          endDate: c.endDate,
+                          status: c.status,
+                          description: c.description,
+                          responsible: c.responsible ?? users[0]?.name ?? "Administrador",
+                        });
+                        setEditingId(c.id);
+                        setShowForm(true);
+                      }}
+                      className="text-xs font-medium text-zinc-600 hover:underline"
+                    >
+                      Editar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDeleteId(c.id)}
+                      className="text-xs font-medium text-red-650 hover:underline"
+                    >
+                      Excluir
+                    </button>
+                  </div>
+                ) : (
+                  <span className="text-xs text-zinc-400">Visualização</span>
+                ),
+            },
+          ]}
+        />
+        <ConfirmDialog
+          open={deleteId !== null}
+          title="Excluir campanha"
+          message="Deseja remover esta campanha?"
+          onConfirm={async () => {
+            if (deleteId) {
+              try {
+                await deleteCampaign(deleteId);
+                setCampaigns((p) => p.filter((c) => c.id !== deleteId));
+                setDeleteId(null);
+                toast("Campanha excluída.");
+              } catch {
+                toast("Não foi possível excluir a campanha.", "error");
+              }
+            }
+          }}
+          onCancel={() => setDeleteId(null)}
+        />
       </div>
     </ModuleBlock>
   );

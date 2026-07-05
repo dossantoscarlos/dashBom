@@ -17,6 +17,8 @@ import type {
   PermissionDefinition,
   Region,
   Role,
+  FinancialTransaction,
+  Survey,
 } from "@/lib/domain/types";
 
 type DashboardContextValue = {
@@ -27,6 +29,8 @@ type DashboardContextValue = {
   users: DashboardUser[];
   roles: Role[];
   availablePermissions: PermissionDefinition[];
+  finances: FinancialTransaction[];
+  surveys: Survey[];
   currentRole: Role | null;
   getRegionName: (id: string) => string;
   getRoleName: (roleId: string) => string;
@@ -37,6 +41,8 @@ type DashboardContextValue = {
   setLocations: React.Dispatch<React.SetStateAction<Location[]>>;
   setUsers: React.Dispatch<React.SetStateAction<DashboardUser[]>>;
   setRoles: React.Dispatch<React.SetStateAction<Role[]>>;
+  setFinances: React.Dispatch<React.SetStateAction<FinancialTransaction[]>>;
+  setSurveys: React.Dispatch<React.SetStateAction<Survey[]>>;
 };
 
 const DashboardContext = createContext<DashboardContextValue | null>(null);
@@ -51,6 +57,8 @@ type DashboardProviderProps = {
   initialUsers?: DashboardUser[];
   initialRoles?: Role[];
   initialPermissions?: PermissionDefinition[];
+  initialFinances?: FinancialTransaction[];
+  initialSurveys?: Survey[];
   children: React.ReactNode;
 };
 
@@ -64,6 +72,8 @@ export function DashboardProvider({
   initialUsers,
   initialRoles,
   initialPermissions,
+  initialFinances,
+  initialSurveys,
   children,
 }: DashboardProviderProps) {
   const [regions, setRegions] = useState<Region[]>(() =>
@@ -94,6 +104,12 @@ export function DashboardProvider({
   );
   const [availablePermissions] = useState<PermissionDefinition[]>(() =>
     initialPermissions ?? [],
+  );
+  const [finances, setFinances] = useState<FinancialTransaction[]>(() =>
+    initialFinances ?? [],
+  );
+  const [surveys, setSurveys] = useState<Survey[]>(() =>
+    initialSurveys ?? [],
   );
 
   const currentUser = useMemo(
@@ -132,6 +148,8 @@ export function DashboardProvider({
       users,
       roles,
       availablePermissions,
+      finances,
+      surveys,
       currentRole,
       getRegionName,
       getRoleName,
@@ -142,6 +160,8 @@ export function DashboardProvider({
       setLocations,
       setUsers,
       setRoles,
+      setFinances,
+      setSurveys,
     }),
     [
       regions,
@@ -151,6 +171,8 @@ export function DashboardProvider({
       users,
       roles,
       availablePermissions,
+      finances,
+      surveys,
       currentRole,
       getRegionName,
       getRoleName,
