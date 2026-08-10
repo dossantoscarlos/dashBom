@@ -50,9 +50,9 @@ export function DataTable<T>({
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
-            {data.map((row) => (
+            {data.map((row, idx) => (
               <tr
-                key={keyExtractor(row)}
+                key={`${keyExtractor(row)}-${idx}`}
                 className="transition hover:bg-zinc-50 dark:hover:bg-zinc-900/30"
               >
                 {columns.map((col) => (

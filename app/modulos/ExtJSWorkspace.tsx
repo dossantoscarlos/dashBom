@@ -4,6 +4,29 @@ import { useEffect, useState, useTransition } from "react";
 import { useDashboard } from "@/contexts/DashboardProvider";
 import { logout } from "@/app/actions/auth";
 
+import {
+  LayoutGrid,
+  Megaphone,
+  CalendarDays,
+  Wallet,
+  Users,
+  Handshake,
+  MapPin,
+  Map,
+  Landmark,
+  BarChart3,
+  User,
+  ClipboardList,
+  MessageSquareMore,
+  SquareChevronLeft,
+  SquareChevronRight,
+  LayoutDashboard,
+  Lock,
+  UserCheck,
+  Menu,
+  X,
+} from "lucide-react";
+
 // Import modules from CoreModules
 import { DashboardPanel } from "@/CoreModules/Dashboard";
 import { CampaignsPanel } from "@/CoreModules/Campaigns";
@@ -17,13 +40,11 @@ import { PermissionsPanel } from "@/CoreModules/Permissions";
 import { ProfilePanel } from "@/CoreModules/Profile";
 import { FinanceiroPanel } from "@/CoreModules/Financeiro";
 import { SurveysPanel } from "@/CoreModules/Surveys";
-import { ParecerPanel } from "@/CoreModules/Parecer";
 import { RedeSocialPanel } from "@/CoreModules/RedeSocial";
-
-// Import dashboard components for ExtJS portal home
-import { CampaignWorkflow } from "@/components/dashboard/CampaignWorkflow";
-import { CAMPAIGN_TYPE_LABELS } from "@/lib/domain/constants";
-import Link from "next/link";
+import { AutoridadesPanel } from "@/CoreModules/Autoridades";
+import { AgendaPanel } from "@/CoreModules/Agenda";
+import { VoluntariadoPanel } from "@/CoreModules/Voluntariado";
+import { PushNotifier } from "@/components/notifications/PushNotifier";
 
 type ExtJSWorkspaceProps = {
   userName: string;
@@ -33,7 +54,7 @@ type ExtJSWorkspaceProps = {
 type TabItem = {
   id: string;
   title: string;
-  icon: string;
+  iconNode: React.ReactNode;
   closable: boolean;
 };
 
@@ -46,125 +67,68 @@ type ProfileSettings = {
   mode: string;
 };
 
-// Theme styles configuration mapping
-const themeStyles: Record<
-  string,
-  { headerBg: string; headerBorder: string; activeTabBorder: string; textHighlight: string; sidebarActiveNode: string }
-> = {
-  triton: {
-    headerBg: "from-[#157fcc] to-[#1268a7] dark:from-[#1b2f42] dark:to-[#111e2a]",
-    headerBorder: "border-[#115b94] dark:border-[#1e3d59]",
-    activeTabBorder: "border-t-[#157fcc] dark:border-t-blue-500",
-    textHighlight: "text-[#157fcc] dark:text-blue-400",
-    sidebarActiveNode: "bg-[#e2eff8] dark:bg-[#1e2f42] text-[#157fcc] dark:text-blue-400 border-l-[#157fcc] dark:border-l-blue-400",
-  },
-  neptune: {
-    headerBg: "from-[#0f766e] to-[#0d5c56] dark:from-[#1a3835] dark:to-[#102220]",
-    headerBorder: "border-[#0b4d48] dark:border-[#122826]",
-    activeTabBorder: "border-t-[#0f766e] dark:border-t-teal-500",
-    textHighlight: "text-[#0f766e] dark:text-teal-400",
-    sidebarActiveNode: "bg-[#e2f2f1] dark:bg-[#152e2c] text-[#0f766e] dark:text-teal-400 border-l-[#0f766e] dark:border-l-teal-400",
-  },
-  slate: {
-    headerBg: "from-[#475569] to-[#334155] dark:from-[#242d38] dark:to-[#171d24]",
-    headerBorder: "border-[#1e293b] dark:border-[#212933]",
-    activeTabBorder: "border-t-[#475569] dark:border-t-slate-500",
-    textHighlight: "text-[#475569] dark:text-slate-400",
-    sidebarActiveNode: "bg-[#f1f5f9] dark:bg-[#252f3d] text-[#334155] dark:text-slate-450 border-l-[#475569] dark:border-l-slate-450",
-  },
+type MenuItem = {
+  id: string;
+  label: string;
+  iconNode: React.ReactNode;
+  permission: string;
+};
+
+const TAB_ICONS_MAP: Record<string, React.ReactNode> = {
+  dashboard: <LayoutGrid className="h-3.5 w-3.5 text-[#008B63]" strokeWidth={2} />,
+  campanhas: <Megaphone className="h-3.5 w-3.5 text-[#1264F3]" strokeWidth={2} />,
+  agenda: <CalendarDays className="h-3.5 w-3.5 text-[#1264F3]" strokeWidth={2} />,
+  financeiro: <Wallet className="h-3.5 w-3.5 text-[#F59E0B]" strokeWidth={2} />,
+  voluntarios: <Users className="h-3.5 w-3.5 text-[#008B63]" strokeWidth={2} />,
+  parceiros: <Handshake className="h-3.5 w-3.5 text-[#7928F5]" strokeWidth={2} />,
+  locais: <MapPin className="h-3.5 w-3.5 text-[#1264F3]" strokeWidth={2} />,
+  regioes: <Map className="h-3.5 w-3.5 text-[#1264F3]" strokeWidth={2} />,
+  tre: <Landmark className="h-3.5 w-3.5 text-[#008B63]" strokeWidth={2} />,
+  relatorios: <BarChart3 className="h-3.5 w-3.5 text-[#7928F5]" strokeWidth={2} />,
+  autoridades: <User className="h-3.5 w-3.5 text-[#1264F3]" strokeWidth={2} />,
+  pesquisas: <ClipboardList className="h-3.5 w-3.5 text-[#1264F3]" strokeWidth={2} />,
+  redesocial: <MessageSquareMore className="h-3.5 w-3.5 text-[#1264F3]" strokeWidth={2} />,
+  perfil: <User className="h-3.5 w-3.5 text-[#1264F3]" strokeWidth={2} />,
+  permissoes: <Lock className="h-3.5 w-3.5 text-[#7928F5]" strokeWidth={2} />,
+  usuarios: <UserCheck className="h-3.5 w-3.5 text-[#008B63]" strokeWidth={2} />,
 };
 
 export function ExtJSWorkspace({ userName, userEmail }: ExtJSWorkspaceProps) {
-  const { campaigns, can, currentRole } = useDashboard();
+  const { can, currentRole } = useDashboard();
   const [isPending, startTransition] = useTransition();
 
   // Profile Settings State
   const [profileSettings, setProfileSettings] = useState<ProfileSettings>({
-    displayName: userName,
+    displayName: userName || "Suporte N1",
     fullName: "Administrador do Sistema",
-    email: userEmail,
+    email: userEmail || "suporte.n1@vertis.com.local",
     phone: "(11) 99999-9999",
     theme: "triton",
     mode: "light",
   });
 
-  // Estados do Cenário Político e Notícias do TSE em Tempo Real
-  const [tseNoticias, setTseNoticias] = useState<any[]>([]);
-  const [cenarioPolitico, setCenarioPolitico] = useState<any>(null);
-  const [tseLoading, setTseLoading] = useState(false);
+  // Iniciar obrigatoriamente no Dashboard com abas padronizadas usando os mesmos ícones Lucide
+  const [openTabs, setOpenTabs] = useState<TabItem[]>(() => [
+    { id: "dashboard", title: "Dashboard", iconNode: TAB_ICONS_MAP["dashboard"], closable: true },
+    { id: "tre", title: "Monitor TSE", iconNode: TAB_ICONS_MAP["tre"], closable: true },
+    { id: "perfil", title: "Configurações de Perfil", iconNode: TAB_ICONS_MAP["perfil"], closable: true },
+    { id: "permissoes", title: "Matriz de Permissões", iconNode: TAB_ICONS_MAP["permissoes"], closable: true },
+  ]);
 
-  async function loadTseLiveData() {
-    setTseLoading(true);
-    try {
-      const res = await fetch("/api/tre/noticias");
-      if (res.ok) {
-        const data = await res.json();
-        if (data.noticias) setTseNoticias(data.noticias);
-        if (data.cenarioPolitico) setCenarioPolitico(data.cenarioPolitico);
-      }
-    } catch {
-      // ignora se falhar
-    } finally {
-      setTseLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    loadTseLiveData();
-  }, []);
-
-  // Tab Panel State — 'home' e 'dashboard' são fixas e não podem ser fechadas
-  const canViewDashboard = can("dashboard:visualizar");
-
-  const [openTabs, setOpenTabs] = useState<TabItem[]>(() => {
-    const tabs: TabItem[] = [
-      {
-        id: "home",
-        title: "Área de Trabalho",
-        icon: "💻",
-        closable: false,
-      },
-    ];
-
-    if (canViewDashboard) {
-      tabs.push({
-        id: "dashboard",
-        title: "Dashboard",
-        icon: "📊",
-        closable: false,
-      });
-    }
-
-    return tabs;
-  });
-
-  const [activeTab, setActiveTab] = useState<string>(
-    canViewDashboard ? "dashboard" : "home",
-  );
-
-  // Carousel State
-  const [currentSlide, setCurrentSlide] = useState(0);
-
-  // Sidebar navigation group collapses
-  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({
-    operacao: false,
-    cadastros: false,
-    inteligencia: false,
-    configuracao: false,
-  });
-
-  // Sidebar collapse state
+  const [activeTab, setActiveTab] = useState<string>("dashboard");
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-
-  // Clock state
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
+  const [showTabOverflow, setShowTabOverflow] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [currentTime, setCurrentTime] = useState("");
 
-  // Update clock every second
+  // Relógio oficial em tempo real
   useEffect(() => {
     const updateTime = () => {
       const now = new Date();
       setCurrentTime(
-        now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })
+        `Hoje, ${now.toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" })} • ${now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`
       );
     };
     updateTime();
@@ -172,505 +136,507 @@ export function ExtJSWorkspace({ userName, userEmail }: ExtJSWorkspaceProps) {
     return () => clearInterval(interval);
   }, []);
 
-  // Auto-rotate Carousel Slides
-  useEffect(() => {
-    if (activeTab === "home") {
-      const timer = setInterval(() => {
-        setCurrentSlide((prev) => (prev + 1) % 3);
-      }, 6000);
-      return () => clearInterval(timer);
-    }
-  }, [activeTab]);
-
-  // Load profile settings from localStorage on mount and apply mode
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("user_profile_settings");
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          setProfileSettings((prev) => ({ ...prev, ...parsed }));
-
-          // Apply dark mode class
-          if (parsed.mode === "dark") {
-            document.documentElement.classList.add("dark");
-          } else {
-            document.documentElement.classList.remove("dark");
-          }
-        } catch (e) {
-          console.error("Erro ao parsear preferências de perfil", e);
-        }
-      }
-    }
-  }, []);
-
-  // Parse initial tab from URL parameter if present
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const params = new URLSearchParams(window.location.search);
-    const tabParam = params.get("tab");
-
-    if (!tabParam || tabParam === "home") {
-      return;
-    }
-
-    if (tabParam === "dashboard" && !can("dashboard:visualizar")) {
-      return;
-    }
-
-    handleOpenTab(tabParam);
-  }, []);
-
   const handleUpdateProfile = (newSettings: ProfileSettings) => {
     setProfileSettings(newSettings);
     localStorage.setItem("user_profile_settings", JSON.stringify(newSettings));
-
-    // Apply visual mode class
-    if (newSettings.mode === "dark") {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
   };
 
-  const menuGroups = [
+  // Grupos do Menu da Sidebar conforme a imagem de referência do campanhaPRO
+  const menuGroups: Array<{ id: string; title: string; items: MenuItem[] }> = [
     {
       id: "operacao",
-      title: "Operações",
-      icon: "⚙️",
+      title: "OPERAÇÕES",
       items: [
-        { id: "dashboard", label: "Dashboard", icon: "📊", permission: "dashboard:visualizar" },
-        { id: "campanhas", label: "Campanhas", icon: "📣", permission: "campanhas:gerenciar" },
-        { id: "financeiro", label: "Área Financeira", icon: "💰", permission: "financeiro:gerenciar" },
-        { id: "parecer", label: "Parecer", icon: "⚖️", permission: "parecer:visualizar" },
+        { id: "dashboard", label: "Dashboard", iconNode: <LayoutGrid className="h-[18px] w-[18px]" strokeWidth={2} />, permission: "dashboard:visualizar" },
+        { id: "campanhas", label: "Campanhas", iconNode: <Megaphone className="h-[18px] w-[18px]" strokeWidth={2} />, permission: "campanhas:gerenciar" },
+        { id: "agenda", label: "Agenda do Candidato", iconNode: <CalendarDays className="h-[18px] w-[18px]" strokeWidth={2} />, permission: "campanhas:gerenciar" },
+        { id: "financeiro", label: "Área Financeira", iconNode: <Wallet className="h-[18px] w-[18px]" strokeWidth={2} />, permission: "financeiro:visualizar" },
       ],
     },
     {
       id: "cadastros",
-      title: "Cadastros Gerais",
-      icon: "📁",
+      title: "CADASTROS",
       items: [
-        { id: "usuarios", label: "Usuários", icon: "👤", permission: "usuarios:gerenciar" },
-        { id: "parceiros", label: "Parceiros", icon: "🤝", permission: "parceiros:gerenciar" },
-        { id: "locais", label: "Locais (Comitê)", icon: "📍", permission: "locais:gerenciar" },
-        { id: "regioes", label: "Regiões", icon: "🗺", permission: "regioes:gerenciar" },
+        { id: "voluntarios", label: "Voluntários", iconNode: <Users className="h-[18px] w-[18px]" strokeWidth={2} />, permission: "usuarios:gerenciar" },
+        { id: "parceiros", label: "Parceiros", iconNode: <Handshake className="h-[18px] w-[18px]" strokeWidth={2} />, permission: "parceiros:gerenciar" },
+        { id: "locais", label: "Locais (Comitê)", iconNode: <MapPin className="h-[18px] w-[18px]" strokeWidth={2} />, permission: "locais:gerenciar" },
+        { id: "regioes", label: "Regiões", iconNode: <Map className="h-[18px] w-[18px]" strokeWidth={2} />, permission: "regioes:gerenciar" },
       ],
     },
     {
       id: "inteligencia",
-      title: "Inteligência",
-      icon: "📈",
+      title: "INTELIGÊNCIA",
       items: [
-        { id: "relatorios", label: "Relatórios", icon: "📊", permission: "relatorios:visualizar" },
-        { id: "tre", label: "Consulta TRE", icon: "⚖", permission: "tre:consultar" },
-        { id: "pesquisas", label: "Pesquisas", icon: "🔍", permission: "" },
+        { id: "tre", label: "Monitor TSE", iconNode: <Landmark className="h-[18px] w-[18px]" strokeWidth={2} />, permission: "tre:consultar" },
+        { id: "relatorios", label: "Relatórios", iconNode: <BarChart3 className="h-[18px] w-[18px]" strokeWidth={2} />, permission: "relatorios:visualizar" },
+        { id: "autoridades", label: "Contatos de Autoridades", iconNode: <User className="h-[18px] w-[18px]" strokeWidth={2} />, permission: "tre:consultar" },
+        { id: "pesquisas", label: "Pesquisas", iconNode: <ClipboardList className="h-[18px] w-[18px]" strokeWidth={2} />, permission: "" },
       ],
     },
     {
       id: "comunicacao",
-      title: "Comunicação",
-      icon: "💬",
+      title: "COMUNICAÇÃO",
       items: [
-        { id: "redesocial", label: "Rede Social", icon: "💬", permission: "" },
-      ],
-    },
-    {
-      id: "configuracao",
-      title: "Configurações",
-      icon: "🛠️",
-      items: [
-        { id: "perfil", label: "Meu Perfil", icon: "👤", permission: "" },
-        { id: "permissoes", label: "Permissões", icon: "🔐", permission: "permissoes:gerenciar" },
+        { id: "redesocial", label: "Rede Social", iconNode: <MessageSquareMore className="h-[18px] w-[18px]" strokeWidth={2} />, permission: "" },
       ],
     },
   ];
 
-  const panelDefinitions: Record<string, { title: string; icon: string; component: React.ReactNode }> = {
+  const panelDefinitions: Record<string, { title: string; component: React.ReactNode }> = {
     dashboard: {
       title: "Dashboard",
-      icon: "📊",
-      component: can("dashboard:visualizar")
-        ? <DashboardPanel />
-        : <div>Acesso negado</div>
+      component: can("dashboard:visualizar") ? <DashboardPanel /> : <div className="p-6 text-red-600 font-bold">Acesso Negado</div>
     },
     campanhas: {
-      title: "Gestão de Campanhas", icon: "📣", component: can("campanhas:gerenciar") ? <CampaignsPanel /> : <div>Acesso negado</div>
+      title: "Campanhas",
+      component: can("campanhas:gerenciar") ? <CampaignsPanel /> : <div className="p-6 text-red-600 font-bold">Acesso Negado</div>
+    },
+    agenda: {
+      title: "Agenda do Candidato",
+      component: can("campanhas:gerenciar") ? <AgendaPanel /> : <div className="p-6 text-red-600 font-bold">Acesso Negado</div>
     },
     financeiro: {
-      title: "Área Financeira", icon: "💰", component: can("financeiro:gerenciar") ? <FinanceiroPanel /> : <div>Acesso negado</div>
-    },
-    parecer: {
-      title: "Parecer de Lançamentos", icon: "⚖️", component: can("parecer:visualizar") ? <ParecerPanel /> : <div>Acesso negado</div>
+      title: "Área Financeira",
+      component: <FinanceiroPanel />
     },
     usuarios: {
-      title: "Equipe Operacional", icon: "👤", component: can("usuarios:gerenciar") ? <UsersPanel /> : <div>Acesso negado</div>
+      title: "Usuários",
+      component: can("usuarios:gerenciar") ? <UsersPanel /> : <div className="p-6 text-red-600 font-bold">Acesso Negado</div>
+    },
+    voluntarios: {
+      title: "Voluntários",
+      component: <VoluntariadoPanel />
     },
     parceiros: {
-      title: "Gestão de Parceiros", icon: "🤝", component: can("parceiros:gerenciar") ? <PartnersPanel /> : <div>Acesso negado</div>
+      title: "Parceiros",
+      component: can("parceiros:gerenciar") ? <PartnersPanel /> : <div className="p-6 text-red-600 font-bold">Acesso Negado</div>
     },
     locais: {
-      title: "Locais e Comitês", icon: "📍", component: can("locais:gerenciar") ? <LocationsPanel /> : <div>Acesso negado</div>
+      title: "Locais (Comitê)",
+      component: can("locais:gerenciar") ? <LocationsPanel /> : <div className="p-6 text-red-600 font-bold">Acesso Negado</div>
     },
     regioes: {
-      title: "Regiões Eleitorais", icon: "🗺", component: can("regioes:gerenciar") ? <RegionsPanel /> : <div>Acesso negado</div>
+      title: "Regiões",
+      component: can("regioes:gerenciar") ? <RegionsPanel /> : <div className="p-6 text-red-600 font-bold">Acesso Negado</div>
     },
     relatorios: {
-      title: "Relatórios e Estatísticas",
-      icon: "📊",
+      title: "Relatórios",
       component: can("relatorios:visualizar") ? (
         <ReportsPanel
           onOpenTab={(id, title, icon, component) => {
             setOpenTabs((prev) => {
               if (prev.find((t) => t.id === id)) return prev;
-              return [...prev, { id, title, icon, closable: true }];
+              return [...prev, { id, title, iconNode: TAB_ICONS_MAP[id] || <LayoutGrid className="h-3.5 w-3.5" />, closable: true }];
             });
-            // Store the dynamic component
-            setPanelExtras((prev) => ({ ...prev, [id]: { title, icon, component } }));
+            setPanelExtras((prev) => ({ ...prev, [id]: { title, component } }));
             setActiveTab(id);
           }}
         />
-      ) : (
-        <div>Acesso negado</div>
-      ),
+      ) : <div className="p-6 text-red-600 font-bold">Acesso Negado</div>
     },
     tre: {
-      title: "Consulta Oficial TRE", icon: "⚖",
-      component: can("tre:consultar") ? <TrePanel /> : <div>Acesso negado</div>
+      title: "Monitor TSE",
+      component: <TrePanel />
+    },
+    autoridades: {
+      title: "Contatos de Autoridades",
+      component: <AutoridadesPanel />
     },
     permissoes: {
-      title: "Matriz de Permissões", icon: "🔐",
-      component: can("permissoes:gerenciar") ? <PermissionsPanel /> : <div>Acesso negado</div>
+      title: "Matriz de Permissões",
+      component: can("permissoes:gerenciar") ? <PermissionsPanel /> : <div className="p-6 text-red-600 font-bold">Acesso Negado</div>
     },
     perfil: {
-      title: "Configurações de Perfil",
-      icon: "👤",
-      component: <ProfilePanel settings={profileSettings} onUpdate={handleUpdateProfile} />,
+      title: "Meu Perfil",
+      component: <ProfilePanel settings={profileSettings} onUpdate={handleUpdateProfile} />
     },
     pesquisas: {
-      title: "Gestão de Pesquisas",
-      icon: "🔍",
-      component: <SurveysPanel />,
+      title: "Pesquisas",
+      component: <SurveysPanel />
     },
     redesocial: {
       title: "Rede Social",
-      icon: "💬",
-      component: <RedeSocialPanel />,
+      component: <RedeSocialPanel />
     },
   };
 
-  // Extra dynamic panels (e.g. individual report tabs)
-  const [panelExtras, setPanelExtras] = useState<Record<string, { title: string; icon: string; component: React.ReactNode }>>({});
+  const [panelExtras, setPanelExtras] = useState<Record<string, { title: string; component: React.ReactNode }>>({});
   const allPanels = { ...panelDefinitions, ...panelExtras };
 
+  // Abertura dinâmica de aba conforme menu selecionado replicando os ícones idênticos
   const handleOpenTab = (id: string) => {
-    if (id === "dashboard" && !can("dashboard:visualizar")) {
-      return;
-    }
     const tabDef = allPanels[id];
     if (!tabDef) return;
-
-    // Verify permission
-    const menuItem = menuGroups
-      .flatMap((g) => g.items)
-      .find((item) => item.id === id);
-    if (menuItem && menuItem.permission && !can(menuItem.permission)) {
-      alert("Acesso Negado: Você não possui permissão para acessar este módulo.");
-      return;
-    }
 
     setOpenTabs((prev) => {
       const exists = prev.find((t) => t.id === id);
       if (exists) return prev;
-      return [...prev, { id, title: tabDef.title, icon: tabDef.icon, closable: true }];
+      return [
+        ...prev,
+        {
+          id,
+          title: tabDef.title,
+          iconNode: TAB_ICONS_MAP[id] || <LayoutGrid className="h-3.5 w-3.5 text-[#1264F3]" />,
+          closable: true,
+        },
+      ];
     });
     setActiveTab(id);
-
-    // Update query param
-    if (typeof window !== "undefined") {
-      const url = new URL(window.location.href);
-      if (id === "home" || id === "dashboard") {
-        url.searchParams.delete("tab");
-      } else {
-        url.searchParams.set("tab", id);
-      }
-      window.history.pushState({}, "", url.toString());
-    }
+    setIsMobileDrawerOpen(false);
   };
 
   const handleCloseTab = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (id === "home" || id === "dashboard") return;
 
     const index = openTabs.findIndex((t) => t.id === id);
     const updatedTabs = openTabs.filter((t) => t.id !== id);
     setOpenTabs(updatedTabs);
 
-    if (activeTab === id) {
-      const nextActive = updatedTabs[index - 1]?.id || updatedTabs[0]?.id || "home";
+    if (activeTab === id && updatedTabs.length > 0) {
+      const nextActive = updatedTabs[index - 1]?.id || updatedTabs[0]?.id || "dashboard";
       setActiveTab(nextActive);
-
-      if (typeof window !== "undefined") {
-        const url = new URL(window.location.href);
-        if (nextActive === "home") {
-          url.searchParams.delete("tab");
-        } else {
-          url.searchParams.set("tab", nextActive);
-        }
-        window.history.pushState({}, "", url.toString());
-      }
     }
   };
 
-  const handleSelectTab = (id: string) => {
-    setActiveTab(id);
-    if (typeof window !== "undefined") {
-      const url = new URL(window.location.href);
-      if (id === "home" || id === "dashboard") {
-        url.searchParams.delete("tab");
-      } else {
-        url.searchParams.set("tab", id);
-      }
-      window.history.pushState({}, "", url.toString());
-    }
-  };
+  const userInitials = profileSettings.displayName
+    .split(" ")
+    .map((n) => n[0])
+    .slice(0, 2)
+    .join("") || "SN";
 
-  const toggleGroup = (groupId: string) => {
-    setCollapsedGroups((prev) => ({
-      ...prev,
-      [groupId]: !prev[groupId],
-    }));
-  };
-
-  const activeCampaigns = campaigns.filter((c) => c.status === "em andamento");
-  const themeConfig = themeStyles[profileSettings.theme] || themeStyles.triton;
-
-  // Mock Carousel news content
-  const carouselSlides = [
-    {
-      title: "Urnas Eletrônicas 2026: Segurança e Isolamento Absoluto",
-      description: "As urnas eletrônicas brasileiras operam sem qualquer conexão à internet, Wi-Fi ou Bluetooth. A ausência de conexões de rede inviabiliza invasões ou interferências cibernéticas externas. Toda a computação dos votos é protegida por criptografias certificadas e mais de 30 camadas redundantes de segurança.",
-      icon: "🔒",
-      badge: "Segurança de Votação",
-    },
-    {
-      title: "Calendário Eleitoral 2026: Programe os Prazos Críticos",
-      description: "Fique atento ao cronograma oficial do TSE para 2026: as eleições gerais acontecem dia 04 de Outubro (1º turno) e 25 de Outubro (2º turno). A janela de transferência e emissão de novos títulos se encerra em 06 de Maio, e a propaganda partidária de rua começa em 16 de Agosto.",
-      icon: "📅",
-      badge: "Eleições 2026",
-    },
-    {
-      title: "Auditoria de Códigos-Fonte e Teste Público",
-      description: "O código-fonte das urnas e sistemas eleitorais fica disponível para auditoria pelas entidades fiscalizadoras muito antes das eleições. Além disso, o Teste Público de Segurança (TPS) abre o sistema para que investigadores externos tentem forçar falhas, ajudando o TSE a blindar os códigos continuamente.",
-      icon: "🛡️",
-      badge: "Transparência",
-    },
-  ];
-
-  // Additional mock news articles
-  const mockNews = [
-    {
-      id: 1,
-      date: "14 Jun 2026 · 09:00",
-      category: "Segurança",
-      title: "TSE conclui a homologação técnica dos novos modelos de Urna Eletrônica UE2026",
-      summary: "A nova versão traz hardware criptográfico atualizado e processadores mais rápidos, mantendo o consagrado isolamento total de redes do modelo clássico brasileiro.",
-    },
-    {
-      id: 2,
-      date: "11 Jun 2026 · 14:30",
-      category: "Calendário",
-      title: "Prazo para convenções partidárias tem início em 20 de julho de 2026",
-      summary: "Legendas terão até o dia 5 de agosto para oficializar candidaturas a deputados federais, senadores e governadores nas coligações estaduais.",
-    },
-    {
-      id: 3,
-      date: "08 Jun 2026 · 10:15",
-      category: "Fiscalização",
-      title: "Votação paralela no dia das eleições: sorteio de urnas para auditoria em tempo real",
-      summary: "Entidades auditoras validaram o protocolo de testes do pleito de 2026. Urnas eletrônicas em funcionamento real serão testadas simultaneamente com cédulas físicas de controle.",
-    },
-  ];
-
-  return (
-    <div className="flex h-screen w-screen flex-col overflow-hidden bg-[#eef2f7] dark:bg-[#0a0f14] font-sans text-xs text-[#333] dark:text-[#ccd3db] select-none antialiased">
-
-      {/* ---------------- NORTH REGION: HEADER ---------------- */}
-      <header className={`flex h-12 w-full shrink-0 items-center justify-between border-b ${themeConfig.headerBorder} bg-gradient-to-r ${themeConfig.headerBg} px-4 text-white shadow-md`}>
-        <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded bg-white/10 dark:bg-white/5 font-bold text-white shadow-inner">
-            🧩
-          </div>
-          <div>
-            <h1 className="text-sm font-bold tracking-wider uppercase">CampanhaPro Workspace</h1>
-            <p className="text-[9px] font-medium opacity-80 uppercase tracking-widest text-[#d8e8f5] dark:text-blue-300">
-              Sencha ExtJS Modern Portal v7.8
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-4">
-          <div className="hidden items-center gap-2 border-r border-white/20 dark:border-white/10 pr-4 text-right sm:flex">
-            <span className="text-[10px] font-semibold text-white">
-              {profileSettings.displayName}
-            </span>
-            <span className="rounded bg-black/20 dark:bg-black/35 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-blue-200 dark:text-blue-400">
-              {currentRole?.name ?? "Membro"}
-            </span>
-          </div>
-
-          <div className="flex items-center gap-2">
-            {can('dashboard:visualizar') && (
-              <a
-                href="/modulos"
-                className="flex h-8 items-center gap-1.5 rounded border border-white/20 dark:border-white/10 bg-white/10 dark:bg-white/5 px-3 font-semibold text-white transition hover:bg-white/25 dark:hover:bg-white/15 active:scale-95 text-[10px] uppercase tracking-wide"
-              >
-                📊 Dashboard
-              </a>
-            )}
-            <button
-              onClick={() => {
-                if (confirm("Deseja sair do sistema?")) {
-                  startTransition(async () => {
-                    await logout();
-                  });
-                }
-              }}
-              disabled={isPending}
-              className="flex h-8 items-center justify-center rounded border border-red-700 bg-red-600 dark:bg-red-700 dark:border-red-800 px-3 font-semibold text-white transition hover:bg-red-700 dark:hover:bg-red-800 active:scale-95 disabled:opacity-50 text-[10px] uppercase tracking-wide"
-            >
-              {isPending ? "Saindo..." : "Sair"}
-            </button>
-          </div>
-        </div>
-      </header>
-
-      {/* MAIN LAYOUT WRAPPER (WEST & CENTER) */}
-      <div className="flex flex-1 w-full overflow-hidden">
-
-        {/* ---------------- WEST REGION: NAVIGATION TREE ---------------- */}
-        <aside
-          className={`flex shrink-0 flex-col border-r border-[#c0c7d0] dark:border-[#2b3e51] bg-[#f5f5f5] dark:bg-[#121c26] transition-all duration-300 ${isSidebarCollapsed ? "w-7" : "w-60"
-            }`}
-        >
-          {isSidebarCollapsed ? (
-            // Collapsed narrow vertical bar
-            <div className="flex flex-1 flex-col items-center py-4 gap-4 bg-[#f0f0f0] dark:bg-[#0f1720]">
-              <button
-                onClick={() => setIsSidebarCollapsed(false)}
-                className="flex h-6 w-5 items-center justify-center border border-[#b0b7c0] dark:border-[#2b3e51] bg-white dark:bg-[#1a2836] rounded shadow-sm text-[#157fcc] dark:text-blue-400 hover:bg-[#e6eff8] dark:hover:bg-[#25394f] transition-colors"
-                title="Expandir Painel"
-              >
-                ▶
-              </button>
-              <div className="write-vertical text-[#555] dark:text-zinc-500 font-bold uppercase tracking-widest text-[9px] select-none pointer-events-none origin-center rotate-90 whitespace-nowrap mt-12">
-                Navegação de Módulos
-              </div>
+  const renderSidebarContent = (collapsed: boolean) => (
+    <>
+      {/* Cabeçalho da Sidebar — Marca campanhaPRO & Logotipo Corrigido */}
+      <div className="flex h-16 items-center px-4 justify-between border-b border-[#093566] shrink-0">
+        {!collapsed ? (
+          <div className="flex items-center gap-2.5">
+            <div className="relative flex h-8 w-8 items-center justify-center shrink-0">
+              <svg width="32" height="32" viewBox="0 0 36 36" fill="none">
+                <circle cx="18" cy="18" r="14" stroke="#008B63" strokeWidth="4.5" fill="none" opacity="0.9" />
+                <path
+                  d="M 18 4 A 14 14 0 0 1 32 18"
+                  stroke="#00A978"
+                  strokeWidth="5"
+                  strokeLinecap="round"
+                  fill="none"
+                />
+                <circle cx="18" cy="18" r="6" fill="#06284F" stroke="#00A978" strokeWidth="2" />
+              </svg>
             </div>
-          ) : (
-            // Expanded Sidebar Tree
-            <>
-              {/* Sidebar Header */}
-              <div className="flex h-8 items-center justify-between border-b border-[#c0c7d0] dark:border-[#2b3e51] bg-[#e6eff8] dark:bg-[#172534] px-3 font-bold text-[#154f85] dark:text-blue-300">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-sm">📂</span>
-                  <span>MÓDULOS DO SISTEMA</span>
-                </div>
-                <button
-                  onClick={() => setIsSidebarCollapsed(true)}
-                  className="flex h-5 w-5 items-center justify-center border border-[#b0b7c0] dark:border-[#2b3e51] bg-white dark:bg-[#1a2836] rounded shadow-sm text-[#157fcc] dark:text-blue-400 hover:bg-[#e6eff8] dark:hover:bg-[#25394f]"
-                  title="Recolher Painel"
-                >
-                  ◀
-                </button>
-              </div>
 
-              {/* Tree Accordion / List */}
-              <div className="flex-1 overflow-y-auto p-1.5 space-y-1">
-                {menuGroups.map((group) => {
-                  // Filter items by permission
-                  const visibleItems = group.items.filter(
-                    (item) => !item.permission || can(item.permission)
-                  );
-                  if (visibleItems.length === 0) return null;
+            <span className="text-xl font-extrabold tracking-tight text-white font-sans whitespace-nowrap">
+              campanha<span className="text-[#00A978] font-black">PRO</span>
+            </span>
+          </div>
+        ) : (
+          <div className="mx-auto flex h-8 w-8 items-center justify-center" title="campanhaPRO">
+            <svg width="32" height="32" viewBox="0 0 36 36" fill="none">
+              <circle cx="18" cy="18" r="14" stroke="#008B63" strokeWidth="4.5" fill="none" />
+              <path
+                d="M 18 4 A 14 14 0 0 1 32 18"
+                stroke="#00A978"
+                strokeWidth="5"
+                strokeLinecap="round"
+                fill="none"
+              />
+              <circle cx="18" cy="18" r="6" fill="#06284F" stroke="#00A978" strokeWidth="2" />
+            </svg>
+          </div>
+        )}
 
-                  const isCollapsed = collapsedGroups[group.id];
+        {/* Botão fechar no mobile drawer */}
+        <button
+          type="button"
+          onClick={() => setIsMobileDrawerOpen(false)}
+          className="md:hidden text-slate-300 hover:text-white p-1"
+        >
+          <X className="h-6 w-6" />
+        </button>
+      </div>
 
-                  return (
-                    <div
-                      key={group.id}
-                      className="border border-[#d0d6de] dark:border-[#2b3e51] bg-white dark:bg-[#16222f] rounded overflow-hidden shadow-xs"
+      {/* Indicador Cápsula: "TSE TEMPO REAL" */}
+      {!collapsed && (
+        <div className="px-4 py-3 border-b border-[#093566] shrink-0">
+          <div className="campaignpro-live-pill h-[34px] w-full max-w-[190px] bg-[#031E3B] border border-[#00A978]/30 rounded-full flex items-center justify-center px-3 gap-2">
+            <span className="h-2 w-2 rounded-full bg-[#00A978] animate-pulse shrink-0" />
+            <span className="text-[10px] font-extrabold text-white tracking-wider uppercase">TSE TEMPO REAL</span>
+          </div>
+        </div>
+      )}
+
+      {/* Lista de Grupos e Itens de Menu */}
+      <div className="flex-1 overflow-y-auto py-4 px-3 space-y-5 no-scrollbar">
+        {menuGroups.map((group) => (
+          <div key={group.id} className="flex flex-col gap-1.5">
+            {!collapsed && (
+              <span className="px-2 text-[10px] font-extrabold tracking-wider text-[#64748B] uppercase">
+                {group.title}
+              </span>
+            )}
+
+            <ul className="space-y-1">
+              {group.items.map((item) => {
+                const isActive = activeTab === item.id;
+                return (
+                  <li key={item.id}>
+                    <button
+                      type="button"
+                      onClick={() => handleOpenTab(item.id)}
+                      title={collapsed ? item.label : undefined}
+                      className={`flex w-full items-center gap-3 px-3 py-2.5 text-xs font-bold rounded-xl transition-all text-left cursor-pointer ${
+                        isActive
+                          ? "bg-[#008B63] text-white shadow-md"
+                          : "text-[#94A3B8] hover:bg-[#093566] hover:text-white"
+                      } ${collapsed ? "justify-center px-0" : ""}`}
                     >
-                      {/* Group Header */}
-                      <button
-                        onClick={() => toggleGroup(group.id)}
-                        className="flex w-full h-7 items-center justify-between bg-gradient-to-b from-[#f9fbfd] to-[#eaeef3] dark:from-[#1e2d3d] dark:to-[#16222f] px-2 font-bold text-[#3a4f66] dark:text-zinc-300 hover:from-[#eaeef3] hover:to-[#dfe5eb] dark:hover:from-[#253549] dark:hover:to-[#1f2d3d]"
-                      >
-                        <div className="flex items-center gap-1.5 text-[10px]">
-                          <span>{group.icon}</span>
-                          <span>{group.title}</span>
-                        </div>
-                        <span className="text-[8px] font-mono text-[#8a99a8]">
-                          {isCollapsed ? "＋" : "－"}
-                        </span>
-                      </button>
+                      <span className="shrink-0">{item.iconNode}</span>
+                      {!collapsed && <span className="truncate">{item.label}</span>}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ))}
+      </div>
 
-                      {/* Group Items */}
-                      {!isCollapsed && (
-                        <ul className="divide-y divide-[#f2f4f6] dark:divide-[#1f2d3d] p-0.5">
-                          {visibleItems.map((item) => {
-                            const isTabActive = activeTab === item.id;
-                            return (
-                              <li key={item.id}>
-                                <button
-                                  onClick={() => handleOpenTab(item.id)}
-                                  className={`flex w-full h-7 items-center gap-2 px-3 transition-colors text-left rounded-sm font-medium ${isTabActive
-                                    ? themeConfig.sidebarActiveNode
-                                    : "text-[#555] dark:text-zinc-400 hover:bg-[#f0f4f8] dark:hover:bg-[#1a2533] hover:text-[#111] dark:hover:text-zinc-200"
-                                    }`}
-                                >
-                                  <span className="text-xs">{item.icon}</span>
-                                  <span>{item.label}</span>
-                                </button>
-                              </li>
-                            );
-                          })}
-                        </ul>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
+      {/* Rodapé da Sidebar — Ação "Recolher menu" */}
+      <div className="p-3 border-t border-[#093566] shrink-0 hidden md:block">
+        <button
+          type="button"
+          onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+          className="flex w-full items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold text-[#94A3B8] hover:bg-[#093566] hover:text-white transition cursor-pointer"
+        >
+          {collapsed ? (
+            <SquareChevronRight className="h-5 w-5 text-white mx-auto" strokeWidth={2} />
+          ) : (
+            <>
+              <SquareChevronLeft className="h-5 w-5 text-white shrink-0" strokeWidth={2} />
+              <span>Recolher menu</span>
             </>
           )}
-        </aside>
+        </button>
+      </div>
+    </>
+  );
 
-        {/* ---------------- CENTER REGION: TAB PANEL ---------------- */}
-        <main className="flex flex-1 flex-col overflow-hidden bg-[#eef2f7] dark:bg-[#0a0f14] p-2">
+  return (
+    <div className="campaignpro-shell flex h-screen w-screen overflow-hidden font-sans select-none antialiased bg-[#F6F8FB]">
 
-          {/* Tab Strip */}
-          <div className="flex w-full border-b border-[#c0c7d0] dark:border-[#2b3e51] px-1 flex-wrap gap-0.5 items-end h-8 shrink-0">
+      {/* ── 1. DESKTOP / TABLET SIDEBAR ── */}
+      <aside
+        className={`campaignpro-sidebar hidden md:flex shrink-0 flex-col bg-[#06284F] text-white border-r border-[#093566] shadow-xl transition-all duration-300 z-20 ${
+          isSidebarCollapsed ? "w-[72px]" : "w-[250px]"
+        }`}
+      >
+        {renderSidebarContent(isSidebarCollapsed)}
+      </aside>
+
+      {/* ── 2. MOBILE DRAWER SLIDE-OVER ── */}
+      {isMobileDrawerOpen && (
+        <div className="fixed inset-0 z-50 flex md:hidden">
+          <div
+            className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity"
+            onClick={() => setIsMobileDrawerOpen(false)}
+          />
+          <aside className="relative flex w-[260px] max-w-[80vw] flex-col bg-[#06284F] text-white shadow-2xl z-50">
+            {renderSidebarContent(false)}
+          </aside>
+        </div>
+      )}
+
+      {/* ── 3. ÁREA PRINCIPAL DA APLICAÇÃO RESPONSIVA ── */}
+      <div className="flex flex-1 flex-col overflow-hidden bg-[#F6F8FB]">
+        
+        {/* Cabeçalho Superior (Topbar) */}
+        <header className="campaignpro-topbar h-16 bg-white border-b border-[#E2E8F0] px-4 sm:px-6 flex items-center justify-between shrink-0 shadow-2xs">
+          <div className="flex items-center gap-3">
+            {/* Botão Hambúrguer no Mobile */}
+            <button
+              type="button"
+              onClick={() => setIsMobileDrawerOpen(true)}
+              className="md:hidden flex h-9 w-9 items-center justify-center rounded-lg border border-[#E2E8F0] text-[#10213D] hover:bg-slate-100 transition"
+              title="Abrir Menu"
+            >
+              <Menu className="h-5 w-5" />
+            </button>
+
+            <div>
+              <h2 className="text-sm sm:text-base font-extrabold text-[#10213D] leading-tight">
+                {allPanels[activeTab]?.title || "Dashboard"}
+              </h2>
+              <p className="text-[10px] sm:text-[11px] text-[#64748B] truncate max-w-[200px] sm:max-w-none">
+                Acompanhamento do cenário político e eleitoral em tempo real
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 sm:gap-4">
+            <PushNotifier />
+
+            {/* Clique no Avatar/Nome do perfil abre o menu de Perfil */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setShowProfileMenu(!showProfileMenu)}
+                className="flex items-center gap-2 pl-2 sm:pl-3 border-l border-[#E2E8F0] hover:opacity-85 transition cursor-pointer text-left"
+                title="Clique para abrir as Configurações de Perfil"
+              >
+                <div className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full bg-[#06284F] text-white font-extrabold text-xs shadow-2xs border border-[#00A978]">
+                  {userInitials}
+                </div>
+                <div className="hidden sm:flex flex-col text-left">
+                  <span className="text-xs font-bold text-[#10213D] flex items-center gap-1">
+                    {profileSettings.displayName} <span className="text-[9px] text-[#64748B]">▼</span>
+                  </span>
+                  <span className="text-[9px] font-extrabold text-[#008B63] bg-[#E8F7F1] px-1.5 py-0.2 rounded border border-[#00A978]/30">
+                    {currentRole?.name ?? "Administrador"}
+                  </span>
+                </div>
+              </button>
+
+              {/* Dropdown Popover de Perfil */}
+              {showProfileMenu && (
+                <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl border border-[#E2E8F0] shadow-xl py-2 z-40 text-xs flex flex-col gap-1">
+                  <div className="px-3.5 py-2 border-b border-[#F1F5F9] bg-[#F8FAFC]">
+                    <p className="font-extrabold text-[#10213D]">{profileSettings.displayName}</p>
+                    <p className="text-[10px] text-[#64748B] truncate">{profileSettings.email}</p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleOpenTab("perfil");
+                      setShowProfileMenu(false);
+                    }}
+                    className="w-full text-left px-3.5 py-2 hover:bg-[#EAF2FF] text-[#10213D] font-semibold flex items-center gap-2 transition"
+                  >
+                    <User className="h-4 w-4 text-[#1264F3]" strokeWidth={2} />
+                    <span>Meu Perfil</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleOpenTab("usuarios");
+                      setShowProfileMenu(false);
+                    }}
+                    className="w-full text-left px-3.5 py-2 hover:bg-[#EAF2FF] text-[#10213D] font-semibold flex items-center gap-2 transition"
+                  >
+                    <UserCheck className="h-4 w-4 text-[#008B63]" strokeWidth={2} />
+                    <span>Usuários</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleOpenTab("permissoes");
+                      setShowProfileMenu(false);
+                    }}
+                    className="w-full text-left px-3.5 py-2 hover:bg-[#EAF2FF] text-[#10213D] font-semibold flex items-center gap-2 transition"
+                  >
+                    <Lock className="h-4 w-4 text-[#7928F5]" strokeWidth={2} />
+                    <span>Matriz de Permissões</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleOpenTab("perfil");
+                      setShowProfileMenu(false);
+                    }}
+                    className="w-full text-left px-3.5 py-2 hover:bg-[#EAF2FF] text-[#10213D] font-semibold flex items-center gap-2 transition"
+                  >
+                    <LayoutDashboard className="h-4 w-4 text-[#F59E0B]" strokeWidth={2} />
+                    <span>Configurações do Sistema</span>
+                  </button>
+
+                  <div className="border-t border-[#F1F5F9] my-1" />
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowProfileMenu(false);
+                      setShowLogoutModal(true);
+                    }}
+                    className="w-full text-left px-3.5 py-2 hover:bg-red-50 text-red-600 font-bold flex items-center gap-2 transition"
+                  >
+                    <span>🚪</span> <span>Sair do Sistema</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </header>
+
+        {/* ── MODAL CUSTOMIZADO DE CONFIRMAÇÃO DE SAÍDA / LOGOUT ── */}
+        {showLogoutModal && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 select-none">
+            <div className="bg-white rounded-2xl border border-[#E2E8F0] shadow-2xl max-w-md w-full p-6 flex flex-col gap-5 animate-in fade-in zoom-in duration-200">
+              <div className="flex items-start gap-4">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-red-100 text-red-600 font-extrabold text-xl">
+                  🚪
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <h3 className="text-base font-extrabold text-[#10213D]">
+                    Encerrar Sessão no campanhaPRO
+                  </h3>
+                  <p className="text-xs text-[#64748B] leading-relaxed">
+                    Você está prestes a sair do sistema. Suas alterações foram salvas. Deseja realmente continuar?
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 border-t border-[#F1F5F9] pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowLogoutModal(false)}
+                  disabled={isPending}
+                  className="px-4 py-2 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] hover:bg-slate-100 text-[#10213D] text-xs font-bold transition cursor-pointer"
+                >
+                  Cancelar
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    startTransition(async () => {
+                      await logout();
+                    });
+                  }}
+                  disabled={isPending}
+                  className="px-4 py-2 rounded-xl bg-[#EF4444] hover:bg-[#DC2626] text-white text-xs font-bold transition shadow-xs flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                >
+                  {isPending ? "Saindo..." : "Sim, Sair do Sistema"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── 4. SISTEMA DE ABAS ABERTAS REPLICANDO OS ÍCONES DA SIDEBAR ── */}
+        <div className="campaignpro-workspace-tabs bg-[#F6F8FB] border-b border-[#E2E8F0] px-4 sm:px-6 flex items-center justify-between shrink-0 h-11 select-none">
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
             {openTabs.map((tab) => {
               const isActive = activeTab === tab.id;
               return (
                 <div
                   key={tab.id}
-                  onClick={() => handleSelectTab(tab.id)}
-                  className={`group flex h-7 items-center gap-2 px-3 border-t rounded-t cursor-pointer transition-all ${isActive
-                    ? `bg-white dark:bg-zinc-950 border-t-2 ${themeConfig.activeTabBorder} border-x border-x-[#c0c7d0] dark:border-x-[#2b3e51] font-bold ${themeConfig.textHighlight} z-10 -mb-[1px]`
-                    : "bg-[#e1e5eb] dark:bg-[#131b24] border-t border-t-[#c8cfd6] dark:border-t-[#2b3e51] border-x border-x-[#c8cfd6] dark:border-x-[#2b3e51] text-[#555] dark:text-zinc-400 hover:bg-[#f0f2f5] dark:hover:bg-[#1a2530] hover:text-[#111] dark:hover:text-zinc-200 -mb-[1px]"
-                    }`}
-                  style={{ minWidth: "100px", maxWidth: "200px" }}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex h-8 items-center gap-2 px-3 sm:px-3.5 rounded-t-lg text-xs font-semibold cursor-pointer border transition-all ${
+                    isActive
+                      ? "bg-white text-[#06284F] border-[#E2E8F0] border-b-white border-b-0 border-t-2 border-t-[#00A978] shadow-2xs z-10 font-bold"
+                      : "bg-[#F6F8FB] text-[#64748B] border-transparent hover:bg-slate-200/50 hover:text-[#10213D]"
+                  }`}
                 >
-                  <span className="text-xs shrink-0">{tab.icon}</span>
-                  <span className="truncate text-[10px] select-none flex-1">
-                    {tab.title}
-                  </span>
+                  <span className="shrink-0">{tab.iconNode || TAB_ICONS_MAP[tab.id]}</span>
+                  <span className="whitespace-nowrap">{tab.title}</span>
                   {tab.closable && (
                     <button
+                      type="button"
                       onClick={(e) => handleCloseTab(tab.id, e)}
-                      className="flex h-3.5 w-3.5 items-center justify-center rounded-full text-[9px] text-[#9a9fa6] hover:bg-[#e0565b] hover:text-white"
-                      title="Fechar Aba"
+                      className="ml-1 text-[10px] text-slate-400 hover:text-red-600 rounded-full h-4 w-4 flex items-center justify-center hover:bg-slate-100"
                     >
                       ×
                     </button>
@@ -680,292 +646,52 @@ export function ExtJSWorkspace({ userName, userEmail }: ExtJSWorkspaceProps) {
             })}
           </div>
 
-          {/* Active Tab Body Panel */}
-          <div className="flex-1 w-full overflow-hidden border-x border-b border-[#c0c7d0] dark:border-[#2b3e51] bg-white dark:bg-zinc-950 shadow-sm flex flex-col">
+          {/* Menu Dropdown de Abas Ocultas */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setShowTabOverflow(!showTabOverflow)}
+              className="h-7 w-7 flex items-center justify-center rounded border border-[#E2E8F0] bg-white text-[#64748B] hover:text-[#10213D] transition shadow-2xs cursor-pointer"
+              title="Mais Abas"
+            >
+              ▼
+            </button>
 
-            {/* Inner Content Area */}
-            <div className="flex-1 overflow-auto p-4 bg-white dark:bg-zinc-950">
-              {activeTab === "home" ? (
-                // ExtJS Portal Dashboard Home Tab
-                <div className="flex flex-col gap-5 h-full">
+            {showTabOverflow && (
+              <div className="absolute right-0 mt-1 w-48 bg-white border border-[#E2E8F0] rounded-lg shadow-lg py-1 z-30 text-xs">
+                {openTabs.map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => {
+                      setActiveTab(t.id);
+                      setShowTabOverflow(false);
+                    }}
+                    className={`w-full text-left px-3 py-1.5 flex items-center gap-2 hover:bg-slate-50 ${
+                      activeTab === t.id ? "font-bold text-[#008B63]" : "text-[#10213D]"
+                    }`}
+                  >
+                    <span>{t.iconNode}</span>
+                    <span className="truncate">{t.title}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
 
-                  {/* Grid Portal Layout */}
-                  <div className="grid gap-4 md:grid-cols-3">
-
-                    {/* Portal Column 1 (News Area with Carousel Banner) */}
-                    <div className="md:col-span-2 flex flex-col gap-4">
-
-                      {/* PAINEL DE ACOMPANHAMENTO DO CENÁRIO POLÍTICO DO TSE (TEMPO REAL) */}
-                      <div className="border border-[#c0c7d0] dark:border-zinc-800 rounded bg-[#f8fafc] dark:bg-zinc-900 shadow-xs overflow-hidden flex flex-col">
-                        <div className="bg-[#e9eef4] dark:bg-[#1a2d3e] border-b border-[#c0c7d0] dark:border-[#2b3e51] px-3 py-2 font-bold text-[#2c3e50] dark:text-zinc-200 text-[10px] uppercase flex justify-between items-center">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm">🏛️</span>
-                            <span>Acompanhamento do Cenário Político & Eleitoral (TSE)</span>
-                          </div>
-                          <div className="flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded text-[9px] font-bold text-emerald-700 dark:text-emerald-300">
-                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                            <span>TSE Tempo Real</span>
-                          </div>
-                        </div>
-
-                        {/* Indicadores do Cenário Político */}
-                        <div className="p-4 flex flex-col gap-4">
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                            <div className="bg-white dark:bg-zinc-950 p-2.5 rounded border border-slate-200 dark:border-zinc-800 shadow-2xs">
-                              <span className="text-[9px] font-bold uppercase text-slate-500 dark:text-zinc-400 block">Total Candidaturas</span>
-                              <span className="text-base font-extrabold text-blue-600 dark:text-blue-400 mt-0.5 block">
-                                {cenarioPolitico?.totalCandidaturas?.toLocaleString("pt-BR") ?? "28.490"}
-                              </span>
-                              <span className="text-[8px] text-slate-400">Registradas no TSE</span>
-                            </div>
-
-                            <div className="bg-white dark:bg-zinc-950 p-2.5 rounded border border-slate-200 dark:border-zinc-800 shadow-2xs">
-                              <span className="text-[9px] font-bold uppercase text-slate-500 dark:text-zinc-400 block">Taxa de Deferimento</span>
-                              <span className="text-base font-extrabold text-emerald-600 dark:text-emerald-400 mt-0.5 block">
-                                {cenarioPolitico?.percentualDeferidos ?? "94.2"}%
-                              </span>
-                              <span className="text-[8px] text-slate-400">Aprovados pela Justiça</span>
-                            </div>
-
-                            <div className="bg-white dark:bg-zinc-950 p-2.5 rounded border border-slate-200 dark:border-zinc-800 shadow-2xs">
-                              <span className="text-[9px] font-bold uppercase text-slate-500 dark:text-zinc-400 block">Partidos Registrados</span>
-                              <span className="text-base font-extrabold text-purple-600 dark:text-purple-400 mt-0.5 block">
-                                {cenarioPolitico?.totalPartidos ?? "29"} Legendas
-                              </span>
-                              <span className="text-[8px] text-slate-400">No Cenário Nacional</span>
-                            </div>
-
-                            <div className="bg-white dark:bg-zinc-950 p-2.5 rounded border border-slate-200 dark:border-zinc-800 shadow-2xs">
-                              <span className="text-[9px] font-bold uppercase text-slate-500 dark:text-zinc-400 block">Status da Base</span>
-                              <span className="text-base font-extrabold text-emerald-600 dark:text-emerald-400 mt-0.5 block">
-                                100% Online
-                              </span>
-                              <span className="text-[8px] text-slate-400">Dados do TSE</span>
-                            </div>
-                          </div>
-
-                          {/* Distribuição de Força Partidária */}
-                          {cenarioPolitico?.distribuicaoPartidaria && (
-                            <div className="bg-white dark:bg-zinc-950 p-3 rounded border border-slate-200 dark:border-zinc-800 flex flex-col gap-2">
-                              <div className="flex justify-between items-center text-[10px] font-bold text-slate-700 dark:text-zinc-300 border-b border-slate-100 dark:border-zinc-850 pb-1.5">
-                                <span>Distribuição de Candidaturas por Partido (TSE)</span>
-                                <span className="text-slate-400 font-normal">% do Total Registrado</span>
-                              </div>
-                              <div className="grid grid-cols-2 gap-2 text-xs">
-                                {cenarioPolitico.distribuicaoPartidaria.slice(0, 6).map((item: any) => (
-                                  <div key={item.sigla} className="flex flex-col gap-1 bg-slate-50 dark:bg-zinc-900 p-2 rounded">
-                                    <div className="flex justify-between items-center text-[10px]">
-                                      <span className="font-bold text-slate-800 dark:text-zinc-200">{item.sigla}</span>
-                                      <span className="font-mono font-bold text-blue-600 dark:text-blue-400">{item.totalCandidatos?.toLocaleString("pt-BR")} ({item.percentual}%)</span>
-                                    </div>
-                                    <div className="h-1.5 w-full bg-slate-200 dark:bg-zinc-800 rounded-full overflow-hidden">
-                                      <div className={`h-full ${item.cor || "bg-blue-600"}`} style={{ width: `${item.percentual * 4}%` }} />
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Carousel Container */}
-                      <div className="border border-[#c0c7d0] dark:border-zinc-800 rounded bg-[#fafafa] dark:bg-zinc-900 shadow-xs overflow-hidden flex flex-col h-56">
-                        <div className="bg-[#e9eef4] dark:bg-[#1a2d3e] border-b border-[#c0c7d0] dark:border-[#2b3e51] px-3 py-1.5 font-bold text-[#2c3e50] dark:text-zinc-300 text-[10px] uppercase flex justify-between items-center">
-                          <span>📢 Destaques Eleitorais e Urnas Eletrônicas</span>
-                          <span className="bg-[#157fcc] dark:bg-blue-600 text-white font-bold rounded-sm px-1.5 py-0.5 text-[8px]">
-                            {carouselSlides[currentSlide].badge}
-                          </span>
-                        </div>
-
-                        {/* Slide content area */}
-                        <div className="flex-1 p-4 flex items-start gap-4 transition-all duration-500 relative">
-                          <div className="text-3xl p-3 bg-white dark:bg-zinc-950 rounded border border-[#cbd5e1] dark:border-zinc-850 shadow-xs shrink-0 select-none">
-                            {carouselSlides[currentSlide].icon}
-                          </div>
-                          <div className="flex flex-col gap-1.5">
-                            <h3 className="text-xs font-bold text-[#154f85] dark:text-blue-400">
-                              {carouselSlides[currentSlide].title}
-                            </h3>
-                            <p className="text-[10px] text-[#555] dark:text-zinc-350 leading-relaxed">
-                              {carouselSlides[currentSlide].description}
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* Slide controls */}
-                        <div className="h-8 border-t border-[#cbd5e1] dark:border-zinc-800 bg-white dark:bg-zinc-950 flex items-center justify-between px-4">
-                          <div className="flex gap-1">
-                            {carouselSlides.map((_, idx) => (
-                              <button
-                                key={idx}
-                                onClick={() => setCurrentSlide(idx)}
-                                className={`h-2 w-2 rounded-full transition-all ${currentSlide === idx ? "bg-[#157fcc] w-4" : "bg-[#cbd5e1] dark:bg-zinc-700 hover:bg-[#a1a1a1]"
-                                  }`}
-                              />
-                            ))}
-                          </div>
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => setCurrentSlide((prev) => (prev - 1 + 3) % 3)}
-                              className="px-2 py-0.5 text-[9px] font-bold border border-[#cbd5e1] dark:border-zinc-700 bg-white dark:bg-zinc-900 rounded hover:bg-[#f1f5f9] dark:hover:bg-zinc-850"
-                            >
-                              Anterior
-                            </button>
-                            <button
-                              onClick={() => setCurrentSlide((prev) => (prev + 1) % 3)}
-                              className="px-2 py-0.5 text-[9px] font-bold border border-[#cbd5e1] dark:border-zinc-700 bg-white dark:bg-zinc-900 rounded hover:bg-[#f1f5f9] dark:hover:bg-zinc-850"
-                            >
-                              Próximo
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Central de Notícias e Informativos em Tempo Real do TSE */}
-                      <div className="border border-[#c0c7d0] dark:border-zinc-800 rounded bg-white dark:bg-zinc-950 shadow-xs flex flex-col">
-                        <div className="bg-[#e9eef4] dark:bg-[#1a2d3e] border-b border-[#c0c7d0] dark:border-[#2b3e51] px-3 py-2 font-bold text-[#2c3e50] dark:text-zinc-200 text-[10px] uppercase flex justify-between items-center">
-                          <div className="flex items-center gap-1.5">
-                            <span className="h-2 w-2 rounded-full bg-red-600 animate-ping" />
-                            <span>📰 Central de Notícias e Informativos (TSE em Tempo Real)</span>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={loadTseLiveData}
-                            disabled={tseLoading}
-                            className="bg-white dark:bg-zinc-900 border border-[#c0c7d0] dark:border-zinc-700 px-2 py-0.5 rounded text-[9px] font-bold text-[#157fcc] dark:text-blue-400 hover:bg-slate-100 transition"
-                          >
-                            {tseLoading ? "Atualizando..." : "🔄 Atualizar Notícias"}
-                          </button>
-                        </div>
-                        <div className="p-4 flex flex-col gap-4 divide-y divide-[#eaeded] dark:divide-zinc-850">
-                          {tseNoticias.length === 0 ? (
-                            <p className="text-[11px] text-[#7f8c8d] dark:text-zinc-500 italic text-center py-2">
-                              Carregando notícias em tempo real do TSE...
-                            </p>
-                          ) : (
-                            tseNoticias.map((news) => (
-                              <div key={news.id} className="pt-4 first:pt-0 flex flex-col gap-1.5">
-                                <div className="flex items-center justify-between">
-                                  <span className="text-[9px] font-bold text-[#95a5a6]">
-                                    {news.date} · <strong className="text-slate-700 dark:text-zinc-400">{news.fonte}</strong>
-                                  </span>
-                                  <div className="flex items-center gap-1.5">
-                                    {news.tag && (
-                                      <span className="bg-red-500/10 text-red-600 dark:text-red-400 font-extrabold px-1.5 py-0.5 rounded text-[8px] border border-red-500/20">
-                                        {news.tag}
-                                      </span>
-                                    )}
-                                    <span className="bg-[#eef2f7] dark:bg-[#1a2c3a] text-[#154f85] dark:text-blue-300 font-bold px-1.5 py-0.5 rounded text-[8px]">
-                                      {news.category}
-                                    </span>
-                                  </div>
-                                </div>
-                                <h4 className="text-[11px] font-bold text-[#2c3e50] dark:text-zinc-200 hover:underline cursor-pointer">
-                                  {news.title}
-                                </h4>
-                                <p className="text-[10px] text-[#7f8c8d] dark:text-zinc-400 leading-relaxed">
-                                  {news.summary}
-                                </p>
-                              </div>
-                            ))
-                          )}
-                        </div>
-                      </div>
-
-                    </div>
-
-                    {/* Portal Column 2 (Active execution and shortcuts - KEEP UNCHANGED) */}
-                    <div className="flex flex-col gap-4">
-
-                      {/* Active Actions */}
-                      <div className="border border-[#c0c7d0] dark:border-[#2b3e51] rounded bg-[#fafafa] dark:bg-zinc-900 shadow-xs">
-                        <div className="bg-[#e9eef4] dark:bg-[#1a2d3e] border-b border-[#c0c7d0] dark:border-[#2b3e51] px-3 py-1.5 font-bold text-[#2c3e50] dark:text-zinc-300 text-[10px] uppercase">
-                          ⚡ Campanhas em Execução
-                        </div>
-                        <div className="p-3">
-                          {activeCampaigns.length === 0 ? (
-                            <p className="text-[11px] text-[#7f8c8d] dark:text-zinc-500 italic">
-                              Nenhuma campanha ativa no momento.
-                            </p>
-                          ) : (
-                            <ul className="divide-y divide-[#eaeded] dark:divide-zinc-850 space-y-1.5">
-                              {activeCampaigns.map((c) => (
-                                <li key={c.id} className="pt-1.5 first:pt-0">
-                                  <p className="font-bold text-[#2c3e50] dark:text-zinc-200 truncate">{c.name}</p>
-                                  <p className="text-[9px] text-[#7f8c8d] dark:text-zinc-450">
-                                    Tipo: {CAMPAIGN_TYPE_LABELS[c.type]}
-                                  </p>
-                                  <div className="mt-1">
-                                    <CampaignWorkflow status={c.status} compact />
-                                  </div>
-                                </li>
-                              ))}
-                            </ul>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Portal Navigation Shortcuts */}
-                      <div className="border border-[#c0c7d0] dark:border-[#2b3e51] rounded bg-white dark:bg-zinc-950 shadow-xs">
-                        <div className="bg-[#e9eef4] dark:bg-[#1a2d3e] border-b border-[#c0c7d0] dark:border-[#2b3e51] px-3 py-1.5 font-bold text-[#2c3e50] dark:text-zinc-300 text-[10px] uppercase">
-                          🔌 Atalhos Rápidos
-                        </div>
-                        <div className="p-3 grid grid-cols-2 gap-2">
-                          {menuGroups
-                            .flatMap((g) => g.items)
-                            .filter((item) => !item.permission || can(item.permission))
-                            .map((item) => (
-                              <button
-                                key={item.id}
-                                onClick={() => handleOpenTab(item.id)}
-                                className="flex flex-col items-center justify-center p-2.5 border border-[#e2e8f0] dark:border-zinc-800 rounded bg-white dark:bg-zinc-950 hover:bg-[#f1f5f9] dark:hover:bg-zinc-900 hover:border-[#cbd5e1] dark:hover:border-zinc-700 text-[#34495e] dark:text-zinc-300 transition"
-                              >
-                                <span className="text-xl mb-1">{item.icon}</span>
-                                <span className="text-[9px] font-bold text-center">
-                                  {item.label}
-                                </span>
-                              </button>
-                            ))}
-                        </div>
-                      </div>
-
-                    </div>
-
-                  </div>
-                </div>
-              ) : (
-                // Dynamic Tab Panel Content
-                <div className="w-full h-full bg-white dark:bg-zinc-950">
-                  {allPanels[activeTab]?.component || (
-                    <div className="p-4 text-[#e74c3c] font-bold">
-                      Erro: Módulo não encontrado ou falha de carregamento.
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
+        {/* ── 5. CONTEÚDO DO MÓDULO ATIVO (TOTALMENTE RESPONSIVO) ── */}
+        <main className="flex-1 overflow-y-auto bg-[#F6F8FB]">
+          <div className="w-full h-full p-3 sm:p-5 lg:p-7">
+            {allPanels[activeTab]?.component || (
+              <div className="p-8 text-center text-red-600 font-bold bg-white rounded-xl border border-[#E2E8F0]">
+                Erro: Módulo não localizado.
+              </div>
+            )}
           </div>
         </main>
+
       </div>
-
-      {/* ---------------- SOUTH REGION: STATUSBAR ---------------- */}
-      <footer className="flex h-6 w-full shrink-0 items-center justify-between border-t border-[#c0c7d0] dark:border-[#2b3e51] bg-[#f0f0f0] dark:bg-[#111a24] px-3 text-[#555] dark:text-zinc-400 shadow-inner text-[10px]">
-        <div className="flex items-center gap-1.5">
-          <span className="inline-block h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-          <span>Status: Pronto</span>
-        </div>
-
-        <div className="hidden border-x border-[#c0c7d0] dark:border-[#2b3e51] px-4 sm:block">
-          <span>Usuário Conectado: <strong>{profileSettings.email}</strong></span>
-        </div>
-
-        <div>
-          <span>{currentTime || "Carregando..."}</span>
-        </div>
-      </footer>
-
     </div>
   );
 }

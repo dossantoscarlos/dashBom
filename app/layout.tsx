@@ -13,9 +13,14 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "CampanhaPro — Gestão de Campanha Eleitoral",
+  title: "campanhaPRO — Gestão de Campanha & Inteligência Eleitoral",
   description:
-    "Painel de gestão de campanhas eleitorais com CRM político, consulta TRE e relatórios",
+    "Plataforma oficial de inteligência eleitoral, gestão de comitês, voluntários e monitoramento TSE em tempo real.",
+  icons: {
+    icon: "/icon.svg",
+    shortcut: "/icon.svg",
+    apple: "/icon.svg",
+  },
 };
 
 export default function RootLayout({

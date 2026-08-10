@@ -22,6 +22,8 @@ export const initialRoles: Role[] = [
       "campanhas:gerenciar",
       "campanhas:visualizar",
       "campanhas:executar",
+      "financeiro:gerenciar",
+      "financeiro:visualizar",
       "perfil:visualizar",
     ],
   },
@@ -39,6 +41,8 @@ export const initialRoles: Role[] = [
       "tre:consultar",
       "campanhas:gerenciar",
       "campanhas:visualizar",
+      "financeiro:gerenciar",
+      "financeiro:visualizar",
       "perfil:visualizar",
     ],
   },
@@ -64,6 +68,7 @@ export const initialRoles: Role[] = [
       "relatorios:exportar",
       "tre:consultar",
       "campanhas:visualizar",
+      "financeiro:visualizar",
       "perfil:visualizar",
     ],
   },
@@ -79,6 +84,10 @@ export const allPermissions = [
   { id: "campanhas:gerenciar", label: "Gerenciar campanhas", group: "Campanhas" },
   { id: "campanhas:visualizar", label: "Visualizar campanhas", group: "Campanhas" },
   { id: "campanhas:executar", label: "Executar campanhas", group: "Campanhas" },
+
+  // ── Financeiro ──────────────────────────────────────────────────────────────
+  { id: "financeiro:gerenciar", label: "Gerenciar financeiro", group: "Financeiro" },
+  { id: "financeiro:visualizar", label: "Visualizar financeiro", group: "Financeiro" },
 
   // ── Usuários ───────────────────────────────────────────────────────────────
   { id: "usuarios:gerenciar", label: "Gerenciar usuários", group: "Usuários" },
@@ -109,3 +118,4 @@ export const allPermissions = [
   // ── Perfil ────────────────────────────────────────────────────────────────
   { id: "perfil:visualizar", label: "Visualizar perfil", group: "Perfil" },
 ];
+

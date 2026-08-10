@@ -1,6 +1,7 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { LoginForm } from "./login-form";
+import { CampaignProLogo } from "./components/CampaignProLogo";
+import { CampaignDecorations } from "./components/CampaignDecorations";
 import { getSession } from "@/lib/session";
 
 export default async function LoginPage() {
@@ -8,28 +9,35 @@ export default async function LoginPage() {
   if (session) redirect("/modulos");
 
   return (
-    <div className="flex flex-1 items-center justify-center bg-zinc-50 px-4 dark:bg-black">
-      <div className="w-full max-w-md rounded-2xl border border-zinc-200 bg-white p-8 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-        <div className="mb-8 text-center">
-          <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
-            Entrar
-          </h1>
-          <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-            Acesse sua conta para continuar
-          </p>
-        </div>
+    <main className="min-h-screen w-full bg-[#F5F7FA] flex items-center justify-center p-4 sm:p-6 font-sans select-none overflow-x-hidden">
+      {/* Container Principal Ajustado e Compacto */}
+      <div className="w-full max-w-[1240px] lg:max-h-[680px] rounded-[16px] bg-white shadow-xl overflow-hidden flex flex-col lg:flex-row border border-slate-200/70">
+        
+        {/* Painel Institucional Esquerdo (44.5%) */}
+        <section className="w-full lg:w-[44.5%] min-h-[220px] lg:min-h-[640px] bg-gradient-to-br from-[#071F3D] via-[#092A50] to-[#05162D] relative overflow-hidden flex flex-col justify-center px-6 sm:px-10 lg:px-12 py-8 lg:py-12 text-white shrink-0">
+          <CampaignDecorations />
 
-        <LoginForm />
+          <div className="relative z-10 flex flex-col gap-5 sm:gap-6 lg:gap-8 max-w-[460px]">
+            {/* Marca campanhaPRO */}
+            <CampaignProLogo />
 
-        <p className="mt-6 text-center text-sm text-zinc-500 dark:text-zinc-400">
-          <Link
-            href="/"
-            className="font-medium text-zinc-900 hover:underline dark:text-zinc-50"
-          >
-            Voltar ao início
-          </Link>
-        </p>
+            {/* Título e Subtítulo */}
+            <div className="flex flex-col gap-2.5 sm:gap-3">
+              <h1 className="text-2xl sm:text-3xl lg:text-[40px] font-extrabold text-white tracking-tight leading-[1.15]">
+                Bem-vindo de volta
+              </h1>
+              <p className="text-sm sm:text-base lg:text-[20px] font-normal text-white/80 tracking-normal leading-relaxed">
+                Acesse o centro de comando da sua campanha.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* Painel de Autenticação Direito (55.5%) */}
+        <section className="w-full lg:w-[55.5%] bg-white flex items-center justify-center p-6 sm:p-8 lg:p-12 overflow-y-auto">
+          <LoginForm />
+        </section>
       </div>
-    </div>
+    </main>
   );
 }

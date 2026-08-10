@@ -4,6 +4,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
 } from "react";
@@ -32,6 +33,7 @@ type DashboardContextValue = {
   finances: FinancialTransaction[];
   surveys: Survey[];
   currentRole: Role | null;
+  userEmail: string;
   getRegionName: (id: string) => string;
   getRoleName: (roleId: string) => string;
   can: (permission: string) => boolean;
@@ -85,9 +87,33 @@ export function DashboardProvider({
   const [partners, setPartners] = useState<Partner[]>(() =>
     initialPartners ?? [],
   );
-  const [locations, setLocations] = useState<Location[]>(() =>
-    initialLocations ?? [],
+  const [locations, setLocations] = useState<Location[]>(
+    () => initialLocations ?? [],
   );
+  const [isMounted, setIsMounted] = useState(false);
+
+  // Carregar do localStorage após a hidratação (evita Hydration Mismatch)
+  useEffect(() => {
+    setIsMounted(true);
+    try {
+      const saved = localStorage.getItem("dashbom_locations");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setLocations(parsed);
+        }
+      }
+    } catch {}
+  }, []);
+
+  // Persistir alterações de locais no localStorage após a montagem
+  useEffect(() => {
+    if (isMounted && typeof window !== "undefined") {
+      try {
+        localStorage.setItem("dashbom_locations", JSON.stringify(locations));
+      } catch {}
+    }
+  }, [locations, isMounted]);
   const [users, setUsers] = useState<DashboardUser[]>(() => {
     const users = initialUsers ?? [];
     if (!initialUser) return users;
@@ -151,6 +177,7 @@ export function DashboardProvider({
       finances,
       surveys,
       currentRole,
+      userEmail,
       getRegionName,
       getRoleName,
       can,
@@ -174,6 +201,7 @@ export function DashboardProvider({
       finances,
       surveys,
       currentRole,
+      userEmail,
       getRegionName,
       getRoleName,
       can,

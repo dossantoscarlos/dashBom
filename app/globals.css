@@ -4,7 +4,29 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
-  --font-size-base: 16pt;
+  --font-size-base: 18px;
+
+  /* SCSS/CSS Tokens — campanhaPRO Ext JS Modern Toolkit 7.8 */
+  --cp-navy-main: #06284F;
+  --cp-navy-dark: #031E3B;
+  --cp-navy-active: #17456F;
+  --cp-green-main: #008B63;
+  --cp-green-sec: #00A978;
+  --cp-green-light: #E8F7F1;
+  --cp-blue-main: #1264F3;
+  --cp-blue-light: #EAF2FF;
+  --cp-purple-main: #7928F5;
+  --cp-purple-light: #F3EAFF;
+  --cp-orange-main: #F59E0B;
+  --cp-orange-light: #FFF4E5;
+  --cp-red-main: #EF4444;
+  --cp-bg-main: #F6F8FB;
+  --cp-surface: #FFFFFF;
+  --cp-text-main: #10213D;
+  --cp-text-sec: #64748B;
+  --cp-border: #E2E8F0;
+  --cp-track: #EDF1F5;
+  --cp-shadow: rgba(15, 35, 65, 0.06);
 }
 
 @theme inline {
@@ -21,12 +43,109 @@
   }
 }
 
+html {
+  font-size: 18px;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+  font-family: var(--font-geist-sans), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
-  font-size: var(--font-size-base);
+  -moz-osx-font-smoothing: grayscale;
+  font-size: 1rem;
+  line-height: 1.6;
+  letter-spacing: -0.01em;
+}
+
+/* ==========================================================================
+   Classes de Estilo Específicas campanhaPRO Ext JS Modern Toolkit 7.8
+   ========================================================================== */
+
+.campaignpro-shell {
+  background-color: var(--cp-bg-main);
+  min-height: 100vh;
+  color: var(--cp-text-main);
+}
+
+.campaignpro-sidebar {
+  background-color: var(--cp-navy-main);
+  color: #FFFFFF;
+}
+
+.campaignpro-brand {
+  font-family: system-ui, sans-serif;
+  font-weight: 800;
+  color: #FFFFFF;
+}
+
+.campaignpro-live-pill {
+  background-color: var(--cp-navy-dark);
+  border: 1px solid rgba(0, 169, 120, 0.3);
+  border-radius: 9999px;
+  color: #FFFFFF;
+}
+
+.campaignpro-topbar {
+  background-color: var(--cp-surface);
+  border-bottom: 1px solid var(--cp-border);
+}
+
+.campaignpro-workspace-tabs {
+  background-color: var(--cp-surface);
+  border-bottom: 1px solid var(--cp-border);
+}
+
+.campaignpro-status-banner {
+  background-color: var(--cp-green-light);
+  border: 1px solid #BCEBDC;
+  border-radius: 8px;
+}
+
+.campaignpro-kpi-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.campaignpro-kpi-card {
+  background-color: var(--cp-surface);
+  border: 1px solid var(--cp-border);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px var(--cp-shadow);
+}
+
+.campaignpro-content-panel {
+  background-color: var(--cp-surface);
+  border: 1px solid var(--cp-border);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px var(--cp-shadow);
+}
+
+.campaignpro-party-row {
+  border-bottom: 1px solid #F1F5F9;
+}
+
+.campaignpro-calendar-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.campaignpro-news-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.campaignpro-status-pill {
+  background-color: var(--cp-green-light);
+  color: var(--cp-green-main);
+  border-radius: 4px;
+}
+
+.campaignpro-footer-notice {
+  background-color: #F8FAFC;
+  border: 1px solid var(--cp-border);
+  border-radius: 6px;
+  color: var(--cp-text-sec);
 }
 
 @media print {
