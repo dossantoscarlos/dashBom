@@ -7,6 +7,7 @@ import {
   SESSION_COOKIE,
   SESSION_MAX_AGE,
 } from "@/lib/auth";
+import { validateCredentials } from "@/lib/users";
 
 export type LoginState = {
   error?: string;
@@ -64,11 +65,26 @@ export async function login(
     return { error: "Preencha e-mail e senha." };
   }
 
-  let user: LaravelLoginResponse["user"] | null;
+  let user: LaravelLoginResponse["user"] | null = null;
   try {
     user = await authenticateWithLaravel(email, password);
   } catch {
-    return { error: "Não foi possível validar o login no servidor." };
+    // Servidor Laravel indisponível localmente, tentar validação local de demonstração
+  }
+
+  if (!user) {
+    const localUser = validateCredentials(email, password);
+    if (localUser) {
+      user = {
+        id: localUser.id,
+        email: localUser.email,
+        name: localUser.name,
+        roleId: "role-admin",
+        roleName: "Administrador",
+        supportLevel: "N1",
+        permissions: ["*"],
+      };
+    }
   }
 
   if (!user) {

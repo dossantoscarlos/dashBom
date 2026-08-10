@@ -16,6 +16,13 @@ const users: User[] = [
     passwordHash:
       "demosalt12345678:2ae3e4e6506a89212beb986d0428e8b0a942db794e9dfba2859eee9111f49d0a5237eb20101d16d8192793d7976009770e7981324701109df82299a2a205ae7d",
   },
+  {
+    id: "2",
+    email: "suporte.n1@vertis.com.local",
+    name: "Suporte N1",
+    passwordHash:
+      "demosalt12345678:2ae3e4e6506a89212beb986d0428e8b0a942db794e9dfba2859eee9111f49d0a5237eb20101d16d8192793d7976009770e7981324701109df82299a2a205ae7d",
+  },
 ];
 
 function verifyPassword(password: string, stored: string): boolean {

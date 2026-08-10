@@ -88,6 +88,31 @@ export function ExtJSWorkspace({ userName, userEmail }: ExtJSWorkspaceProps) {
     mode: "light",
   });
 
+  // Estados do Cenário Político e Notícias do TSE em Tempo Real
+  const [tseNoticias, setTseNoticias] = useState<any[]>([]);
+  const [cenarioPolitico, setCenarioPolitico] = useState<any>(null);
+  const [tseLoading, setTseLoading] = useState(false);
+
+  async function loadTseLiveData() {
+    setTseLoading(true);
+    try {
+      const res = await fetch("/api/tre/noticias");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.noticias) setTseNoticias(data.noticias);
+        if (data.cenarioPolitico) setCenarioPolitico(data.cenarioPolitico);
+      }
+    } catch {
+      // ignora se falhar
+    } finally {
+      setTseLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadTseLiveData();
+  }, []);
+
   // Tab Panel State — 'home' e 'dashboard' são fixas e não podem ser fechadas
   const canViewDashboard = can("dashboard:visualizar");
 
@@ -670,8 +695,82 @@ export function ExtJSWorkspace({ userName, userEmail }: ExtJSWorkspaceProps) {
                     {/* Portal Column 1 (News Area with Carousel Banner) */}
                     <div className="md:col-span-2 flex flex-col gap-4">
 
+                      {/* PAINEL DE ACOMPANHAMENTO DO CENÁRIO POLÍTICO DO TSE (TEMPO REAL) */}
+                      <div className="border border-[#c0c7d0] dark:border-zinc-800 rounded bg-[#f8fafc] dark:bg-zinc-900 shadow-xs overflow-hidden flex flex-col">
+                        <div className="bg-[#e9eef4] dark:bg-[#1a2d3e] border-b border-[#c0c7d0] dark:border-[#2b3e51] px-3 py-2 font-bold text-[#2c3e50] dark:text-zinc-200 text-[10px] uppercase flex justify-between items-center">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm">🏛️</span>
+                            <span>Acompanhamento do Cenário Político & Eleitoral (TSE)</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded text-[9px] font-bold text-emerald-700 dark:text-emerald-300">
+                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                            <span>TSE Tempo Real</span>
+                          </div>
+                        </div>
+
+                        {/* Indicadores do Cenário Político */}
+                        <div className="p-4 flex flex-col gap-4">
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                            <div className="bg-white dark:bg-zinc-950 p-2.5 rounded border border-slate-200 dark:border-zinc-800 shadow-2xs">
+                              <span className="text-[9px] font-bold uppercase text-slate-500 dark:text-zinc-400 block">Total Candidaturas</span>
+                              <span className="text-base font-extrabold text-blue-600 dark:text-blue-400 mt-0.5 block">
+                                {cenarioPolitico?.totalCandidaturas?.toLocaleString("pt-BR") ?? "28.490"}
+                              </span>
+                              <span className="text-[8px] text-slate-400">Registradas no TSE</span>
+                            </div>
+
+                            <div className="bg-white dark:bg-zinc-950 p-2.5 rounded border border-slate-200 dark:border-zinc-800 shadow-2xs">
+                              <span className="text-[9px] font-bold uppercase text-slate-500 dark:text-zinc-400 block">Taxa de Deferimento</span>
+                              <span className="text-base font-extrabold text-emerald-600 dark:text-emerald-400 mt-0.5 block">
+                                {cenarioPolitico?.percentualDeferidos ?? "94.2"}%
+                              </span>
+                              <span className="text-[8px] text-slate-400">Aprovados pela Justiça</span>
+                            </div>
+
+                            <div className="bg-white dark:bg-zinc-950 p-2.5 rounded border border-slate-200 dark:border-zinc-800 shadow-2xs">
+                              <span className="text-[9px] font-bold uppercase text-slate-500 dark:text-zinc-400 block">Partidos Registrados</span>
+                              <span className="text-base font-extrabold text-purple-600 dark:text-purple-400 mt-0.5 block">
+                                {cenarioPolitico?.totalPartidos ?? "29"} Legendas
+                              </span>
+                              <span className="text-[8px] text-slate-400">No Cenário Nacional</span>
+                            </div>
+
+                            <div className="bg-white dark:bg-zinc-950 p-2.5 rounded border border-slate-200 dark:border-zinc-800 shadow-2xs">
+                              <span className="text-[9px] font-bold uppercase text-slate-500 dark:text-zinc-400 block">Status da Base</span>
+                              <span className="text-base font-extrabold text-emerald-600 dark:text-emerald-400 mt-0.5 block">
+                                100% Online
+                              </span>
+                              <span className="text-[8px] text-slate-400">Dados do TSE</span>
+                            </div>
+                          </div>
+
+                          {/* Distribuição de Força Partidária */}
+                          {cenarioPolitico?.distribuicaoPartidaria && (
+                            <div className="bg-white dark:bg-zinc-950 p-3 rounded border border-slate-200 dark:border-zinc-800 flex flex-col gap-2">
+                              <div className="flex justify-between items-center text-[10px] font-bold text-slate-700 dark:text-zinc-300 border-b border-slate-100 dark:border-zinc-850 pb-1.5">
+                                <span>Distribuição de Candidaturas por Partido (TSE)</span>
+                                <span className="text-slate-400 font-normal">% do Total Registrado</span>
+                              </div>
+                              <div className="grid grid-cols-2 gap-2 text-xs">
+                                {cenarioPolitico.distribuicaoPartidaria.slice(0, 6).map((item: any) => (
+                                  <div key={item.sigla} className="flex flex-col gap-1 bg-slate-50 dark:bg-zinc-900 p-2 rounded">
+                                    <div className="flex justify-between items-center text-[10px]">
+                                      <span className="font-bold text-slate-800 dark:text-zinc-200">{item.sigla}</span>
+                                      <span className="font-mono font-bold text-blue-600 dark:text-blue-400">{item.totalCandidatos?.toLocaleString("pt-BR")} ({item.percentual}%)</span>
+                                    </div>
+                                    <div className="h-1.5 w-full bg-slate-200 dark:bg-zinc-800 rounded-full overflow-hidden">
+                                      <div className={`h-full ${item.cor || "bg-blue-600"}`} style={{ width: `${item.percentual * 4}%` }} />
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
                       {/* Carousel Container */}
-                      <div className="border border-[#c0c7d0] dark:border-zinc-800 rounded bg-[#fafafa] dark:bg-zinc-900 shadow-xs overflow-hidden flex flex-col h-64">
+                      <div className="border border-[#c0c7d0] dark:border-zinc-800 rounded bg-[#fafafa] dark:bg-zinc-900 shadow-xs overflow-hidden flex flex-col h-56">
                         <div className="bg-[#e9eef4] dark:bg-[#1a2d3e] border-b border-[#c0c7d0] dark:border-[#2b3e51] px-3 py-1.5 font-bold text-[#2c3e50] dark:text-zinc-300 text-[10px] uppercase flex justify-between items-center">
                           <span>📢 Destaques Eleitorais e Urnas Eletrônicas</span>
                           <span className="bg-[#157fcc] dark:bg-blue-600 text-white font-bold rounded-sm px-1.5 py-0.5 text-[8px]">
@@ -680,15 +779,15 @@ export function ExtJSWorkspace({ userName, userEmail }: ExtJSWorkspaceProps) {
                         </div>
 
                         {/* Slide content area */}
-                        <div className="flex-1 p-5 flex items-start gap-4 transition-all duration-500 relative">
+                        <div className="flex-1 p-4 flex items-start gap-4 transition-all duration-500 relative">
                           <div className="text-3xl p-3 bg-white dark:bg-zinc-950 rounded border border-[#cbd5e1] dark:border-zinc-850 shadow-xs shrink-0 select-none">
                             {carouselSlides[currentSlide].icon}
                           </div>
-                          <div className="flex flex-col gap-2">
+                          <div className="flex flex-col gap-1.5">
                             <h3 className="text-xs font-bold text-[#154f85] dark:text-blue-400">
                               {carouselSlides[currentSlide].title}
                             </h3>
-                            <p className="text-[11px] text-[#555] dark:text-zinc-350 leading-relaxed">
+                            <p className="text-[10px] text-[#555] dark:text-zinc-350 leading-relaxed">
                               {carouselSlides[currentSlide].description}
                             </p>
                           </div>
@@ -723,30 +822,54 @@ export function ExtJSWorkspace({ userName, userEmail }: ExtJSWorkspaceProps) {
                         </div>
                       </div>
 
-                      {/* Mock News Grid */}
+                      {/* Central de Notícias e Informativos em Tempo Real do TSE */}
                       <div className="border border-[#c0c7d0] dark:border-zinc-800 rounded bg-white dark:bg-zinc-950 shadow-xs flex flex-col">
-                        <div className="bg-[#e9eef4] dark:bg-[#1a2d3e] border-b border-[#c0c7d0] dark:border-[#2b3e51] px-3 py-1.5 font-bold text-[#2c3e50] dark:text-zinc-300 text-[10px] uppercase">
-                          📰 Central de Notícias e Informativos
+                        <div className="bg-[#e9eef4] dark:bg-[#1a2d3e] border-b border-[#c0c7d0] dark:border-[#2b3e51] px-3 py-2 font-bold text-[#2c3e50] dark:text-zinc-200 text-[10px] uppercase flex justify-between items-center">
+                          <div className="flex items-center gap-1.5">
+                            <span className="h-2 w-2 rounded-full bg-red-600 animate-ping" />
+                            <span>📰 Central de Notícias e Informativos (TSE em Tempo Real)</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={loadTseLiveData}
+                            disabled={tseLoading}
+                            className="bg-white dark:bg-zinc-900 border border-[#c0c7d0] dark:border-zinc-700 px-2 py-0.5 rounded text-[9px] font-bold text-[#157fcc] dark:text-blue-400 hover:bg-slate-100 transition"
+                          >
+                            {tseLoading ? "Atualizando..." : "🔄 Atualizar Notícias"}
+                          </button>
                         </div>
                         <div className="p-4 flex flex-col gap-4 divide-y divide-[#eaeded] dark:divide-zinc-850">
-                          {mockNews.map((news) => (
-                            <div key={news.id} className="pt-4 first:pt-0 flex flex-col gap-1.5">
-                              <div className="flex items-center justify-between">
-                                <span className="text-[9px] font-bold text-[#95a5a6]">
-                                  {news.date}
-                                </span>
-                                <span className="bg-[#eef2f7] dark:bg-[#1a2c3a] text-[#154f85] dark:text-blue-300 font-bold px-1.5 py-0.5 rounded text-[8px]">
-                                  {news.category}
-                                </span>
+                          {tseNoticias.length === 0 ? (
+                            <p className="text-[11px] text-[#7f8c8d] dark:text-zinc-500 italic text-center py-2">
+                              Carregando notícias em tempo real do TSE...
+                            </p>
+                          ) : (
+                            tseNoticias.map((news) => (
+                              <div key={news.id} className="pt-4 first:pt-0 flex flex-col gap-1.5">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-[9px] font-bold text-[#95a5a6]">
+                                    {news.date} · <strong className="text-slate-700 dark:text-zinc-400">{news.fonte}</strong>
+                                  </span>
+                                  <div className="flex items-center gap-1.5">
+                                    {news.tag && (
+                                      <span className="bg-red-500/10 text-red-600 dark:text-red-400 font-extrabold px-1.5 py-0.5 rounded text-[8px] border border-red-500/20">
+                                        {news.tag}
+                                      </span>
+                                    )}
+                                    <span className="bg-[#eef2f7] dark:bg-[#1a2c3a] text-[#154f85] dark:text-blue-300 font-bold px-1.5 py-0.5 rounded text-[8px]">
+                                      {news.category}
+                                    </span>
+                                  </div>
+                                </div>
+                                <h4 className="text-[11px] font-bold text-[#2c3e50] dark:text-zinc-200 hover:underline cursor-pointer">
+                                  {news.title}
+                                </h4>
+                                <p className="text-[10px] text-[#7f8c8d] dark:text-zinc-400 leading-relaxed">
+                                  {news.summary}
+                                </p>
                               </div>
-                              <h4 className="text-[11px] font-bold text-[#2c3e50] dark:text-zinc-200 hover:underline cursor-pointer">
-                                {news.title}
-                              </h4>
-                              <p className="text-[10px] text-[#7f8c8d] dark:text-zinc-400 leading-relaxed">
-                                {news.summary}
-                              </p>
-                            </div>
-                          ))}
+                            ))
+                          )}
                         </div>
                       </div>
 

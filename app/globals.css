@@ -28,3 +28,41 @@ body {
   -webkit-font-smoothing: antialiased;
   font-size: var(--font-size-base);
 }
+
+@media print {
+  header,
+  aside,
+  nav,
+  form,
+  button,
+  .print-hidden,
+  .no-print {
+    display: none !important;
+  }
+
+  body, html {
+    background: #ffffff !important;
+    color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: 10pt !important;
+  }
+
+  section {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
+  }
+
+  .print-only-report {
+    display: block !important;
+    width: 100% !important;
+  }
+
+  .print-page-break-avoid {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+}
