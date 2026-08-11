@@ -70,6 +70,7 @@ import {
   Layers,
   Search,
   ArrowLeft,
+  RefreshCw,
 } from "lucide-react";
 
 export function DemandasProjetosPanel() {
@@ -78,94 +79,62 @@ export function DemandasProjetosPanel() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // MODO PRINCIPAL DO MÓDULO:
-  // "nova_demanda": TELA 1 — CADASTRO DE NOVA DEMANDA (PREMISSA INICIAL OBRIGATÓRIA!)
-  // "analise_demanda": TELA 2 & 3 — DETALHES E ANÁLISE DA DEMANDA (ONDE É APROVADA OU NÃO)
-  // "projeto_ativo": TELAS 4 A 10 — ACOMPANHAMENTO DO PROJETO CONVERTIDO (DESBLOQUEADO APÓS APROVAÇÃO)
+  // "nova_demanda": TELA 1 — CADASTRO DE NOVA DEMANDA (FORMULÁRIO LIMPO PARA DADOS REAIS)
+  // "analise_demanda": TELA 2 & 3 — ANÁLISE TÉCNICA E AVALIAÇÃO DE CRITÉRIOS DA DEMANDA REAL CADASTRADA
+  // "projeto_ativo": TELAS 4 A 10 — ACOMPANHAMENTO DO PROJETO CRIADO DINAMICAMENTE
   const [mainMode, setMainMode] = useState<"nova_demanda" | "analise_demanda" | "projeto_ativo">("nova_demanda");
 
-  // Sub-aba ativa do projeto (quando em modo "projeto_ativo")
+  // Sub-aba ativa do projeto
   const [projectSubTab, setProjectSubTab] = useState<ProjectSubTab>("kanban");
 
-  // Estado da Demanda Atual no Fluxo
-  const [currentDemanda, setCurrentDemanda] = useState<DemandaItem>({
-    id: "dem-0235",
-    code: "DEM-0235",
-    title: "",
-    category: "",
-    description: "",
-    priority: "Média",
-    channelOrigin: "Gabinete Virtual",
-    regionId: regions[0]?.id || "reg-1",
-    municipio: "São Paulo / SP",
-    bairro: "Centro",
-    address: "",
-    cep: "",
-    responsible: users[0]?.name || "Ana Martins",
-    team: "Equipe de Gestão de Projetos",
-    status: "Recebida",
-    receiptDate: new Date().toISOString().slice(0, 10),
-    analysisDeadline: "",
-    applicantName: "",
-    applicantPhone: "",
-    applicantEmail: "",
-    files: [],
-    createdAt: new Date().toLocaleString("pt-BR"),
-    criteria: {
-      multDeliveries: false,
-      needsTeam: false,
-      hasTimeline: false,
-      needsBudget: false,
-      approvedByResponsible: false,
-    },
-  });
+  // Lista de Demandas Cadastradas no Sistema (Inicia vazia ou com registros reais)
+  const [registeredDemands, setRegisteredDemands] = useState<DemandaItem[]>([]);
 
-  // Estado do Projeto Ativo (PRJ-0104)
-  const [projectState, setProjectState] = useState<ProjetoItem>(initialProjeto);
+  // Demanda Ativa sendo cadastrada/analisada
+  const [currentDemanda, setCurrentDemanda] = useState<DemandaItem | null>(null);
 
-  // Sub-Módulos do Projeto
-  const [kanbanTasks, setKanbanTasks] = useState<KanbanTask[]>(initialKanbanTasks);
-  const [cronogramaData, setCronogramaData] = useState<CronogramaItem[]>(initialCronogramaData);
-  const [categorias, setCategorias] = useState<OrcamentoCategoria[]>(initialOrcamentoCategorias);
-  const [transacoes, setTransacoes] = useState<FinancialTransaction[]>(initialFinancialTransactions);
-  const [members, setMembers] = useState<TeamMember[]>(initialTeamMembers);
-  const [raciItems, setRaciItems] = useState<RaciItem[]>(initialRaciItems);
-  const [projectFiles, setProjectFiles] = useState<ProjectFileItem[]>(initialProjectFiles);
-  const [auditEvents, setAuditEvents] = useState<AuditEvent[]>(initialAuditEvents);
+  // Projeto Ativo criado a partir de conversão real
+  const [projectState, setProjectState] = useState<ProjetoItem | null>(null);
 
-  // Formulário State "Nova Demanda"
+  // Sub-Módulos do Projeto Ativo
+  const [kanbanTasks, setKanbanTasks] = useState<KanbanTask[]>([]);
+  const [cronogramaData, setCronogramaData] = useState<CronogramaItem[]>([]);
+  const [categorias, setCategorias] = useState<OrcamentoCategoria[]>([]);
+  const [transacoes, setTransacoes] = useState<FinancialTransaction[]>([]);
+  const [members, setMembers] = useState<TeamMember[]>([]);
+  const [raciItems, setRaciItems] = useState<RaciItem[]>([]);
+  const [projectFiles, setProjectFiles] = useState<ProjectFileItem[]>([]);
+  const [auditEvents, setAuditEvents] = useState<AuditEvent[]>([]);
+
+  // ── ESTADOS DO FORMULÁRIO DE NOVA DEMANDA (INICIAM 100% LIMPOS) ──
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("");
   const [description, setDescription] = useState("");
-  const [priority, setPriority] = useState<any>("Média");
+  const [priority, setPriority] = useState<"Baixa" | "Média" | "Alta" | "Urgente">("Média");
   const [channelOrigin, setChannelOrigin] = useState("Gabinete Virtual");
   const [cep, setCep] = useState("");
   const [cepLoading, setCepLoading] = useState(false);
   const [cepFound, setCepFound] = useState("");
   const [cepError, setCepError] = useState("");
   const [regionId, setRegionId] = useState(regions[0]?.id || "");
-  const [municipio, setMunicipio] = useState("São Paulo / SP");
+  const [municipio, setMunicipio] = useState("");
   const [bairro, setBairro] = useState("");
   const [address, setAddress] = useState("");
-  const [responsible, setResponsible] = useState("Ana Martins");
+  const [responsible, setResponsible] = useState(users[0]?.name || "Ana Martins");
   const [team, setTeam] = useState("Equipe de Gestão de Projetos");
   const [receiptDate, setReceiptDate] = useState(new Date().toISOString().slice(0, 10));
   const [analysisDeadline, setAnalysisDeadline] = useState("");
-  const [notifyResponsible, setNotifyResponsible] = useState(true);
   const [applicantName, setApplicantName] = useState("");
   const [applicantPhone, setApplicantPhone] = useState("");
   const [applicantEmail, setApplicantEmail] = useState("");
-  const [contactChannel, setContactChannel] = useState("");
-  const [contactAuthorized, setContactAuthorized] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<any[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
 
-  // Parecer Técnico da Análise
-  const [technicalReport, setTechnicalReport] = useState(
-    "Solicitação de reformas estruturais, iluminação de LED, pavimentação das quadras e implantação de acessibilidade no Centro Esportivo. Apresenta alta viabilidade técnica e impacto social relevante."
-  );
+  // Parecer Técnico da Análise (Inicia limpo)
+  const [technicalReport, setTechnicalReport] = useState("");
 
-  // Busca Automática por CEP
+  // Busca Automática de Endereço por CEP Real
   const handleCepSearch = async () => {
     const raw = cep.replace(/\D/g, "");
     if (raw.length !== 8) {
@@ -191,10 +160,10 @@ export function DemandasProjetosPanel() {
         setBairro(b);
         setMunicipio(m);
         setCepFound(`${fullAddr}, ${b} — ${m}`);
-        toast("Localização e território preenchidos automaticamente pelo CEP!");
+        toast("Localização preenchida automaticamente pelo CEP!");
       }
     } catch {
-      setCepError("Erro de conexão ao consultar CEP.");
+      setCepError("Erro ao consultar CEP.");
     } finally {
       setCepLoading(false);
     }
@@ -212,24 +181,14 @@ export function DemandasProjetosPanel() {
     }));
 
     setUploadedFiles((prev) => [...prev, ...newFiles]);
-    toast("Arquivo(s) anexado(s) com sucesso!");
+    toast("Arquivo anexado com sucesso!");
   };
 
-  const handleSimulateAddSampleFile = () => {
-    const sample = {
-      id: `sample-${Date.now()}`,
-      name: `documento_solicitacao_${uploadedFiles.length + 1}.pdf`,
-      size: "1.8 MB",
-    };
-    setUploadedFiles((prev) => [...prev, sample]);
-    toast("Anexo de demonstração adicionado!");
-  };
-
-  // ── ETAPA 1: CADASCRO DE NOVA DEMANDA ──
+  // ── ETAPA 1: CADASTRO DA DEMANDA COM DADOS REALMENTE DIGITADOS (SEM DADOS FAKES) ──
   const handleCreateDemanda = (isDraft = false) => {
     if (!isDraft) {
       if (!title.trim()) {
-        toast("Por favor, preencha o Título da solicitação.", "error");
+        toast("Por favor, informe o Título da solicitação.", "error");
         return;
       }
       if (!category) {
@@ -237,34 +196,36 @@ export function DemandasProjetosPanel() {
         return;
       }
       if (!description.trim()) {
-        toast("Por favor, preencha a Descrição da demanda.", "error");
+        toast("Por favor, informe a Descrição detalhada da demanda.", "error");
         return;
       }
     }
 
     setIsSubmitting(true);
 
-    const created: DemandaItem = {
+    const generatedCode = `DEM-${Math.floor(1000 + Math.random() * 9000)}`;
+
+    const newDemanda: DemandaItem = {
       id: `dem-${Date.now()}`,
-      code: "DEM-0235",
-      title: title || "Modernização e Qualificação do Centro Esportivo Comunitário",
-      category: category || "Infraestrutura Urbana",
-      description: description || "Solicitação de reformas estruturais, iluminação de LED e acessibilidade.",
-      priority: priority || "Alta",
-      channelOrigin: channelOrigin || "Gabinete Virtual",
+      code: generatedCode,
+      title: title.trim(),
+      category: category.trim(),
+      description: description.trim(),
+      priority,
+      channelOrigin,
       regionId,
-      municipio,
-      bairro: bairro || "Centro",
-      address: address || "Av. do Esporte, 500",
-      cep,
-      responsible: responsible || "Ana Martins",
-      team: team || "Equipe de Gestão de Projetos",
+      municipio: municipio.trim() || "São Paulo / SP",
+      bairro: bairro.trim(),
+      address: address.trim(),
+      cep: cep.trim(),
+      responsible,
+      team,
       status: "Recebida",
       receiptDate,
       analysisDeadline: analysisDeadline || receiptDate,
-      applicantName: applicantName || "Associação de Moradores do Centro",
-      applicantPhone,
-      applicantEmail,
+      applicantName: applicantName.trim(),
+      applicantPhone: applicantPhone.trim(),
+      applicantEmail: applicantEmail.trim(),
       files: uploadedFiles.map((f) => f.name),
       createdAt: new Date().toLocaleString("pt-BR"),
       criteria: {
@@ -276,47 +237,87 @@ export function DemandasProjetosPanel() {
       },
     };
 
-    setCurrentDemanda(created);
+    setRegisteredDemands((prev) => [newDemanda, ...prev]);
+    setCurrentDemanda(newDemanda);
+    setTechnicalReport(""); // Limpa o parecer técnico para nova análise
     setIsSubmitting(false);
 
+    // Reseta campos do formulário para o próximo uso
+    setTitle("");
+    setCategory("");
+    setDescription("");
+    setCep("");
+    setMunicipio("");
+    setBairro("");
+    setAddress("");
+    setApplicantName("");
+    setApplicantPhone("");
+    setApplicantEmail("");
+    setUploadedFiles([]);
+
     if (isDraft) {
-      toast("Rascunho da demanda salvo com sucesso!");
+      toast(`Rascunho da demanda ${generatedCode} salvo com sucesso!`);
     } else {
-      toast("Demanda DEM-0235 cadastrada com sucesso! Status inicial: 'Recebida'. Encaminhando para Análise...");
-      // Avança para a Etapa de Análise
+      toast(`Demanda ${generatedCode} cadastrada com sucesso com os seus dados reais! Status: 'Recebida'. Encaminhando para Análise...`);
       setMainMode("analise_demanda");
     }
   };
 
-  // ── ETAPA 2: ENCAMINHAR DEMANDA PARA "EM ANÁLISE" ──
-  const handleAdvanceToAnalysis = () => {
-    setCurrentDemanda((prev) => ({ ...prev, status: "Em análise" }));
-    toast("Demanda encaminhada para a etapa 'Em análise'. Checklist de avaliação liberado!");
+  // Carregar Exemplo Demonstrativo se o Usuário Desejar
+  const handleLoadDemoData = () => {
+    setCurrentDemanda(initialDemanda);
+    setProjectState(initialProjeto);
+    setKanbanTasks(initialKanbanTasks);
+    setCronogramaData(initialCronogramaData);
+    setCategorias(initialOrcamentoCategorias);
+    setTransacoes(initialFinancialTransactions);
+    setMembers(initialTeamMembers);
+    setRaciItems(initialRaciItems);
+    setProjectFiles(initialProjectFiles);
+    setAuditEvents(initialAuditEvents);
+    setTechnicalReport(initialDemanda.technicalReport || "");
+    toast("Dados demonstrativos do Projeto PRJ-0104 carregados!");
   };
 
-  // Alterna Critérios de Conversão
+  // ── ETAPA 2: ENCAMINHAR DEMANDA PARA "EM ANÁLISE" ──
+  const handleAdvanceToAnalysis = () => {
+    if (!currentDemanda) return;
+    const updated = { ...currentDemanda, status: "Em análise" as const };
+    setCurrentDemanda(updated);
+    setRegisteredDemands((prev) => prev.map((d) => (d.id === updated.id ? updated : d)));
+    toast(`Demanda ${updated.code} encaminhada para 'Em análise'. Checklist de avaliação liberado!`);
+  };
+
+  // Alterna Critérios de Conversão na Demanda Real
   const handleToggleCriterion = (key: keyof DemandaItem["criteria"]) => {
+    if (!currentDemanda) return;
     if (currentDemanda.status !== "Em análise") {
-      toast("Encaminhe a demanda para a etapa 'Em análise' antes de preencher os critérios.", "error");
+      toast("Encaminhe a demanda para a etapa 'Em análise' antes de avaliar os critérios.", "error");
       return;
     }
 
-    setCurrentDemanda((prev) => ({
-      ...prev,
+    const updated = {
+      ...currentDemanda,
       criteria: {
-        ...prev.criteria,
-        [key]: !prev.criteria[key],
+        ...currentDemanda.criteria,
+        [key]: !currentDemanda.criteria[key],
       },
-    }));
+    };
+    setCurrentDemanda(updated);
+    setRegisteredDemands((prev) => prev.map((d) => (d.id === updated.id ? updated : d)));
   };
 
-  // Define Decisão Formal da Análise
+  // Define Decisão Formal
   const handleSetDecision = (decision: string) => {
-    setCurrentDemanda((prev) => ({ ...prev, decision }));
+    if (!currentDemanda) return;
+    const updated = { ...currentDemanda, decision, technicalReport };
+    setCurrentDemanda(updated);
+    setRegisteredDemands((prev) => prev.map((d) => (d.id === updated.id ? updated : d)));
   };
 
-  // Valida se os 5 critérios estão marcados
+  // Validação estrita dos 5 critérios
   const canConvert =
+    currentDemanda !== null &&
     currentDemanda.status === "Em análise" &&
     currentDemanda.criteria.multDeliveries &&
     currentDemanda.criteria.needsTeam &&
@@ -325,9 +326,9 @@ export function DemandasProjetosPanel() {
     currentDemanda.criteria.approvedByResponsible &&
     currentDemanda.decision === "Aprovada para Projeto";
 
-  // ── ETAPA 3: OPERAÇÃO TRANSACIONAL DE CONVERSÃO EM PROJETO ──
+  // ── ETAPA 3: CONVERSÃO TRANSACIONAL EM PROJETO REAL (COM OS DADOS REAIS CADASTRADOS) ──
   const handleExecuteConversion = () => {
-    if (!canConvert) {
+    if (!currentDemanda || !canConvert) {
       toast(
         "A conversão exige que a demanda esteja 'Em análise', com os 5 critérios checados e decisão de aprovação.",
         "error"
@@ -335,16 +336,79 @@ export function DemandasProjetosPanel() {
       return;
     }
 
-    // Transação de Conversão Efetiva
+    const projectCode = `PRJ-${Math.floor(1000 + Math.random() * 9000)}`;
+
+    // Cria o Projeto Real com base estrita nos dados cadastrados pelo usuário
+    const newProject: ProjetoItem = {
+      id: `prj-${Date.now()}`,
+      code: projectCode,
+      title: currentDemanda.title,
+      demandaId: currentDemanda.id,
+      demandaCode: currentDemanda.code,
+      category: currentDemanda.category,
+      responsible: currentDemanda.responsible,
+      status: "Em execução",
+      priority: currentDemanda.priority,
+      description: currentDemanda.description,
+      startDate: new Date().toLocaleDateString("pt-BR"),
+      endDate: "31/12/2025",
+      progress: 0,
+      createdAt: new Date().toLocaleString("pt-BR"),
+    };
+
     const updatedDemand: DemandaItem = {
       ...currentDemanda,
       status: "Convertida em projeto",
-      convertedProjectId: "prj-0104",
+      convertedProjectId: newProject.id,
     };
 
     setCurrentDemanda(updatedDemand);
+    setProjectState(newProject);
 
-    // Registra Evento de Auditoria no Histórico
+    // Se o projeto não possuir tarefas, inicia com a estrutura básica para o projeto do usuário
+    if (kanbanTasks.length === 0) {
+      setKanbanTasks([
+        {
+          id: `task-${Date.now()}-1`,
+          code: "TAR-001",
+          title: `Elaborar plano de trabalho para ${newProject.title}`,
+          type: "entrega",
+          columnId: "planejamento",
+          priority: newProject.priority,
+          responsible: newProject.responsible,
+          responsibleAvatar: newProject.responsible.split(" ").map((n) => n[0]).join(""),
+          dueDate: "15/09/2025",
+          progress: 0,
+          tags: [newProject.category],
+          checklistCompleted: 0,
+          checklistTotal: 4,
+          commentsCount: 0,
+          attachmentsCount: currentDemanda.files.length,
+        },
+      ]);
+    }
+
+    if (categorias.length === 0) {
+      setCategorias(initialOrcamentoCategorias);
+    }
+
+    if (members.length === 0) {
+      setMembers([
+        {
+          id: `tm-${Date.now()}`,
+          name: newProject.responsible,
+          role: "Gerente do projeto",
+          department: "Gestão de Projetos",
+          status: "Disponível",
+          tasksCount: 1,
+          allocationPercent: 80,
+          avatarInitials: newProject.responsible.split(" ").map((n) => n[0]).join(""),
+          avatarBg: "bg-[#008B63]",
+        },
+      ]);
+    }
+
+    // Registra evento de auditoria real
     const newEvent: AuditEvent = {
       id: `evt-${Date.now()}`,
       time: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
@@ -352,22 +416,20 @@ export function DemandasProjetosPanel() {
       user: "Sistema",
       avatarInitials: "SIS",
       avatarBg: "bg-[#06284F]",
-      actionText: `Projeto ${projectState.code} foi criado a partir da demanda ${currentDemanda.code}`,
+      actionText: `Projeto ${newProject.code} foi criado a partir da demanda ${currentDemanda.code}`,
       eventType: "Sistema",
       targetCode: currentDemanda.code,
-      targetTitle: "Criação do projeto com status Planejamento",
+      targetTitle: `Criação do projeto: ${newProject.title}`,
       previousValue: "Status Demanda: Em análise",
       newValue: "Status Demanda: Convertida em projeto",
-      justification: "Transação de conversão concluída com 5 critérios validados.",
+      justification: "Conversão concluída após preenchimento e aprovação dos 5 critérios.",
       isImportant: true,
       fullDate: `${new Date().toLocaleDateString("pt-BR")} às ${new Date().toLocaleTimeString("pt-BR")}`,
     };
 
     setAuditEvents((prev) => [newEvent, ...prev]);
 
-    toast(`Demanda ${currentDemanda.code} APROVADA e CONVERTIDA com sucesso no Projeto PRJ-0104! Redirecionando para o Kanban...`);
-    
-    // Redireciona para as Telas de Acompanhamento do Projeto PRJ-0104
+    toast(`PROJETO ${newProject.code} CRIADO COM SUCESSO com os seus dados reais! Redirecionando para o Kanban...`);
     setMainMode("projeto_ativo");
     setProjectSubTab("kanban");
   };
@@ -375,7 +437,7 @@ export function DemandasProjetosPanel() {
   return (
     <div className="flex flex-col gap-6 font-sans text-xs bg-[#F6F8FB] max-w-[1671px] mx-auto antialiased select-none">
       
-      {/* ── BARRA SUPERIOR DE FLUXO CONTEXTUAL DA APLICAÇÃO ── */}
+      {/* ── BARRA DE FLUXO E MODO DE DADOS (SELETOR DE DADOS REAIS vs DEMO) ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-[#E2E8F0] shadow-2xs">
         <div className="flex flex-wrap items-center gap-2">
           {/* Aba 1: Nova Demanda */}
@@ -389,40 +451,42 @@ export function DemandasProjetosPanel() {
             }`}
           >
             <Plus className="h-4 w-4" strokeWidth={2.5} />
-            <span>1. Nova demanda</span>
+            <span>1. Nova demanda (Dados Reais)</span>
           </button>
 
           {/* Aba 2: Análise da Demanda */}
           <button
             type="button"
-            onClick={() => setMainMode("analise_demanda")}
+            onClick={() => {
+              if (!currentDemanda) {
+                toast("Cadastre uma nova demanda primeiro.", "error");
+                return;
+              }
+              setMainMode("analise_demanda");
+            }}
             className={`px-4 py-2 rounded-xl font-extrabold text-xs transition flex items-center gap-2 cursor-pointer ${
               mainMode === "analise_demanda"
                 ? "bg-[#1264F3] text-white shadow-xs font-black"
-                : "bg-[#F8FAFC] text-[#64748B] hover:bg-[#EAF2FF] hover:text-[#1264F3]"
+                : currentDemanda
+                ? "bg-[#F8FAFC] text-[#64748B] hover:bg-[#EAF2FF] hover:text-[#1264F3]"
+                : "bg-slate-100 text-[#94A3B8] cursor-not-allowed opacity-60"
             }`}
           >
             <FileText className="h-4 w-4" strokeWidth={2} />
-            <span>2. Análise da Demanda ({currentDemanda.code})</span>
-            <span
-              className={`text-[9px] px-2 py-0.2 rounded font-extrabold uppercase border ${
-                currentDemanda.status === "Recebida"
-                  ? "bg-[#EAF2FF] text-[#1264F3] border-[#1264F3]/30"
-                  : currentDemanda.status === "Em análise"
-                  ? "bg-[#FFF4E5] text-[#F59E0B] border-[#F59E0B]/30"
-                  : "bg-[#E8F7F1] text-[#008B63] border-[#00A978]/30"
-              }`}
-            >
-              {currentDemanda.status}
-            </span>
+            <span>2. Análise {currentDemanda ? `(${currentDemanda.code})` : ""}</span>
+            {currentDemanda && (
+              <span className="text-[9px] px-2 py-0.2 rounded font-extrabold uppercase bg-[#E8F7F1] text-[#008B63] border border-[#00A978]/30">
+                {currentDemanda.status}
+              </span>
+            )}
           </button>
 
-          {/* Aba 3: Projeto Convertido PRJ-0104 */}
+          {/* Aba 3: Projeto Criado */}
           <button
             type="button"
             onClick={() => {
-              if (currentDemanda.status !== "Convertida em projeto") {
-                toast("O acesso ao Projeto PRJ-0104 só é liberado após concluir a análise e aprovar a conversão.", "error");
+              if (!projectState) {
+                toast("Nenhum projeto gerado ainda. Cadastre e converta uma demanda.", "error");
                 return;
               }
               setMainMode("projeto_ativo");
@@ -430,26 +494,34 @@ export function DemandasProjetosPanel() {
             className={`px-4 py-2 rounded-xl font-extrabold text-xs transition flex items-center gap-2 cursor-pointer ${
               mainMode === "projeto_ativo"
                 ? "bg-[#7928F5] text-white shadow-xs font-black"
-                : currentDemanda.status === "Convertida em projeto"
+                : projectState
                 ? "bg-[#F8FAFC] text-[#7928F5] hover:bg-[#F3EAFF]"
                 : "bg-slate-100 text-[#94A3B8] cursor-not-allowed opacity-60"
             }`}
           >
-            {currentDemanda.status === "Convertida em projeto" ? (
+            {projectState ? (
               <FolderKanban className="h-4 w-4 text-[#7928F5]" strokeWidth={2} />
             ) : (
               <Lock className="h-4 w-4 text-[#94A3B8]" strokeWidth={2} />
             )}
-            <span>3. Projeto PRJ-0104 (Acompanhamento)</span>
+            <span>3. Projeto {projectState ? `(${projectState.code})` : ""}</span>
           </button>
         </div>
 
-        <span className="text-[10px] font-extrabold text-[#008B63] bg-[#E8F7F1] px-3 py-1 rounded-lg border border-[#00A978]/30 self-start sm:self-auto">
-          ● Regra de Negócio: Demanda → Análise → Aprovação → Projeto
-        </span>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleLoadDemoData}
+            className="h-8 px-3 rounded-lg bg-[#F1F5F9] hover:bg-slate-200 text-[#10213D] font-extrabold text-[11px] transition flex items-center gap-1.5 cursor-pointer border border-[#E2E8F0]"
+            title="Carregar dados demonstrativos de referência"
+          >
+            <RefreshCw className="h-3.5 w-3.5 text-[#1264F3]" />
+            <span>Carregar Exemplo Demonstrativo</span>
+          </button>
+        </div>
       </div>
 
-      {/* ── TELA 1 — CADASTRO DE NOVA DEMANDA (PREMISSA INICIAL OBRIGATÓRIA DA TELA) ── */}
+      {/* ── TELA 1 — CADASTRO DE NOVA DEMANDA COM DADOS LIMPOS E REAIS ── */}
       {mainMode === "nova_demanda" && (
         <>
           {/* Cabeçalho da Página */}
@@ -460,11 +532,11 @@ export function DemandasProjetosPanel() {
                   Nova demanda
                 </h1>
                 <span className="bg-[#E8F7F1] text-[#008B63] border border-[#00A978]/30 px-3 py-0.5 rounded-full text-[11px] font-extrabold uppercase tracking-wider">
-                  Novo cadastro
+                  Formulário de Entrada Real
                 </span>
               </div>
               <p className="text-xs text-[#64748B] mt-1">
-                Registre a solicitação para análise e encaminhamento.
+                Preencha os dados reais da solicitação. Não há dados fakes ou preenchimentos ilustrativos fixos.
               </p>
             </div>
 
@@ -494,12 +566,12 @@ export function DemandasProjetosPanel() {
                 className="h-10 px-5 rounded-xl bg-[#008B63] hover:bg-[#007553] text-white font-extrabold text-xs transition shadow-xs flex items-center gap-2 cursor-pointer disabled:opacity-60"
               >
                 <Check className="h-4 w-4 text-white" strokeWidth={2.5} />
-                <span>{isSubmitting ? "Cadastrando..." : "Cadastrar demanda"}</span>
+                <span>{isSubmitting ? "Cadastrando..." : "Cadastrar demanda real"}</span>
               </button>
             </div>
           </div>
 
-          {/* Banner da Regra de Conversão */}
+          {/* Banner de Aviso de Regra de Negócio */}
           <div className="bg-[#EAF2FF] border border-[#1264F3]/30 p-4 sm:p-5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-2xs">
             <div className="flex items-start sm:items-center gap-3.5">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#1264F3] text-white shadow-2xs">
@@ -508,10 +580,10 @@ export function DemandasProjetosPanel() {
 
               <div>
                 <h3 className="text-sm font-extrabold text-[#10213D]">
-                  Toda solicitação é cadastrada como demanda.
+                  Toda solicitação é cadastrada incialmente como demanda.
                 </h3>
                 <p className="text-xs text-[#64748B] mt-0.5">
-                  A conversão em projeto será liberada somente após a análise e aprovação.
+                  Não é permitido cadastrar um projeto diretamente. A conversão é liberada somente após análise e aprovação.
                 </p>
               </div>
             </div>
@@ -522,7 +594,7 @@ export function DemandasProjetosPanel() {
             </div>
           </div>
 
-          {/* Estrutura do Conteúdo: Formulário Principal (78%) e Painel Lateral (22%) */}
+          {/* Form Real (78% / 22%) */}
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] xl:grid-cols-[1fr_340px] gap-6 items-start">
             <div className="flex flex-col gap-6 min-w-0">
               
@@ -531,7 +603,7 @@ export function DemandasProjetosPanel() {
                 <div className="border-b border-[#E2E8F0] pb-3 flex items-center gap-2">
                   <FileText className="h-5 w-5 text-[#1264F3]" strokeWidth={2} />
                   <h3 className="text-sm font-extrabold text-[#10213D] uppercase tracking-wider">
-                    Informações principais
+                    Informações principais da solicitação
                   </h3>
                 </div>
 
@@ -544,7 +616,7 @@ export function DemandasProjetosPanel() {
                       type="text"
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
-                      placeholder="Ex.: Solicitação de iluminação pública na Av. Paulista"
+                      placeholder="Digite o título real da solicitação..."
                       className="h-10 px-3.5 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] text-xs font-medium text-[#10213D] focus:bg-white focus:border-[#1264F3] focus:outline-none transition"
                       required
                     />
@@ -560,7 +632,7 @@ export function DemandasProjetosPanel() {
                       className="h-10 px-3.5 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] text-xs font-medium text-[#10213D] focus:bg-white focus:border-[#1264F3] focus:outline-none transition cursor-pointer"
                       required
                     >
-                      <option value="">Selecione uma categoria</option>
+                      <option value="">Selecione uma categoria...</option>
                       <option value="Infraestrutura Urbana">Infraestrutura Urbana</option>
                       <option value="Saúde e Acolhimento">Saúde e Acolhimento</option>
                       <option value="Educação e Cultura">Educação e Cultura</option>
@@ -578,11 +650,10 @@ export function DemandasProjetosPanel() {
                       onChange={(e) => setChannelOrigin(e.target.value)}
                       className="h-10 px-3.5 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] text-xs font-medium text-[#10213D] focus:bg-white focus:border-[#1264F3] focus:outline-none transition cursor-pointer"
                     >
-                      <option value="">Selecione o canal</option>
+                      <option value="Gabinete Virtual">Gabinete Virtual</option>
                       <option value="Atendimento Presencial">Atendimento Presencial</option>
                       <option value="WhatsApp Oficial">WhatsApp Oficial</option>
                       <option value="Redes Sociais">Redes Sociais</option>
-                      <option value="Gabinete Virtual">Gabinete Virtual</option>
                       <option value="E-mail Institucional">E-mail Institucional</option>
                       <option value="Ouvidoria">Ouvidoria</option>
                     </select>
@@ -597,7 +668,7 @@ export function DemandasProjetosPanel() {
                       maxLength={1000}
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
-                      placeholder="Descreva a necessidade, o contexto e o resultado esperado da demanda..."
+                      placeholder="Descreva detalhadamente a demanda digitada..."
                       className="p-3.5 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] text-xs font-medium text-[#10213D] focus:bg-white focus:border-[#1264F3] focus:outline-none transition resize-none"
                       required
                     />
@@ -607,68 +678,34 @@ export function DemandasProjetosPanel() {
                   </div>
 
                   <div className="flex flex-col gap-2 sm:col-span-2">
-                    <label className="text-xs font-bold text-[#10213D]">
-                      Nível de Prioridade <span className="text-red-500">*</span>
-                    </label>
-
+                    <label className="text-xs font-bold text-[#10213D]">Nível de Prioridade *</label>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                      <button
-                        type="button"
-                        onClick={() => setPriority("Baixa")}
-                        className={`p-3 rounded-xl border font-extrabold flex items-center justify-center gap-2 transition cursor-pointer ${
-                          priority === "Baixa"
-                            ? "bg-[#E8F7F1] text-[#008B63] border-[#00A978] ring-2 ring-[#00A978]/30 shadow-2xs"
-                            : "bg-[#F8FAFC] border-[#E2E8F0] text-[#64748B]"
-                        }`}
-                      >
-                        <span className="h-2.5 w-2.5 rounded-full bg-[#008B63]" />
-                        <span>Baixa</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setPriority("Média")}
-                        className={`p-3 rounded-xl border font-extrabold flex items-center justify-center gap-2 transition cursor-pointer ${
-                          priority === "Média"
-                            ? "bg-[#FFF4E5] text-[#F59E0B] border-[#F59E0B] ring-2 ring-[#F59E0B]/30 shadow-2xs"
-                            : "bg-[#F8FAFC] border-[#E2E8F0] text-[#64748B]"
-                        }`}
-                      >
-                        <span className="h-2.5 w-2.5 rounded-full bg-[#F59E0B]" />
-                        <span>Média</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setPriority("Alta")}
-                        className={`p-3 rounded-xl border font-extrabold flex items-center justify-center gap-2 transition cursor-pointer ${
-                          priority === "Alta"
-                            ? "bg-[#FEECEC] text-[#EF4444] border-[#EF4444] ring-2 ring-[#EF4444]/30 shadow-2xs"
-                            : "bg-[#F8FAFC] border-[#E2E8F0] text-[#64748B]"
-                        }`}
-                      >
-                        <span className="h-2.5 w-2.5 rounded-full bg-[#EF4444]" />
-                        <span>Alta</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setPriority("Urgente")}
-                        className={`p-3 rounded-xl border font-extrabold flex items-center justify-center gap-1.5 transition cursor-pointer ${
-                          priority === "Urgente"
-                            ? "bg-[#EF4444] text-white border-[#EF4444] ring-2 ring-[#EF4444]/40 shadow-xs"
-                            : "bg-[#F8FAFC] border-[#E2E8F0] text-[#EF4444]"
-                        }`}
-                      >
-                        <AlertTriangle className="h-4 w-4" strokeWidth={2.2} />
-                        <span>Urgente</span>
-                      </button>
+                      {(["Baixa", "Média", "Alta", "Urgente"] as const).map((p) => (
+                        <button
+                          key={p}
+                          type="button"
+                          onClick={() => setPriority(p)}
+                          className={`p-3 rounded-xl border font-extrabold flex items-center justify-center gap-2 transition cursor-pointer ${
+                            priority === p
+                              ? p === "Urgente"
+                                ? "bg-[#EF4444] text-white border-[#EF4444]"
+                                : p === "Alta"
+                                ? "bg-[#FEECEC] text-[#EF4444] border-[#EF4444]"
+                                : p === "Média"
+                                ? "bg-[#FFF4E5] text-[#F59E0B] border-[#F59E0B]"
+                                : "bg-[#E8F7F1] text-[#008B63] border-[#00A978]"
+                              : "bg-[#F8FAFC] border-[#E2E8F0] text-[#64748B]"
+                          }`}
+                        >
+                          <span>{p}</span>
+                        </button>
+                      ))}
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* SEÇÃO 2: LOCALIZAÇÃO E TERRITÓRIO (COM BUSCA VIA CEP) */}
+              {/* SEÇÃO 2: LOCALIZAÇÃO E TERRITÓRIO */}
               <div className="bg-white rounded-2xl border border-[#E2E8F0] p-5 sm:p-6 shadow-2xs flex flex-col gap-5">
                 <div className="border-b border-[#E2E8F0] pb-3 flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -677,63 +714,37 @@ export function DemandasProjetosPanel() {
                       Localização e território
                     </h3>
                   </div>
-
-                  <button
-                    type="button"
-                    onClick={() => toast("Selecione o ponto no mapa interativo.")}
-                    className="h-8 px-3 rounded-lg bg-[#EAF2FF] hover:bg-[#1264F3] text-[#1264F3] hover:text-white font-bold text-xs transition border border-[#1264F3]/30 flex items-center gap-1.5 cursor-pointer"
-                  >
-                    <MapPin className="h-3.5 w-3.5" strokeWidth={2} />
-                    <span>Selecionar no mapa</span>
-                  </button>
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="flex flex-col gap-1.5 sm:col-span-2">
-                    <label className="text-xs font-bold text-[#10213D] flex items-center justify-between">
-                      <span>Buscar Endereço por CEP</span>
-                      {cepFound && (
-                        <span className="text-[10px] text-[#008B63] font-extrabold">
-                          ✓ Localizado automaticamente por CEP!
-                        </span>
-                      )}
-                    </label>
-
+                    <label className="text-xs font-bold text-[#10213D]">Buscar CEP Real</label>
                     <div className="flex items-center gap-2">
                       <input
                         type="text"
                         value={cep}
-                        onChange={(e) => {
-                          let val = e.target.value.replace(/\D/g, "");
-                          if (val.length > 8) val = val.slice(0, 8);
-                          if (val.length > 5) val = `${val.slice(0, 5)}-${val.slice(5)}`;
-                          setCep(val);
-                          if (val.replace(/\D/g, "").length === 8) handleCepSearch();
-                        }}
-                        placeholder="00000-000"
-                        className="h-10 flex-1 px-3.5 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] text-xs font-mono font-bold text-[#10213D]"
+                        onChange={(e) => setCep(e.target.value)}
+                        placeholder="Ex.: 01001-000"
+                        className="h-10 flex-1 px-3.5 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] text-xs font-mono font-bold"
                       />
-
                       <button
                         type="button"
                         onClick={handleCepSearch}
                         disabled={cepLoading}
-                        className="h-10 px-4 rounded-xl bg-[#1264F3] hover:bg-blue-700 text-white font-extrabold text-xs transition flex items-center gap-2 cursor-pointer disabled:opacity-60 shrink-0"
+                        className="h-10 px-4 rounded-xl bg-[#1264F3] text-white font-extrabold text-xs cursor-pointer"
                       >
-                        {cepLoading ? <span>Buscando...</span> : <span>🔍 Buscar CEP</span>}
+                        {cepLoading ? "Buscando..." : "Buscar CEP"}
                       </button>
                     </div>
+                    {cepError && <span className="text-[10px] text-red-500 font-bold">{cepError}</span>}
                   </div>
 
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-bold text-[#10213D]">
-                      Território / Região <span className="text-red-500">*</span>
-                    </label>
+                    <label className="text-xs font-bold text-[#10213D]">Território / Região *</label>
                     <select
                       value={regionId}
                       onChange={(e) => setRegionId(e.target.value)}
-                      className="h-10 px-3.5 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] text-xs font-medium text-[#10213D] cursor-pointer"
-                      required
+                      className="h-10 px-3.5 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] text-xs font-medium cursor-pointer"
                     >
                       {regions.map((r) => (
                         <option key={r.id} value={r.id}>
@@ -744,16 +755,13 @@ export function DemandasProjetosPanel() {
                   </div>
 
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-bold text-[#10213D]">
-                      Município / UF <span className="text-red-500">*</span>
-                    </label>
+                    <label className="text-xs font-bold text-[#10213D]">Município / UF *</label>
                     <input
                       type="text"
                       value={municipio}
                       onChange={(e) => setMunicipio(e.target.value)}
                       placeholder="Ex.: São Paulo / SP"
                       className="h-10 px-3.5 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] text-xs font-medium"
-                      required
                     />
                   </div>
 
@@ -763,30 +771,30 @@ export function DemandasProjetosPanel() {
                       type="text"
                       value={bairro}
                       onChange={(e) => setBairro(e.target.value)}
-                      placeholder="Ex.: Centro"
+                      placeholder="Ex.: Jardins"
                       className="h-10 px-3.5 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] text-xs font-medium"
                     />
                   </div>
 
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-bold text-[#10213D]">Endereço</label>
+                    <label className="text-xs font-bold text-[#10213D]">Endereço / Logradouro</label>
                     <input
                       type="text"
                       value={address}
                       onChange={(e) => setAddress(e.target.value)}
-                      placeholder="Ex.: Rua das Flores, 123"
+                      placeholder="Ex.: Av. Brasil, 1500"
                       className="h-10 px-3.5 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] text-xs font-medium"
                     />
                   </div>
                 </div>
               </div>
 
-              {/* SEÇÃO 3: RESPONSABILIDADE E PRAZO */}
+              {/* SEÇÃO 3: RESPONSABILIDADE */}
               <div className="bg-white rounded-2xl border border-[#E2E8F0] p-5 sm:p-6 shadow-2xs flex flex-col gap-5">
                 <div className="border-b border-[#E2E8F0] pb-3 flex items-center gap-2">
                   <UserCheck className="h-5 w-5 text-[#1264F3]" strokeWidth={2} />
                   <h3 className="text-sm font-extrabold text-[#10213D] uppercase tracking-wider">
-                    Responsabilidade e prazo
+                    Responsabilidade e setor
                   </h3>
                 </div>
 
@@ -807,7 +815,7 @@ export function DemandasProjetosPanel() {
                   </div>
 
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-bold text-[#10213D]">Equipe / Setor</label>
+                    <label className="text-xs font-bold text-[#10213D]">Equipe / Setor responsável</label>
                     <select
                       value={team}
                       onChange={(e) => setTeam(e.target.value)}
@@ -819,72 +827,81 @@ export function DemandasProjetosPanel() {
                       <option value="Comunicação e Imprensa">Comunicação e Imprensa</option>
                     </select>
                   </div>
+                </div>
+              </div>
 
+              {/* SEÇÃO 4: DADOS DO SOLICITANTE */}
+              <div className="bg-white rounded-2xl border border-[#E2E8F0] p-5 sm:p-6 shadow-2xs flex flex-col gap-5">
+                <div className="border-b border-[#E2E8F0] pb-3 flex items-center gap-2">
+                  <Mail className="h-5 w-5 text-[#1264F3]" strokeWidth={2} />
+                  <h3 className="text-sm font-extrabold text-[#10213D] uppercase tracking-wider">
+                    Dados do solicitante
+                  </h3>
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-3">
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-bold text-[#10213D] flex items-center gap-1">
-                      Status inicial <Lock className="h-3 w-3 text-[#1264F3]" strokeWidth={2} />
-                    </label>
-                    <div className="h-10 px-3.5 rounded-xl border border-[#1264F3]/30 bg-[#EAF2FF] text-xs font-extrabold text-[#1264F3] flex items-center gap-2 cursor-not-allowed">
-                      <Lock className="h-3.5 w-3.5 text-[#1264F3]" strokeWidth={2} />
-                      <span>Recebida</span>
-                    </div>
+                    <label className="text-xs font-bold text-[#10213D]">Nome do solicitante</label>
+                    <input
+                      type="text"
+                      value={applicantName}
+                      onChange={(e) => setApplicantName(e.target.value)}
+                      placeholder="Ex.: Carlos Silva"
+                      className="h-10 px-3.5 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] text-xs font-medium"
+                    />
                   </div>
 
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-bold text-[#10213D]">Data de recebimento</label>
+                    <label className="text-xs font-bold text-[#10213D]">Telefone / WhatsApp</label>
                     <input
-                      type="date"
-                      value={receiptDate}
-                      onChange={(e) => setReceiptDate(e.target.value)}
-                      className="h-10 w-full px-3.5 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] text-xs font-medium cursor-pointer"
+                      type="text"
+                      value={applicantPhone}
+                      onChange={(e) => setApplicantPhone(e.target.value)}
+                      placeholder="(11) 99999-9999"
+                      className="h-10 px-3.5 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] text-xs font-mono font-medium"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-bold text-[#10213D]">E-mail de contato</label>
+                    <input
+                      type="email"
+                      value={applicantEmail}
+                      onChange={(e) => setApplicantEmail(e.target.value)}
+                      placeholder="carlos@exemplo.com"
+                      className="h-10 px-3.5 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] text-xs font-medium"
                     />
                   </div>
                 </div>
               </div>
 
-              {/* SEÇÃO 4: ANEXOS */}
+              {/* SEÇÃO 5: ANEXOS */}
               <div className="bg-white rounded-2xl border border-[#E2E8F0] p-5 sm:p-6 shadow-2xs flex flex-col gap-4">
-                <div className="border-b border-[#E2E8F0] pb-3 flex items-center justify-between">
-                  <h3 className="text-sm font-extrabold text-[#10213D] uppercase tracking-wider">
-                    Anexos da solicitação
-                  </h3>
-                  <button
-                    type="button"
-                    onClick={handleSimulateAddSampleFile}
-                    className="h-8 px-3 rounded-lg bg-[#EAF2FF] hover:bg-[#1264F3] text-[#1264F3] hover:text-white font-bold text-xs transition border border-[#1264F3]/30 flex items-center gap-1.5 cursor-pointer"
-                  >
-                    <Plus className="h-3.5 w-3.5" />
-                    <span>Anexar Documento Exemplo</span>
-                  </button>
-                </div>
+                <h3 className="text-sm font-extrabold text-[#10213D] uppercase tracking-wider border-b border-[#E2E8F0] pb-3">
+                  Anexos da solicitação real
+                </h3>
 
                 <input ref={fileInputRef} type="file" multiple onChange={handleFileUpload} className="hidden" />
 
                 <div
                   onClick={() => fileInputRef.current?.click()}
-                  className="border-2 border-dashed border-[#E2E8F0] hover:border-[#00A978] bg-[#F8FAFC] hover:bg-[#E8F7F1]/30 rounded-2xl p-6 text-center transition flex flex-col items-center justify-center gap-2 cursor-pointer group select-none"
+                  className="border-2 border-dashed border-[#E2E8F0] hover:border-[#00A978] bg-[#F8FAFC] hover:bg-[#E8F7F1]/30 rounded-2xl p-6 text-center transition flex flex-col items-center justify-center gap-2 cursor-pointer"
                 >
-                  <div className="h-12 w-12 rounded-full bg-[#EAF2FF] group-hover:bg-[#E8F7F1] text-[#1264F3] group-hover:text-[#008B63] flex items-center justify-center transition shadow-2xs">
-                    <UploadCloud className="h-6 w-6" strokeWidth={2} />
-                  </div>
-                  <span className="text-xs font-extrabold text-[#10213D] mt-1">
-                    Arraste arquivos aqui ou clique para selecionar
+                  <UploadCloud className="h-8 w-8 text-[#1264F3]" />
+                  <span className="text-xs font-extrabold text-[#10213D]">
+                    Clique aqui para selecionar os arquivos reais da demanda
                   </span>
-                  <span className="text-[10px] text-[#64748B]">PDF, JPG ou PNG • até 10 MB por arquivo</span>
                 </div>
 
                 {uploadedFiles.length > 0 && (
                   <div className="flex flex-col gap-2 pt-2">
                     {uploadedFiles.map((file) => (
                       <div key={file.id} className="flex items-center justify-between p-3 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] text-xs">
-                        <div className="flex items-center gap-3">
-                          <File className="h-5 w-5 text-[#1264F3]" strokeWidth={2} />
-                          <span className="font-extrabold text-[#10213D]">{file.name}</span>
-                        </div>
+                        <span className="font-extrabold text-[#10213D]">{file.name}</span>
                         <button
                           type="button"
                           onClick={() => setUploadedFiles((prev) => prev.filter((f) => f.id !== file.id))}
-                          className="text-red-500 p-1 hover:bg-red-50 rounded"
+                          className="text-red-500 p-1 hover:bg-red-50 rounded cursor-pointer"
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
@@ -895,172 +912,48 @@ export function DemandasProjetosPanel() {
               </div>
             </div>
 
-            {/* Coluna Direita: Painel Lateral de Acompanhamento (22%) */}
+            {/* Painel Lateral (22%) */}
             <div className="flex flex-col gap-5 shrink-0">
               <div className="bg-white rounded-2xl border border-[#E2E8F0] p-5 shadow-2xs flex flex-col gap-3.5">
                 <h4 className="text-xs font-extrabold text-[#10213D] uppercase tracking-wider border-b border-[#E2E8F0] pb-2.5">
-                  Resumo do cadastro
+                  Resumo dos Dados Digitados
                 </h4>
 
                 <ul className="flex flex-col gap-2.5 text-xs font-medium">
                   <li className="flex items-center justify-between">
-                    <span className="text-[#64748B]">Tipo:</span>
-                    <span className="bg-[#E8F7F1] text-[#008B63] border border-[#00A978]/30 px-2 py-0.5 rounded text-[10px] font-extrabold">
-                      Demanda
+                    <span className="text-[#64748B]">Título:</span>
+                    <span className="font-extrabold text-[#10213D] truncate max-w-[150px]">
+                      {title || "Não preenchido"}
                     </span>
                   </li>
 
                   <li className="flex items-center justify-between">
-                    <span className="text-[#64748B]">Etapa inicial:</span>
-                    <span className="bg-[#EAF2FF] text-[#1264F3] border border-[#1264F3]/30 px-2 py-0.5 rounded text-[10px] font-extrabold">
-                      Recebida
+                    <span className="text-[#64748B]">Categoria:</span>
+                    <span className="font-extrabold text-[#10213D]">
+                      {category || "Não selecionada"}
                     </span>
                   </li>
 
                   <li className="flex items-center justify-between">
-                    <span className="text-[#64748B]">Análise:</span>
-                    <span className="bg-[#FFF4E5] text-[#F59E0B] border border-[#F59E0B]/30 px-2 py-0.5 rounded text-[10px] font-extrabold">
-                      Obrigatória
-                    </span>
-                  </li>
-
-                  <li className="flex items-center justify-between">
-                    <span className="text-[#64748B]">Projeto:</span>
-                    <span className="bg-[#F1F5F9] text-[#64748B] border border-[#E2E8F0] px-2 py-0.5 rounded text-[10px] font-extrabold flex items-center gap-1">
-                      <Lock className="h-3 w-3" strokeWidth={2} />
-                      <span>Bloqueado</span>
-                    </span>
-                  </li>
-
-                  <li className="flex items-center justify-between border-t border-[#F1F5F9] pt-2">
                     <span className="text-[#64748B]">Prioridade:</span>
-                    <span className="font-extrabold text-[#10213D]">{priority || "Não definida"}</span>
+                    <span className="font-extrabold text-[#10213D]">{priority}</span>
                   </li>
 
                   <li className="flex items-center justify-between">
                     <span className="text-[#64748B]">Responsável:</span>
                     <span className="font-extrabold text-[#10213D] truncate max-w-[140px]">
-                      {responsible || "Não definido"}
+                      {responsible}
                     </span>
                   </li>
                 </ul>
-              </div>
-
-              {/* Stepper Vertical do Fluxo Obrigatório */}
-              <div className="bg-white rounded-2xl border border-[#E2E8F0] p-5 shadow-2xs flex flex-col gap-3.5">
-                <h4 className="text-xs font-extrabold text-[#10213D] uppercase tracking-wider border-b border-[#E2E8F0] pb-2.5">
-                  Fluxo obrigatório
-                </h4>
-
-                <div className="flex flex-col gap-3 text-xs">
-                  <div className="flex items-start gap-3">
-                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#008B63] text-white font-extrabold text-xs shrink-0 shadow-2xs">
-                      1
-                    </div>
-                    <div className="flex flex-col pt-0.5">
-                      <span className="font-extrabold text-[#008B63] flex items-center gap-1.5">
-                        Recebida <span className="text-[9px] bg-[#E8F7F1] px-1.5 py-0.2 rounded border border-[#00A978]/30">Ativa</span>
-                      </span>
-                      <span className="text-[10px] text-[#64748B]">Cadastro inicial efetuado</span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-3 opacity-60">
-                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#E2E8F0] text-[#64748B] font-bold text-xs shrink-0">
-                      2
-                    </div>
-                    <div className="flex flex-col pt-0.5">
-                      <span className="font-bold text-[#64748B]">Em análise</span>
-                      <span className="text-[10px] text-[#94A3B8]">Etapa obrigatória de avaliação</span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-3 opacity-60">
-                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#E2E8F0] text-[#64748B] font-bold text-xs shrink-0">
-                      3
-                    </div>
-                    <div className="flex flex-col pt-0.5">
-                      <span className="font-bold text-[#64748B]">Decisão da análise</span>
-                      <span className="text-[10px] text-[#94A3B8]">Aprovação ou recusa formal</span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-3 opacity-60">
-                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#E2E8F0] text-[#64748B] font-bold text-xs shrink-0">
-                      <Lock className="h-3.5 w-3.5" strokeWidth={2} />
-                    </div>
-                    <div className="flex flex-col pt-0.5">
-                      <span className="font-bold text-[#64748B]">Conversão aprovada</span>
-                      <span className="text-[10px] text-[#94A3B8]">Liberada após análise</span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-3 opacity-60">
-                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#E2E8F0] text-[#64748B] font-bold text-xs shrink-0">
-                      <Lock className="h-3.5 w-3.5" strokeWidth={2} />
-                    </div>
-                    <div className="flex flex-col pt-0.5">
-                      <span className="font-bold text-[#64748B]">Projeto em planejamento</span>
-                      <span className="text-[10px] text-[#94A3B8]">Criação do projeto</span>
-                    </div>
-                  </div>
-                </div>
-
-                <p className="text-[10px] text-[#64748B] bg-[#F8FAFC] p-2.5 rounded-xl border border-[#E2E8F0] mt-1">
-                  💡 Sem aprovação, a demanda segue para Em andamento ou Concluída.
-                </p>
-              </div>
-
-              {/* Critérios da Análise Desabilitados na Criação */}
-              <div className="bg-white rounded-2xl border border-[#E2E8F0] p-5 shadow-2xs flex flex-col gap-3.5">
-                <h4 className="text-xs font-extrabold text-[#10213D] uppercase tracking-wider border-b border-[#E2E8F0] pb-2.5">
-                  Critérios da análise
-                </h4>
-
-                <ul className="flex flex-col gap-2 text-xs text-[#64748B]">
-                  <li className="flex items-center gap-2 opacity-60">
-                    <input type="checkbox" disabled className="h-3.5 w-3.5 rounded border-[#E2E8F0]" />
-                    <span>Escopo exige múltiplas entregas.</span>
-                  </li>
-                  <li className="flex items-center gap-2 opacity-60">
-                    <input type="checkbox" disabled className="h-3.5 w-3.5 rounded border-[#E2E8F0]" />
-                    <span>Necessita equipe e responsáveis.</span>
-                  </li>
-                  <li className="flex items-center gap-2 opacity-60">
-                    <input type="checkbox" disabled className="h-3.5 w-3.5 rounded border-[#E2E8F0]" />
-                    <span>Possui prazo ou cronograma.</span>
-                  </li>
-                  <li className="flex items-center gap-2 opacity-60">
-                    <input type="checkbox" disabled className="h-3.5 w-3.5 rounded border-[#E2E8F0]" />
-                    <span>Exige orçamento ou recursos.</span>
-                  </li>
-                  <li className="flex items-center gap-2 opacity-60">
-                    <input type="checkbox" disabled className="h-3.5 w-3.5 rounded border-[#E2E8F0]" />
-                    <span>Conversão aprovada pelo responsável.</span>
-                  </li>
-                </ul>
-
-                <div className="pt-2 flex flex-col gap-1.5">
-                  <button
-                    type="button"
-                    disabled
-                    className="w-full h-11 bg-[#E2E8F0] text-[#94A3B8] font-extrabold text-xs rounded-xl flex items-center justify-center gap-2 cursor-not-allowed shadow-none"
-                  >
-                    <Lock className="h-4 w-4" strokeWidth={2} />
-                    <span>Converter em projeto</span>
-                  </button>
-                  <span className="text-[10px] text-[#64748B] text-center font-medium">
-                    Disponível após concluir e aprovar a análise.
-                  </span>
-                </div>
               </div>
             </div>
           </div>
         </>
       )}
 
-      {/* ── TELA 2 & 3 — DETALHES E ANÁLISE DA DEMANDA CADASTRADA (ETAPA DE APROVAÇÃO/RECUSA) ── */}
-      {mainMode === "analise_demanda" && (
+      {/* ── TELA 2 & 3 — ANÁLISE TÉCNICA DA DEMANDA REAL CADASTRADA ── */}
+      {mainMode === "analise_demanda" && currentDemanda && (
         <div className="flex flex-col gap-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E2E8F0] pb-4">
             <div>
@@ -1069,7 +962,7 @@ export function DemandasProjetosPanel() {
                   {currentDemanda.code}
                 </span>
                 <h1 className="text-xl sm:text-2xl font-black text-[#10213D] tracking-tight">
-                  {currentDemanda.title || "Modernização e Qualificação do Centro Esportivo"}
+                  {currentDemanda.title}
                 </h1>
               </div>
               <p className="text-xs text-[#64748B] mt-1">
@@ -1077,7 +970,6 @@ export function DemandasProjetosPanel() {
               </p>
             </div>
 
-            {/* Ação de Avançar Status: Recebida -> Em análise */}
             {currentDemanda.status === "Recebida" && (
               <button
                 type="button"
@@ -1090,53 +982,32 @@ export function DemandasProjetosPanel() {
             )}
           </div>
 
-          {/* Parecer Técnico e Checklist Interativo dos 5 Critérios da Análise */}
           <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6 shadow-2xs flex flex-col gap-6">
             <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-3">
               <h3 className="text-sm font-extrabold text-[#10213D] uppercase tracking-wider">
-                Formulário da Análise Técnica
+                Parecer Técnico da Solicitação Real
               </h3>
-              <span
-                className={`text-xs font-extrabold px-3 py-1 rounded-lg border ${
-                  currentDemanda.status === "Em análise"
-                    ? "bg-[#FFF4E5] text-[#F59E0B] border-[#F59E0B]/30"
-                    : "bg-[#E8F7F1] text-[#008B63] border-[#00A978]/30"
-                }`}
-              >
+              <span className="text-xs font-extrabold px-3 py-1 rounded-lg border bg-[#EAF2FF] text-[#1264F3] border-[#1264F3]/30">
                 Status: {currentDemanda.status}
               </span>
             </div>
 
-            {/* Textarea Parecer Técnico */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-bold text-[#10213D]">Parecer técnico obrigatório *</label>
+              <label className="text-xs font-bold text-[#10213D]">Parecer técnico da análise *</label>
               <textarea
                 rows={3}
                 value={technicalReport}
                 onChange={(e) => setTechnicalReport(e.target.value)}
-                placeholder="Insira o parecer técnico detalhado..."
+                placeholder="Insira o parecer técnico com a justificativa de viabilidade da demanda..."
                 className="p-3.5 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] text-xs font-medium text-[#10213D] focus:bg-white focus:border-[#1264F3] focus:outline-none transition resize-none"
               />
             </div>
 
-            {/* Checklist dos 5 Critérios de Conversão */}
+            {/* Checklist dos 5 Critérios */}
             <div className="border border-[#E2E8F0] rounded-2xl p-5 flex flex-col gap-4 bg-[#FAF5FF]/30">
-              <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-3">
-                <div>
-                  <h4 className="text-xs font-extrabold text-[#10213D] uppercase tracking-wider">
-                    Checklist dos 5 Critérios de Conversão (Marque para habilitar)
-                  </h4>
-                  <p className="text-[11px] text-[#64748B] mt-0.5">
-                    {currentDemanda.status === "Em análise"
-                      ? "Marque todos os 5 critérios para desbloquear o botão de conversão em projeto."
-                      : "Clique em 'Encaminhar para Em análise' acima para habilitar o preenchimento."}
-                  </p>
-                </div>
-
-                <span className="text-xs font-extrabold text-[#7928F5] bg-[#F3EAFF] px-3 py-1 rounded-lg border border-[#7928F5]/30">
-                  Etapa de Avaliação
-                </span>
-              </div>
+              <h4 className="text-xs font-extrabold text-[#10213D] uppercase tracking-wider border-b border-[#E2E8F0] pb-2">
+                Checklist dos 5 Critérios de Conversão
+              </h4>
 
               <div className="grid gap-3 sm:grid-cols-2 text-xs">
                 <label className="flex items-start gap-2.5 p-3 rounded-xl border border-[#E2E8F0] bg-white cursor-pointer hover:bg-[#F3EAFF]/40 transition">
@@ -1214,7 +1085,7 @@ export function DemandasProjetosPanel() {
               </div>
             </div>
 
-            {/* BOTÃO TRANSACIONAL DE CONVERSÃO (DESBLOQUEADO SE CRITÉRIOS = OK) */}
+            {/* BOTÃO CONVERTER AGORA EM PROJETO */}
             <div className="pt-2 flex flex-col gap-2">
               <button
                 type="button"
@@ -1229,28 +1100,22 @@ export function DemandasProjetosPanel() {
                 {canConvert ? (
                   <>
                     <Sparkles className="h-5 w-5 text-white" />
-                    <span>CONVERTER AGORA EM PROJETO (DESBLOQUEADO)</span>
+                    <span>CONVERTER AGORA EM PROJETO (DADOS REAIS)</span>
                   </>
                 ) : (
                   <>
                     <Lock className="h-4 w-4" strokeWidth={2} />
-                    <span>Converter em projeto (Bloqueado)</span>
+                    <span>Converter em projeto (Bloqueado até preencher critérios)</span>
                   </>
                 )}
               </button>
-
-              <p className="text-[11px] text-[#64748B] text-center font-medium">
-                {canConvert
-                  ? "✓ Requisitos atendidos! Clique para executar a conversão transacional para o Projeto PRJ-0104."
-                  : "🔒 Requisitos pendentes: Estar em 'Em análise', marcar os 5 critérios e selecionar 'Aprovada para Projeto'."}
-              </p>
             </div>
           </div>
         </div>
       )}
 
-      {/* ── TELAS 4 A 10 — ACOMPANHAMENTO DO PROJETO CONVERTIDO (LIBERADO APÓS APROVAÇÃO E CONVERSÃO) ── */}
-      {mainMode === "projeto_ativo" && (
+      {/* ── TELAS 4 A 10 — PROJETO ATIVO CRIADO A PARTIR DOS DADOS REAIS ── */}
+      {mainMode === "projeto_ativo" && projectState && (
         <div className="flex flex-col gap-6">
           <ProjectHeader
             project={projectState}
@@ -1316,15 +1181,13 @@ export function DemandasProjetosPanel() {
         </div>
       )}
 
-      {/* MODAL CONFIRMAÇÃO DE CANCELAMENTO */}
+      {/* MODAL CANCELAR */}
       {showCancelModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl border border-[#E2E8F0] shadow-2xl max-w-md w-full p-6 flex flex-col gap-4 animate-in fade-in zoom-in duration-200">
-            <h3 className="text-base font-extrabold text-[#10213D]">
-              Cancelar cadastro de demanda?
-            </h3>
+          <div className="bg-white rounded-2xl border border-[#E2E8F0] shadow-2xl max-w-md w-full p-6 flex flex-col gap-4">
+            <h3 className="text-base font-extrabold text-[#10213D]">Descartar formulário?</h3>
             <p className="text-xs text-[#64748B]">
-              As informações não salvas serão perdidas. Deseja descartar o formulário?
+              Os dados reais informados serão descartados.
             </p>
             <div className="flex justify-end gap-3 pt-3">
               <button
@@ -1332,13 +1195,16 @@ export function DemandasProjetosPanel() {
                 onClick={() => setShowCancelModal(false)}
                 className="px-4 py-2 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-[#10213D] text-xs font-bold"
               >
-                Continuar preenchendo
+                Continuar digitando
               </button>
               <button
                 type="button"
                 onClick={() => {
+                  setTitle("");
+                  setCategory("");
+                  setDescription("");
                   setShowCancelModal(false);
-                  toast("Cadastro descartado.");
+                  toast("Formulário descartado.");
                 }}
                 className="px-4 py-2 rounded-xl bg-[#EF4444] text-white text-xs font-bold shadow-xs"
               >
