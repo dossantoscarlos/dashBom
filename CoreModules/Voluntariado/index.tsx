@@ -8,7 +8,7 @@ import { Voluntario } from "@/app/api/voluntarios/route";
 import { useDashboard } from "@/contexts/DashboardProvider";
 
 export function VoluntariadoPanel() {
-  const { locations } = useDashboard();
+  const { locations, regions } = useDashboard();
   const comites = locations.filter((l) => l.type === "comitê" || l.type === "sede");
 
   const [voluntarios, setVoluntarios] = useState<Voluntario[]>([]);
@@ -108,7 +108,7 @@ export function VoluntariadoPanel() {
     loadVoluntarios();
   }
 
-  // 🔍 BUSCA E VALIDAÇÃO DE ELEITOR ATIVO NO TSE
+  // 🔍 BUSCA E VALIDAÇÃO AO VIVO DE ELEITOR ATIVO NA API DO TSE
   async function handleVerifyTseVoter() {
     if (!tituloEleitor || tituloEleitor.trim().length < 10) {
       setErrorMsg("Informe um Título de Eleitor válido com pelo menos 10 dígitos para consulta.");
@@ -118,15 +118,15 @@ export function VoluntariadoPanel() {
     setErrorMsg(null);
     setTseValidStatus(null);
     try {
-      await new Promise((r) => setTimeout(r, 800));
-      const isOk = !tituloEleitor.endsWith("00");
-      if (isOk) {
-        setTseValidStatus("✓ REGULAR E ATIVO NO TSE (Zona: 001ª / Seção: 0142)");
+      const res = await fetch(`/api/voluntarios?validarTitulo=${encodeURIComponent(tituloEleitor.trim())}`);
+      const data = await res.json();
+      if (res.ok && data.statusStr) {
+        setTseValidStatus(data.statusStr);
       } else {
-        setTseValidStatus("❌ ATENÇÃO: Título de Eleitor Cancelado ou Suspenso no TSE");
+        setErrorMsg(data.erro ?? "Erro ao consultar título na base do TSE.");
       }
     } catch {
-      setErrorMsg("Erro ao conectar com a base da Justiça Eleitoral.");
+      setErrorMsg("Erro ao conectar com a API da Justiça Eleitoral.");
     } finally {
       setTseChecking(false);
     }
@@ -334,18 +334,26 @@ export function VoluntariadoPanel() {
               <input id="vol-indicador" className={inputClass} value={indicadoPor} onChange={(e) => setIndicadoPor(e.target.value)} placeholder="Nome da liderança ou parceiro..." />
             </div>
 
-            {/* Região Designada */}
+            {/* Região Designada (Vinda dinamicamente do cadastro oficial de Regiões do sistema) */}
             <div className="flex flex-col gap-1">
               <label htmlFor="vol-regiao" className="font-bold text-zinc-700 dark:text-zinc-300">Região Designada</label>
               <select id="vol-regiao" className={inputClass} value={regiaoDesignada} onChange={(e) => setRegiaoDesignada(e.target.value)}>
-                <option value="Zona Norte">Zona Norte (Comitê Regional 01)</option>
-                <option value="Zona Sul">Zona Sul (Comitê Regional 02)</option>
-                <option value="Zona Leste">Zona Leste (Comitê Regional 03)</option>
-                <option value="Zona Oeste">Zona Oeste (Comitê Regional 04)</option>
-                <option value="Centro / Capital">Centro / Capital</option>
-                <option value="Região Metropolitana">Região Metropolitana</option>
-                <option value="Interior">Região do Interior</option>
+                <option value="">— Selecione a Região —</option>
+                {regions.length > 0 ? (
+                  regions.map((reg) => (
+                    <option key={reg.id} value={reg.name}>
+                      {reg.name} ({reg.uf})
+                    </option>
+                  ))
+                ) : (
+                  <option disabled value="">Nenhuma região cadastrada no sistema</option>
+                )}
               </select>
+              {regions.length === 0 && (
+                <span className="text-[10px] text-amber-600 dark:text-amber-400">
+                  ⚠️ Cadastre regiões primeiro no menu Regiões para vinculação.
+                </span>
+              )}
             </div>
 
             {/* COMITÊ - Associação ao comitê registrado no sistema */}

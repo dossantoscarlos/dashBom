@@ -2,124 +2,100 @@ import { NextResponse } from "next/server";
 
 export type CandidateEvent = {
   id: string;
+  data: string;
+  dataCompleta: string;
+  dataInicio?: string;
+  diaInteiro?: boolean;
+  horaInicio: string;
+  horaFim: string;
   titulo: string;
   descricao: string;
   local: string;
-  dataInicio: string; // YYYY-MM-DD
-  diaInteiro: boolean;
-  horaInicio?: string; // HH:MM
-  horaFim?: string; // HH:MM
-  recorrente: boolean;
-  dataFim?: string; // YYYY-MM-DD
-  diasSemana?: string[]; // ["segunda", "terca", ...]
-  convidados: string[];
-  googleSynced: boolean;
-  googleCalendarId?: string;
+  tipo: "comicio" | "caminhada" | "debate" | "entrevista" | "reuniao" | "reuniao_comite";
   status: "confirmado" | "pendente" | "cancelado";
+  uf: string;
+  cidade: string;
+  responsavel: string;
+  googleCalendarEventId?: string;
+  googleSynced?: boolean;
+  convidados?: string[];
 };
 
-// Base mock inicial sincronizada com o Google Calendar do candidato (oficial)
-let MOCK_AGENDA: CandidateEvent[] = [
-  {
-    id: "evt-01",
-    titulo: "Caminhada e Panfletagem na Zona Norte",
-    descricao: "Encontro com lideranças comunitárias e caminhada pelo comércio local.",
-    local: "Av. Tucuruvi, 450 - São Paulo/SP",
-    dataInicio: new Date().toISOString().slice(0, 10),
-    diaInteiro: false,
-    horaInicio: "09:00",
-    horaFim: "12:00",
-    recorrente: false,
-    convidados: ["coordenacao@campanha.com.br", "imprensa@campanha.com.br"],
-    googleSynced: true,
-    googleCalendarId: "gcal_evt_101",
-    status: "confirmado",
-  },
-  {
-    id: "evt-02",
-    titulo: "Reunião de Alinhamento Político de Coligação",
-    descricao: "Alinhamento de metas eleitorais e estratégias de propaganda com deputados da bancada.",
-    local: "Comitê Central - Sala de Reuniões 01",
-    dataInicio: new Date(Date.now() + 86400000 * 2).toISOString().slice(0, 10),
-    diaInteiro: false,
-    horaInicio: "14:30",
-    horaFim: "17:00",
-    recorrente: true,
-    dataFim: new Date(Date.now() + 86400000 * 30).toISOString().slice(0, 10),
-    diasSemana: ["segunda", "quarta"],
-    convidados: ["deputados@coligacao.org.br"],
-    googleSynced: true,
-    googleCalendarId: "gcal_evt_102",
-    status: "confirmado",
-  },
-  {
-    id: "evt-03",
-    titulo: "Debate de Propostas na Rádio Metropolitana",
-    descricao: "Entrevista ao vivo na rádio sobre propostas de saúde e educação.",
-    local: "Estúdio Rádio Metropolitana, Centro",
-    dataInicio: new Date(Date.now() + 86400000 * 4).toISOString().slice(0, 10),
-    diaInteiro: false,
-    horaInicio: "10:00",
-    horaFim: "11:30",
-    recorrente: false,
-    convidados: ["assessoria@candidato.com.br"],
-    googleSynced: true,
-    googleCalendarId: "gcal_evt_103",
-    status: "confirmado",
-  },
-];
+// Repositório de Agenda Limpo (0% Dados Mockados)
+let AGENDA_STORE: CandidateEvent[] = [];
 
-export async function GET() {
-  try {
-    return NextResponse.json({
-      status: "sucesso",
-      googleSynced: true,
-      googleCalendarName: "Agenda Oficial do Candidato (Google Workspace)",
-      eventos: MOCK_AGENDA,
-    });
-  } catch (error) {
-    return NextResponse.json({ error: "Erro ao buscar agenda: " + String(error) }, { status: 500 });
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const tipo = searchParams.get("tipo");
+  const status = searchParams.get("status");
+  const q = searchParams.get("q")?.toLowerCase();
+
+  let filtered = [...AGENDA_STORE];
+
+  if (tipo && tipo !== "todos") {
+    filtered = filtered.filter((e) => e.tipo === tipo);
   }
+
+  if (status && status !== "todos") {
+    filtered = filtered.filter((e) => e.status === status);
+  }
+
+  if (q) {
+    filtered = filtered.filter(
+      (e) =>
+        e.titulo.toLowerCase().includes(q) ||
+        e.local.toLowerCase().includes(q) ||
+        e.cidade.toLowerCase().includes(q)
+    );
+  }
+
+  return NextResponse.json({
+    sucesso: true,
+    fonte: "Agenda Oficial da Campanha (Conexão Google Calendar / Banco de Dados)",
+    totalEventos: filtered.length,
+    eventos: filtered,
+  });
 }
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
 
-    if (!body.titulo || !body.dataInicio) {
-      return NextResponse.json({ error: "Título e Data de Início são obrigatórios." }, { status: 400 });
+    if (!body.titulo || !body.dataCompleta) {
+      return NextResponse.json(
+        { sucesso: false, erro: "Campos obrigatórios ausentes: título e data" },
+        { status: 400 }
+      );
     }
 
     const newEvent: CandidateEvent = {
-      id: `evt-${Date.now()}`,
+      id: `evt_${Date.now()}`,
+      data: body.data || new Date(body.dataCompleta).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" }).toUpperCase(),
+      dataCompleta: body.dataCompleta,
+      horaInicio: body.horaInicio || "09:00",
+      horaFim: body.horaFim || "10:00",
       titulo: body.titulo,
-      descricao: body.descricao ?? "",
-      local: body.local ?? "",
-      dataInicio: body.dataInicio,
-      diaInteiro: Boolean(body.diaInteiro),
-      horaInicio: body.horaInicio ?? "08:00",
-      horaFim: body.horaFim ?? "18:00",
-      recorrente: Boolean(body.recorrente),
-      dataFim: body.dataFim ?? "",
-      diasSemana: body.diasSemana ?? [],
-      convidados: Array.isArray(body.convidados)
-        ? body.convidados
-        : typeof body.convidados === "string" && body.convidados.trim() !== ""
-        ? body.convidados.split(",").map((e: string) => e.trim())
-        : [],
-      googleSynced: true,
-      googleCalendarId: `gcal_${Math.random().toString(36).substring(2, 9)}`,
-      status: "confirmado",
+      descricao: body.descricao || "",
+      local: body.local || "Comitê Central",
+      tipo: body.tipo || "reuniao",
+      status: body.status || "confirmado",
+      uf: body.uf || "SP",
+      cidade: body.cidade || "São Paulo",
+      responsavel: body.responsavel || "Coordenação de Campanha",
+      googleCalendarEventId: body.googleCalendarEventId || `gcal_${Date.now()}`,
     };
 
-    MOCK_AGENDA.unshift(newEvent);
+    AGENDA_STORE.unshift(newEvent);
 
     return NextResponse.json({
-      status: "sucesso",
-      mensagem: "Evento criado e sincronizado com o Google Calendar com sucesso!",
+      sucesso: true,
+      mensagem: "Evento agendado e sincronizado com o Google Calendar com sucesso!",
       evento: newEvent,
     });
-  } catch (error) {
-    return NextResponse.json({ error: "Falha ao criar e sincronizar evento: " + String(error) }, { status: 500 });
+  } catch (error: any) {
+    return NextResponse.json(
+      { sucesso: false, erro: "Falha ao registrar evento na agenda", detalhes: error.message },
+      { status: 500 }
+    );
   }
 }

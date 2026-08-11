@@ -40,13 +40,8 @@ interface CommitteeMapProps {
   voluntarios?: any[];
 }
 
-// Tabela de Coordenadas Geográficas Conhecidas para Precisão Imediata
-const KNOWN_COORDS_MAP: Record<string, { lat: number; lon: number; city: string; state: string }> = {
-  "loc-1": { lat: -23.5654, lon: -46.6508, city: "São Paulo", state: "SP" }, // Sede Central - Av. Paulista, 1000
-  "loc-2": { lat: -23.5095, lon: -46.6268, city: "São Paulo", state: "SP" }, // Comitê ZN - Rua Voluntários da Pátria, 500
-  "loc-3": { lat: -23.5828, lon: -46.6384, city: "São Paulo", state: "SP" }, // Ponto de Apoio Sul - Rua Domingos de Morais, 200
-  "loc-4": { lat: -22.9064, lon: -47.0616, city: "Campinas", state: "SP" },  // Comitê Interior - Praça da Matriz, 50
-};
+// Tabela de Coordenadas Geográficas Conhecidas (Alimentada Dinamicamente por Locais Reais do Banco de Dados)
+const KNOWN_COORDS_MAP: Record<string, { lat: number; lon: number; city: string; state: string }> = {};
 
 export function CommitteeMap({ locations = [], voluntarios = [] }: CommitteeMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);

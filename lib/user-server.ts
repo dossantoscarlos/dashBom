@@ -11,11 +11,7 @@ import type {
   Survey,
 } from "@/lib/domain/types";
 import type { SessionPayload } from "@/lib/auth";
-import { initialCampaigns } from "@/lib/data/campaigns";
 import { initialDashboardUsers } from "@/lib/data/dashboard-users";
-import { initialLocations } from "@/lib/data/locations";
-import { initialPartners } from "@/lib/data/partners";
-import { initialRegions } from "@/lib/data/regions";
 import { initialRoles, allPermissions } from "@/lib/data/roles";
 
 export type PreparedUserServerState = {
@@ -41,11 +37,12 @@ export async function prepareUserServerState(
   try {
     dashboard = await laravelApi<LaravelDashboardData>("/api/dashboard-data");
   } catch {
+    // Inicialização 100% Limpa sem Dados Mockados (Exclusivo API ou Banco de Dados SQLite)
     dashboard = {
-      regions: initialRegions,
-      campaigns: initialCampaigns,
-      partners: initialPartners,
-      locations: initialLocations,
+      regions: [],
+      campaigns: [],
+      partners: [],
+      locations: [],
       users: initialDashboardUsers,
       roles: initialRoles,
       availablePermissions: allPermissions,

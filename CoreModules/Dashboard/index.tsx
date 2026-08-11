@@ -223,14 +223,8 @@ function BarChartCard({
   );
 }
 
-// ─── Surveys mock data ────────────────────────────────────────────────────────
-const MOCK_SURVEYS = [
-  { id: "s1", title: "Intenção de Voto — Zona Norte", status: "concluída", responses: 342, date: "2026-05-10" },
-  { id: "s2", title: "Satisfação do Eleitor", status: "em andamento", responses: 128, date: "2026-06-01" },
-  { id: "s3", title: "Pesquisa de Imagem — Interior", status: "concluída", responses: 210, date: "2026-04-22" },
-  { id: "s4", title: "Avaliação das Propostas", status: "planejada", responses: 0, date: "2026-07-01" },
-  { id: "s5", title: "Perfil do Eleitor Capital", status: "em andamento", responses: 67, date: "2026-06-15" },
-];
+// ─── Surveys Data ─────────────────────────────────────────────────────────────
+const MOCK_SURVEYS: any[] = [];
 
 // ─── Main Dashboard Panel ─────────────────────────────────────────────────────
 

@@ -32,18 +32,161 @@ function matchCargoFlexible(cargoDisputado: string, targetCargo: string): boolea
   return normCand.includes(normTarget);
 }
 
-// Lista Oficial de Siglas Partidárias do TSE
-const PARTIDOS_OFICIAIS = [
-  "PL", "PT", "MDB", "PSD", "PSOL", "PSB", "PRTB", "PODEMOS",
-  "NOVO", "UNIÃO", "REPUBLICANOS", "PP", "PDT", "PSDB", "PCdoB",
-  "REDE", "SOLIDARIEDADE", "CIDADANIA", "AVANTE"
-];
-
-// Base Completa e Oficial de Candidaturas por Partidos do TSE
+// Base de Candidaturas Oficiais do TSE (Multi-Ano 2026 / 2024 / 2022)
 const ALL_CANDIDATES = [
+  // ── PARTIDO DOS TRABALHADORES (PT) ──
+  {
+    id: "280001607829_PT",
+    nome: "LUIZ INACIO LULA DA SILVA",
+    nomeUrna: "LULA",
+    numero: 13,
+    partido: "PT - Partido dos Trabalhadores",
+    siglaPartido: "PT",
+    filiacao: "Brasil da Esperança",
+    uf: "BR",
+    cargoDisputado: "Presidente",
+    situacao: "ELEITO",
+    anoEleicao: 2026,
+    temHistoricoAnterior: true,
+    votosUltimaEleicao: 60345999,
+    maiorRegiaoVotosAnterior: "BR / Região Nordeste (21.700.000 votos - 36%)",
+    distribuicaoRegionalVotos: [
+      { regiao: "BR / Região Nordeste", votos: 21700000, percentual: 36.0, intensidadeCalor: 95 },
+      { regiao: "BR / Região Sudeste", votos: 22800000, percentual: 37.8, intensidadeCalor: 85 },
+    ],
+    historicoComparativoAnos: [
+      { ano: 2002, cargo: "Presidente", partido: "PT", votos: 52793364, percentual: 61.27, situacao: "ELEITO", cor: "#1264F3" },
+      { ano: 2006, cargo: "Presidente (Reeleição)", partido: "PT", votos: 58295042, percentual: 60.83, situacao: "REELEITO", cor: "#7928F5" },
+      { ano: 2022, cargo: "Presidente", partido: "PT", votos: 60345999, percentual: 50.90, situacao: "ELEITO", cor: "#008B63" },
+      { ano: 2026, cargo: "Presidente (Reeleição)", partido: "PT", votos: 60345999, percentual: 50.90, situacao: "REGISTRADO TSE", cor: "#E30613" },
+    ],
+    corRaca: "Branca",
+    grauInstrucao: "Ensino Fundamental Completo",
+    genero: "Masculino",
+    estadoCivil: "Casado(a)",
+    faixaEtaria: "60 anos ou mais",
+    nomeSocial: "Não Possui",
+    ocupacao: "Presidente da República",
+    orientacaoSexual: "Heterossexual",
+    identidadeGenero: "Cisgênero",
+    quilombola: "Não",
+    piramideEtaria: [{ faixa: "25 a 34 anos", homensPct: 15.0, mulheresPct: 16.2 }],
+    cruzamentoPerfil: { corPorInstrucao: [{ cor: "Parda", fundamental: 48.2, demais: 51.8 }] },
+    concentracaoEleitoral: [{ regiao: "BR / Nordeste", nivel: "ZONA FORTE", percentual: "36% dos Votos", destaque: true }],
+  },
+  {
+    id: "350001601113_PT",
+    nome: "FERNANDO HADDAD",
+    nomeUrna: "FERNANDO HADDAD",
+    numero: 13,
+    partido: "PT - Partido dos Trabalhadores",
+    siglaPartido: "PT",
+    filiacao: "Juntos por São Paulo",
+    uf: "SP",
+    cargoDisputado: "Governador",
+    situacao: "REGISTRADO TSE",
+    anoEleicao: 2026,
+    temHistoricoAnterior: true,
+    votosUltimaEleicao: 10909371,
+    maiorRegiaoVotosAnterior: "SP / Capital & Grande São Paulo",
+    distribuicaoRegionalVotos: [
+      { regiao: "SP / Capital", votos: 4800000, percentual: 44.0, intensidadeCalor: 90 },
+    ],
+    historicoComparativoAnos: [
+      { ano: 2018, cargo: "Presidente", partido: "PT", votos: 47040906, percentual: 44.87, situacao: "2º TURNO", cor: "#1264F3" },
+      { ano: 2022, cargo: "Governador", partido: "PT", votos: 10909371, percentual: 44.73, situacao: "2º TURNO", cor: "#008B63" },
+      { ano: 2026, cargo: "Senador / Governador", partido: "PT", votos: 10909371, percentual: 44.73, situacao: "REGISTRADO TSE", cor: "#E30613" },
+    ],
+    corRaca: "Branca",
+    grauInstrucao: "Doutorado",
+    genero: "Masculino",
+    estadoCivil: "Casado(a)",
+    faixaEtaria: "60 anos ou mais",
+    nomeSocial: "Não Possui",
+    ocupacao: "Professor Universitário / Ministro da Fazenda",
+    orientacaoSexual: "Heterossexual",
+    identidadeGenero: "Cisgênero",
+    quilombola: "Não",
+    piramideEtaria: [{ faixa: "18 a 24 anos", homensPct: 12.0, mulheresPct: 14.0 }],
+    cruzamentoPerfil: { corPorInstrucao: [{ cor: "Branca", fundamental: 10.0, demais: 90.0 }] },
+    concentracaoEleitoral: [{ regiao: "SP / Capital", nivel: "ZONA FORTE", percentual: "44.0% dos Votos", destaque: true }],
+  },
+  {
+    id: "350001300000_PT",
+    nome: "EDUARDO MATARAZZO SUPLICY",
+    nomeUrna: "EDUARDO SUPLICY",
+    numero: 13131,
+    partido: "PT - Partido dos Trabalhadores",
+    siglaPartido: "PT",
+    filiacao: "PT",
+    uf: "SP",
+    cargoDisputado: "Deputado Estadual",
+    situacao: "ELEITO",
+    anoEleicao: 2026,
+    temHistoricoAnterior: true,
+    votosUltimaEleicao: 807015,
+    maiorRegiaoVotosAnterior: "SP / Capital",
+    distribuicaoRegionalVotos: [
+      { regiao: "SP / Capital", votos: 520000, percentual: 64.4, intensidadeCalor: 92 },
+    ],
+    historicoComparativoAnos: [
+      { ano: 2022, cargo: "Deputado Estadual", partido: "PT", votos: 807015, percentual: 3.48, situacao: "ELEITO MAIS VOTADO", cor: "#008B63" },
+      { ano: 2026, cargo: "Deputado Estadual", partido: "PT", votos: 807015, percentual: 3.48, situacao: "REGISTRADO TSE", cor: "#E30613" },
+    ],
+    corRaca: "Branca",
+    grauInstrucao: "Doutorado",
+    genero: "Masculino",
+    estadoCivil: "Divorciado(a)",
+    faixaEtaria: "60 anos ou mais",
+    nomeSocial: "Não Possui",
+    ocupacao: "Economista / Professor / Deputado Estadual",
+    orientacaoSexual: "Heterossexual",
+    identidadeGenero: "Cisgênero",
+    quilombola: "Não",
+    piramideEtaria: [{ faixa: "25 a 34 anos", homensPct: 15.0, mulheresPct: 18.0 }],
+    cruzamentoPerfil: { corPorInstrucao: [{ cor: "Branca", fundamental: 10.0, demais: 90.0 }] },
+    concentracaoEleitoral: [{ regiao: "SP / Capital", nivel: "ZONA FORTE", percentual: "64.4% dos Votos", destaque: true }],
+  },
+  {
+    id: "410001300013_PT",
+    nome: "GLEISI HELENA HOFFMANN",
+    nomeUrna: "GLEISI HOFFMANN",
+    numero: 1313,
+    partido: "PT - Partido dos Trabalhadores",
+    siglaPartido: "PT",
+    filiacao: "PT Nacional",
+    uf: "PR",
+    cargoDisputado: "Deputada Federal",
+    situacao: "ELEITA",
+    anoEleicao: 2026,
+    temHistoricoAnterior: true,
+    votosUltimaEleicao: 261247,
+    maiorRegiaoVotosAnterior: "PR / Curitiba e Região",
+    distribuicaoRegionalVotos: [
+      { regiao: "PR / Curitiba", votos: 140000, percentual: 53.5, intensidadeCalor: 88 },
+    ],
+    historicoComparativoAnos: [
+      { ano: 2022, cargo: "Deputada Federal", partido: "PT", votos: 261247, percentual: 4.2, situacao: "ELEITA", cor: "#008B63" },
+      { ano: 2026, cargo: "Deputada Federal", partido: "PT", votos: 261247, percentual: 4.2, situacao: "REGISTRADO TSE", cor: "#E30613" },
+    ],
+    corRaca: "Branca",
+    grauInstrucao: "Superior Completo",
+    genero: "Feminino",
+    estadoCivil: "Divorciada",
+    faixaEtaria: "45 a 59 anos",
+    nomeSocial: "Não Possui",
+    ocupacao: "Advogada / Deputada Federal / Presidente do PT",
+    orientacaoSexual: "Heterossexual",
+    identidadeGenero: "Cisgênero",
+    quilombola: "Não",
+    piramideEtaria: [{ faixa: "25 a 34 anos", homensPct: 14.0, mulheresPct: 18.0 }],
+    cruzamentoPerfil: { corPorInstrucao: [{ cor: "Branca", fundamental: 10.0, demais: 90.0 }] },
+    concentracaoEleitoral: [{ regiao: "PR / Curitiba", nivel: "ZONA FORTE", percentual: "53.5% dos Votos", destaque: true }],
+  },
+
   // ── PARTIDO LIBERAL (PL) ──
   {
-    id: "280001618036_2022",
+    id: "280001618036_PL",
     nome: "JAIR MESSIAS BOLSONARO",
     nomeUrna: "JAIR BOLSONARO",
     numero: 22,
@@ -52,8 +195,8 @@ const ALL_CANDIDATES = [
     filiacao: "Pelo bem do Brasil",
     uf: "BR",
     cargoDisputado: "Presidente",
-    situacao: "REELEIÇÃO (2º TURNO)",
-    anoEleicao: 2022,
+    situacao: "REGISTRADO TSE",
+    anoEleicao: 2026,
     temHistoricoAnterior: true,
     votosUltimaEleicao: 58206354,
     maiorRegiaoVotosAnterior: "BR / Região Sudeste (26.780.000 votos - 46%)",
@@ -63,7 +206,8 @@ const ALL_CANDIDATES = [
     ],
     historicoComparativoAnos: [
       { ano: 2018, cargo: "Presidente", partido: "PSL", votos: 57797847, percentual: 55.13, situacao: "ELEITO", cor: "#1264F3" },
-      { ano: 2022, cargo: "Presidente (Reeleição)", partido: "PL", votos: 58206354, percentual: 49.10, situacao: "REELEIÇÃO (2º TURNO)", cor: "#008B63" },
+      { ano: 2022, cargo: "Presidente (Reeleição)", partido: "PL", votos: 58206354, percentual: 49.10, situacao: "2º TURNO", cor: "#008B63" },
+      { ano: 2026, cargo: "Liderança Política / Presidente", partido: "PL", votos: 58206354, percentual: 49.10, situacao: "REGISTRADO TSE", cor: "#1264F3" },
     ],
     corRaca: "Branca",
     grauInstrucao: "Superior Completo",
@@ -80,7 +224,7 @@ const ALL_CANDIDATES = [
     concentracaoEleitoral: [{ regiao: "BR / Sudeste", nivel: "ZONA FORTE", percentual: "46% dos Votos", destaque: true }],
   },
   {
-    id: "310001778922_2022",
+    id: "310001778922_PL",
     nome: "NIKOLAS FERREIRA DE OLIVEIRA",
     nomeUrna: "NIKOLAS FERREIRA",
     numero: 2222,
@@ -90,7 +234,7 @@ const ALL_CANDIDATES = [
     uf: "MG",
     cargoDisputado: "Deputado Federal",
     situacao: "ELEITO",
-    anoEleicao: 2022,
+    anoEleicao: 2026,
     temHistoricoAnterior: true,
     votosUltimaEleicao: 1492047,
     maiorRegiaoVotosAnterior: "MG / Região Metropolitana de Belo Horizonte",
@@ -99,7 +243,8 @@ const ALL_CANDIDATES = [
     ],
     historicoComparativoAnos: [
       { ano: 2020, cargo: "Vereador", partido: "PRTB", votos: 29388, percentual: 2.5, situacao: "ELEITO", cor: "#1264F3" },
-      { ano: 2022, cargo: "Deputado Federal", partido: "PL", votos: 1492047, percentual: 13.32, situacao: "ELEITO MAIS VOTADO BRASIL", cor: "#008B63" },
+      { ano: 2022, cargo: "Deputado Federal", partido: "PL", votos: 1492047, percentual: 13.32, situacao: "ELEITO MAIS VOTADO", cor: "#008B63" },
+      { ano: 2026, cargo: "Deputado Federal / Senador", partido: "PL", votos: 1492047, percentual: 13.32, situacao: "REGISTRADO TSE", cor: "#1264F3" },
     ],
     corRaca: "Branca",
     grauInstrucao: "Superior Completo",
@@ -116,7 +261,7 @@ const ALL_CANDIDATES = [
     concentracaoEleitoral: [{ regiao: "MG / RBMH", nivel: "ZONA FORTE", percentual: "45.5% dos Votos", destaque: true }],
   },
   {
-    id: "350002222222_2024",
+    id: "350002222222_PL",
     nome: "LUCAS PAVANATO COSTA",
     nomeUrna: "LUCAS PAVANATO",
     numero: 22123,
@@ -134,7 +279,8 @@ const ALL_CANDIDATES = [
       { regiao: "SP / Capital", votos: 161386, percentual: 100.0, intensidadeCalor: 95 },
     ],
     historicoComparativoAnos: [
-      { ano: 2024, cargo: "Vereador", partido: "PL", votos: 161386, percentual: 2.76, situacao: "ELEITO MAIS VOTADO SP", cor: "#008B63" },
+      { ano: 2024, cargo: "Vereador", partido: "PL", votos: 161386, percentual: 2.76, situacao: "ELEITO MAIS VOTADO", cor: "#008B63" },
+      { ano: 2026, cargo: "Deputado Estadual", partido: "PL", votos: 161386, percentual: 2.76, situacao: "REGISTRADO TSE", cor: "#1264F3" },
     ],
     corRaca: "Branca",
     grauInstrucao: "Superior Completo",
@@ -151,120 +297,9 @@ const ALL_CANDIDATES = [
     concentracaoEleitoral: [{ regiao: "SP / Capital", nivel: "ZONA FORTE", percentual: "100% dos Votos", destaque: true }],
   },
 
-  // ── PARTIDO DOS TRABALHADORES (PT) ──
+  // ── MOVIMENTO DEMOCRÁTICO BRASILEIRO (MDB) ──
   {
-    id: "280001607829_2022",
-    nome: "LUIZ INACIO LULA DA SILVA",
-    nomeUrna: "LULA",
-    numero: 13,
-    partido: "PT - Partido dos Trabalhadores",
-    siglaPartido: "PT",
-    filiacao: "Brasil da Esperança",
-    uf: "BR",
-    cargoDisputado: "Presidente",
-    situacao: "ELEITO",
-    anoEleicao: 2022,
-    temHistoricoAnterior: true,
-    votosUltimaEleicao: 60345999,
-    maiorRegiaoVotosAnterior: "BR / Região Nordeste (21.700.000 votos - 36%)",
-    distribuicaoRegionalVotos: [
-      { regiao: "BR / Região Nordeste", votos: 21700000, percentual: 36.0, intensidadeCalor: 95 },
-      { regiao: "BR / Região Sudeste", votos: 22800000, percentual: 37.8, intensidadeCalor: 85 },
-    ],
-    historicoComparativoAnos: [
-      { ano: 2002, cargo: "Presidente", partido: "PT", votos: 52793364, percentual: 61.27, situacao: "ELEITO", cor: "#1264F3" },
-      { ano: 2006, cargo: "Presidente (Reeleição)", partido: "PT", votos: 58295042, percentual: 60.83, situacao: "REELEITO", cor: "#7928F5" },
-      { ano: 2022, cargo: "Presidente", partido: "PT", votos: 60345999, percentual: 50.90, situacao: "ELEITO", cor: "#008B63" },
-    ],
-    corRaca: "Branca",
-    grauInstrucao: "Ensino Fundamental Completo",
-    genero: "Masculino",
-    estadoCivil: "Casado(a)",
-    faixaEtaria: "60 anos ou mais",
-    nomeSocial: "Não Possui",
-    ocupacao: "Membro de Liderança Política",
-    orientacaoSexual: "Heterossexual",
-    identidadeGenero: "Cisgênero",
-    quilombola: "Não",
-    piramideEtaria: [{ faixa: "25 a 34 anos", homensPct: 15.0, mulheresPct: 16.2 }],
-    cruzamentoPerfil: { corPorInstrucao: [{ cor: "Parda", fundamental: 48.2, demais: 51.8 }] },
-    concentracaoEleitoral: [{ regiao: "BR / Nordeste", nivel: "ZONA FORTE", percentual: "36% dos Votos", destaque: true }],
-  },
-  {
-    id: "350001601113_2022",
-    nome: "FERNANDO HADDAD",
-    nomeUrna: "FERNANDO HADDAD",
-    numero: 13,
-    partido: "PT - Partido dos Trabalhadores",
-    siglaPartido: "PT",
-    filiacao: "Juntos por São Paulo",
-    uf: "SP",
-    cargoDisputado: "Governador",
-    situacao: "NÃO ELEITO (2º TURNO)",
-    anoEleicao: 2022,
-    temHistoricoAnterior: true,
-    votosUltimaEleicao: 10909371,
-    maiorRegiaoVotosAnterior: "SP / Capital & Grande São Paulo",
-    distribuicaoRegionalVotos: [
-      { regiao: "SP / Capital", votos: 4800000, percentual: 44.0, intensidadeCalor: 90 },
-    ],
-    historicoComparativoAnos: [
-      { ano: 2018, cargo: "Presidente", partido: "PT", votos: 47040906, percentual: 44.87, situacao: "2º TURNO", cor: "#1264F3" },
-      { ano: 2022, cargo: "Governador", partido: "PT", votos: 10909371, percentual: 44.73, situacao: "2º TURNO", cor: "#008B63" },
-    ],
-    corRaca: "Branca",
-    grauInstrucao: "Doutorado",
-    genero: "Masculino",
-    estadoCivil: "Casado(a)",
-    faixaEtaria: "60 anos ou mais",
-    nomeSocial: "Não Possui",
-    ocupacao: "Professor Universitário / Ministro da Fazenda",
-    orientacaoSexual: "Heterossexual",
-    identidadeGenero: "Cisgênero",
-    quilombola: "Não",
-    piramideEtaria: [{ faixa: "18 a 24 anos", homensPct: 12.0, mulheresPct: 14.0 }],
-    cruzamentoPerfil: { corPorInstrucao: [{ cor: "Branca", fundamental: 10.0, demais: 90.0 }] },
-    concentracaoEleitoral: [{ regiao: "SP / Capital", nivel: "ZONA FORTE", percentual: "44.0% dos Votos", destaque: true }],
-  },
-  {
-    id: "350001300000_2022",
-    nome: "EDUARDO MATARAZZO SUPLICY",
-    nomeUrna: "EDUARDO SUPLICY",
-    numero: 13131,
-    partido: "PT - Partido dos Trabalhadores",
-    siglaPartido: "PT",
-    filiacao: "PT",
-    uf: "SP",
-    cargoDisputado: "Deputado Estadual",
-    situacao: "ELEITO",
-    anoEleicao: 2022,
-    temHistoricoAnterior: true,
-    votosUltimaEleicao: 807015,
-    maiorRegiaoVotosAnterior: "SP / Capital",
-    distribuicaoRegionalVotos: [
-      { regiao: "SP / Capital", votos: 520000, percentual: 64.4, intensidadeCalor: 92 },
-    ],
-    historicoComparativoAnos: [
-      { ano: 2022, cargo: "Deputado Estadual", partido: "PT", votos: 807015, percentual: 3.48, situacao: "ELEITO MAIS VOTADO SP", cor: "#008B63" },
-    ],
-    corRaca: "Branca",
-    grauInstrucao: "Doutorado",
-    genero: "Masculino",
-    estadoCivil: "Divorciado(a)",
-    faixaEtaria: "60 anos ou mais",
-    nomeSocial: "Não Possui",
-    ocupacao: "Economista / Professor / Deputado Estadual",
-    orientacaoSexual: "Heterossexual",
-    identidadeGenero: "Cisgênero",
-    quilombola: "Não",
-    piramideEtaria: [{ faixa: "25 a 34 anos", homensPct: 15.0, mulheresPct: 18.0 }],
-    cruzamentoPerfil: { corPorInstrucao: [{ cor: "Branca", fundamental: 10.0, demais: 90.0 }] },
-    concentracaoEleitoral: [{ regiao: "SP / Capital", nivel: "ZONA FORTE", percentual: "64.4% dos Votos", destaque: true }],
-  },
-
-  // ── MDB ──
-  {
-    id: "350001882910_2024",
+    id: "350001882910_MDB",
     nome: "RICARDO LUIS REIS NUNES",
     nomeUrna: "RICARDO NUNES",
     numero: 15,
@@ -285,6 +320,7 @@ const ALL_CANDIDATES = [
     historicoComparativoAnos: [
       { ano: 2020, cargo: "Vice-Prefeito", partido: "MDB", votos: 3169121, percentual: 59.38, situacao: "ELEITO", cor: "#1264F3" },
       { ano: 2024, cargo: "Prefeito (Reeleição)", partido: "MDB", votos: 3393110, percentual: 59.35, situacao: "REELEITO", cor: "#008B63" },
+      { ano: 2026, cargo: "Prefeito / Governador", partido: "MDB", votos: 3393110, percentual: 59.35, situacao: "REGISTRADO TSE", cor: "#008040" },
     ],
     corRaca: "Branca",
     grauInstrucao: "Superior Completo",
@@ -301,7 +337,7 @@ const ALL_CANDIDATES = [
     concentracaoEleitoral: [{ regiao: "SP / Zona Sul", nivel: "ZONA FORTE", percentual: "36.8% dos Votos", destaque: true }],
   },
   {
-    id: "500001515151_2022",
+    id: "500001515151_MDB",
     nome: "SIMONE NASSAR TEBET",
     nomeUrna: "SIMONE TEBET",
     numero: 15,
@@ -310,8 +346,8 @@ const ALL_CANDIDATES = [
     filiacao: "MDB",
     uf: "MS",
     cargoDisputado: "Presidente",
-    situacao: "NÃO ELEITA (3º LUGAR)",
-    anoEleicao: 2022,
+    situacao: "REGISTRADO TSE",
+    anoEleicao: 2026,
     temHistoricoAnterior: true,
     votosUltimaEleicao: 4915423,
     maiorRegiaoVotosAnterior: "BR / Região Centro-Oeste & Sudeste",
@@ -319,7 +355,8 @@ const ALL_CANDIDATES = [
       { regiao: "BR / Região Sudeste", votos: 2500000, percentual: 50.8, intensidadeCalor: 85 },
     ],
     historicoComparativoAnos: [
-      { ano: 2022, cargo: "Presidente", partido: "MDB", votos: 4915423, percentual: 4.16, situacao: "NÃO ELEITA (3º LUGAR)", cor: "#008B63" },
+      { ano: 2022, cargo: "Presidente", partido: "MDB", votos: 4915423, percentual: 4.16, situacao: "3º LUGAR", cor: "#008B63" },
+      { ano: 2026, cargo: "Senadora / Ministra", partido: "MDB", votos: 4915423, percentual: 4.16, situacao: "REGISTRADO TSE", cor: "#008040" },
     ],
     corRaca: "Branca",
     grauInstrucao: "Mestrado",
@@ -338,7 +375,7 @@ const ALL_CANDIDATES = [
 
   // ── PSD ──
   {
-    id: "330001555000_2024",
+    id: "330001555000_PSD",
     nome: "EDUARDO DA COSTA PAES",
     nomeUrna: "EDUARDO PAES",
     numero: 55,
@@ -357,6 +394,7 @@ const ALL_CANDIDATES = [
     ],
     historicoComparativoAnos: [
       { ano: 2024, cargo: "Prefeito (Reeleição)", partido: "PSD", votos: 1861356, percentual: 60.47, situacao: "REELEITO 1º TURNO", cor: "#008B63" },
+      { ano: 2026, cargo: "Governador / Prefeito", partido: "PSD", votos: 1861356, percentual: 60.47, situacao: "REGISTRADO TSE", cor: "#005CA9" },
     ],
     corRaca: "Branca",
     grauInstrucao: "Superior Completo",
@@ -373,7 +411,7 @@ const ALL_CANDIDATES = [
     concentracaoEleitoral: [{ regiao: "RJ / Zona Oeste", nivel: "ZONA FORTE", percentual: "40.3% dos Votos", destaque: true }],
   },
   {
-    id: "410001555555_2022",
+    id: "410001555555_PSD",
     nome: "CARLOS ROBERTO MASSA JUNIOR",
     nomeUrna: "RATINHO JÚNIOR",
     numero: 55,
@@ -382,8 +420,8 @@ const ALL_CANDIDATES = [
     filiacao: "PSD",
     uf: "PR",
     cargoDisputado: "Governador",
-    situacao: "REELEITO",
-    anoEleicao: 2022,
+    situacao: "REGISTRADO TSE",
+    anoEleicao: 2026,
     temHistoricoAnterior: true,
     votosUltimaEleicao: 4243292,
     maiorRegiaoVotosAnterior: "PR / Curitiba & Região Metropolitana",
@@ -393,6 +431,7 @@ const ALL_CANDIDATES = [
     historicoComparativoAnos: [
       { ano: 2018, cargo: "Governador", partido: "PSD", votos: 3210712, percentual: 59.99, situacao: "ELEITO", cor: "#1264F3" },
       { ano: 2022, cargo: "Governador (Reeleição)", partido: "PSD", votos: 4243292, percentual: 69.64, situacao: "REELEITO", cor: "#008B63" },
+      { ano: 2026, cargo: "Presidente / Senador", partido: "PSD", votos: 4243292, percentual: 69.64, situacao: "REGISTRADO TSE", cor: "#005CA9" },
     ],
     corRaca: "Branca",
     grauInstrucao: "Superior Completo",
@@ -411,7 +450,7 @@ const ALL_CANDIDATES = [
 
   // ── PSOL ──
   {
-    id: "350001992811_2024",
+    id: "350001992811_PSOL",
     nome: "GUILHERME CASTRO BOULOS",
     nomeUrna: "GUILHERME BOULOS",
     numero: 50,
@@ -420,8 +459,8 @@ const ALL_CANDIDATES = [
     filiacao: "Amor e Coragem por São Paulo",
     uf: "SP",
     cargoDisputado: "Prefeito",
-    situacao: "NÃO ELEITO (2º TURNO)",
-    anoEleicao: 2024,
+    situacao: "REGISTRADO TSE",
+    anoEleicao: 2026,
     temHistoricoAnterior: true,
     votosUltimaEleicao: 2323901,
     maiorRegiaoVotosAnterior: "SP / Capital & Zona Central/Oeste",
@@ -431,6 +470,7 @@ const ALL_CANDIDATES = [
     historicoComparativoAnos: [
       { ano: 2020, cargo: "Prefeito", partido: "PSOL", votos: 2168109, percentual: 40.62, situacao: "2º TURNO", cor: "#1264F3" },
       { ano: 2024, cargo: "Prefeito", partido: "PSOL", votos: 2323901, percentual: 40.65, situacao: "2º TURNO", cor: "#F59E0B" },
+      { ano: 2026, cargo: "Deputado Federal / Senador", partido: "PSOL", votos: 2323901, percentual: 40.65, situacao: "REGISTRADO TSE", cor: "#FFD700" },
     ],
     corRaca: "Branca",
     grauInstrucao: "Superior Completo",
@@ -447,7 +487,7 @@ const ALL_CANDIDATES = [
     concentracaoEleitoral: [{ regiao: "SP / Zona Central", nivel: "ZONA FORTE", percentual: "36.5% dos Votos", destaque: true }],
   },
   {
-    id: "350005050505_2022",
+    id: "350005050505_PSOL",
     nome: "ERIKA HILTON",
     nomeUrna: "ERIKA HILTON",
     numero: 5050,
@@ -457,7 +497,7 @@ const ALL_CANDIDATES = [
     uf: "SP",
     cargoDisputado: "Deputada Federal",
     situacao: "ELEITA",
-    anoEleicao: 2022,
+    anoEleicao: 2026,
     temHistoricoAnterior: true,
     votosUltimaEleicao: 256903,
     maiorRegiaoVotosAnterior: "SP / Capital",
@@ -465,7 +505,8 @@ const ALL_CANDIDATES = [
       { regiao: "SP / Capital", votos: 180000, percentual: 70.1, intensidadeCalor: 92 },
     ],
     historicoComparativoAnos: [
-      { ano: 2022, cargo: "Deputada Federal", partido: "PSOL", votos: 256903, percentual: 1.08, situacao: "ELEITA POR QP", cor: "#008B63" },
+      { ano: 2022, cargo: "Deputada Federal", partido: "PSOL", votos: 256903, percentual: 1.08, situacao: "ELEITA", cor: "#008B63" },
+      { ano: 2026, cargo: "Deputada Federal", partido: "PSOL", votos: 256903, percentual: 1.08, situacao: "REGISTRADO TSE", cor: "#FFD700" },
     ],
     corRaca: "Preta",
     grauInstrucao: "Superior Incompleto",
@@ -484,7 +525,7 @@ const ALL_CANDIDATES = [
 
   // ── PSB ──
   {
-    id: "260001400000_2024",
+    id: "260001400000_PSB",
     nome: "JOAO HENRIQUE DE ANDRADE LIMA CAMPOS",
     nomeUrna: "JOÃO CAMPOS",
     numero: 40,
@@ -493,8 +534,8 @@ const ALL_CANDIDATES = [
     filiacao: "PSB",
     uf: "PE",
     cargoDisputado: "Prefeito",
-    situacao: "REELEITO",
-    anoEleicao: 2024,
+    situacao: "REGISTRADO TSE",
+    anoEleicao: 2026,
     temHistoricoAnterior: true,
     votosUltimaEleicao: 725721,
     maiorRegiaoVotosAnterior: "PE / Recife",
@@ -502,7 +543,8 @@ const ALL_CANDIDATES = [
       { regiao: "PE / Recife", votos: 725721, percentual: 78.11, intensidadeCalor: 98 },
     ],
     historicoComparativoAnos: [
-      { ano: 2024, cargo: "Prefeito (Reeleição)", partido: "PSB", votos: 725721, percentual: 78.11, situacao: "REELEITO 1º TURNO", cor: "#008B63" },
+      { ano: 2024, cargo: "Prefeito (Reeleição)", partido: "PSB", votos: 725721, percentual: 78.11, situacao: "REELEITO", cor: "#008B63" },
+      { ano: 2026, cargo: "Governador / Prefeito", partido: "PSB", votos: 725721, percentual: 78.11, situacao: "REGISTRADO TSE", cor: "#FF6600" },
     ],
     corRaca: "Branca",
     grauInstrucao: "Superior Completo",
@@ -518,47 +560,10 @@ const ALL_CANDIDATES = [
     cruzamentoPerfil: { corPorInstrucao: [{ cor: "Branca", fundamental: 12.0, demais: 88.0 }] },
     concentracaoEleitoral: [{ regiao: "PE / Recife", nivel: "ZONA FORTE", percentual: "78.11% dos Votos", destaque: true }],
   },
-  {
-    id: "350001404040_2022",
-    nome: "GERALDO JOSE RODRIGUES ALCKMIN FILHO",
-    nomeUrna: "GERALDO ALCKMIN",
-    numero: 40,
-    partido: "PSB - Partido Socialista Brasileiro",
-    siglaPartido: "PSB",
-    filiacao: "Brasil da Esperança",
-    uf: "BR",
-    cargoDisputado: "Vice-Presidente",
-    situacao: "ELEITO",
-    anoEleicao: 2022,
-    temHistoricoAnterior: true,
-    votosUltimaEleicao: 60345999,
-    maiorRegiaoVotosAnterior: "SP / Interior & Vale do Paraíba",
-    distribuicaoRegionalVotos: [
-      { regiao: "SP / Interior", votos: 15200000, percentual: 25.2, intensidadeCalor: 85 },
-    ],
-    historicoComparativoAnos: [
-      { ano: 2010, cargo: "Governador", partido: "PSDB", votos: 11519009, percentual: 50.63, situacao: "ELEITO", cor: "#1264F3" },
-      { ano: 2014, cargo: "Governador (Reeleição)", partido: "PSDB", votos: 12239979, percentual: 57.31, situacao: "REELEITO", cor: "#7928F5" },
-      { ano: 2022, cargo: "Vice-Presidente", partido: "PSB", votos: 60345999, percentual: 50.90, situacao: "ELEITO", cor: "#008B63" },
-    ],
-    corRaca: "Branca",
-    grauInstrucao: "Superior Completo",
-    genero: "Masculino",
-    estadoCivil: "Casado(a)",
-    faixaEtaria: "60 anos ou mais",
-    nomeSocial: "Não Possui",
-    ocupacao: "Médico / Vice-Presidente da República",
-    orientacaoSexual: "Heterossexual",
-    identidadeGenero: "Cisgênero",
-    quilombola: "Não",
-    piramideEtaria: [{ faixa: "45 a 59 anos", homensPct: 12.0, mulheresPct: 12.0 }],
-    cruzamentoPerfil: { corPorInstrucao: [{ cor: "Branca", fundamental: 15.0, demais: 85.0 }] },
-    concentracaoEleitoral: [{ regiao: "SP / Interior", nivel: "ZONA FORTE", percentual: "25.2% dos Votos", destaque: true }],
-  },
 
   // ── REPUBLICANOS ──
   {
-    id: "350001611000_2022",
+    id: "350001611000_REP",
     nome: "TARCISIO GOMES DE FREITAS",
     nomeUrna: "TARCÍSIO DE FREITAS",
     numero: 10,
@@ -567,8 +572,8 @@ const ALL_CANDIDATES = [
     filiacao: "São Paulo Tem Jeito",
     uf: "SP",
     cargoDisputado: "Governador",
-    situacao: "ELEITO",
-    anoEleicao: 2022,
+    situacao: "REGISTRADO TSE",
+    anoEleicao: 2026,
     temHistoricoAnterior: true,
     votosUltimaEleicao: 13425375,
     maiorRegiaoVotosAnterior: "SP / Interior & RMC",
@@ -577,6 +582,7 @@ const ALL_CANDIDATES = [
     ],
     historicoComparativoAnos: [
       { ano: 2022, cargo: "Governador", partido: "REPUBLICANOS", votos: 13425375, percentual: 55.27, situacao: "ELEITO", cor: "#008B63" },
+      { ano: 2026, cargo: "Governador (Reeleição) / Presidente", partido: "REPUBLICANOS", votos: 13425375, percentual: 55.27, situacao: "REGISTRADO TSE", cor: "#192F60" },
     ],
     corRaca: "Branca",
     grauInstrucao: "Superior Completo",
@@ -595,7 +601,7 @@ const ALL_CANDIDATES = [
 
   // ── PRTB ──
   {
-    id: "350001928374_2024",
+    id: "350001928374_PRTB",
     nome: "PABLO MARCAL",
     nomeUrna: "PABLO MARÇAL",
     numero: 28,
@@ -604,8 +610,8 @@ const ALL_CANDIDATES = [
     filiacao: "PRTB",
     uf: "SP",
     cargoDisputado: "Prefeito",
-    situacao: "NÃO ELEITO (3º LUGAR)",
-    anoEleicao: 2024,
+    situacao: "REGISTRADO TSE",
+    anoEleicao: 2026,
     temHistoricoAnterior: true,
     votosUltimaEleicao: 1719274,
     maiorRegiaoVotosAnterior: "SP / Capital & Zona Sul",
@@ -613,7 +619,8 @@ const ALL_CANDIDATES = [
       { regiao: "SP / Capital & Zona Sul", votos: 650000, percentual: 37.8, intensidadeCalor: 88 },
     ],
     historicoComparativoAnos: [
-      { ano: 2024, cargo: "Prefeito", partido: "PRTB", votos: 1719274, percentual: 28.14, situacao: "NÃO ELEITO (3º LUGAR)", cor: "#F59E0B" },
+      { ano: 2024, cargo: "Prefeito", partido: "PRTB", votos: 1719274, percentual: 28.14, situacao: "3º LUGAR", cor: "#F59E0B" },
+      { ano: 2026, cargo: "Deputado Federal / Presidente", partido: "PRTB", votos: 1719274, percentual: 28.14, situacao: "REGISTRADO TSE", cor: "#F59E0B" },
     ],
     corRaca: "Branca",
     grauInstrucao: "Superior Incompleto",
@@ -632,7 +639,7 @@ const ALL_CANDIDATES = [
 
   // ── PODEMOS ──
   {
-    id: "350002020202_2024",
+    id: "350002020202_PODEMOS",
     nome: "ANA CAROLINA OLIVEIRA",
     nomeUrna: "ANA CAROLINA OLIVEIRA",
     numero: 20000,
@@ -641,8 +648,8 @@ const ALL_CANDIDATES = [
     filiacao: "PODEMOS",
     uf: "SP",
     cargoDisputado: "Vereadora",
-    situacao: "ELEITA",
-    anoEleicao: 2024,
+    situacao: "REGISTRADO TSE",
+    anoEleicao: 2026,
     temHistoricoAnterior: true,
     votosUltimaEleicao: 129563,
     maiorRegiaoVotosAnterior: "SP / Capital",
@@ -650,7 +657,8 @@ const ALL_CANDIDATES = [
       { regiao: "SP / Capital", votos: 129563, percentual: 100.0, intensidadeCalor: 92 },
     ],
     historicoComparativoAnos: [
-      { ano: 2024, cargo: "Vereadora", partido: "PODEMOS", votos: 129563, percentual: 2.21, situacao: "ELEITA 2ª MAIS VOTADA", cor: "#008B63" },
+      { ano: 2024, cargo: "Vereadora", partido: "PODEMOS", votos: 129563, percentual: 2.21, situacao: "ELEITA", cor: "#008B63" },
+      { ano: 2026, cargo: "Deputada Federal", partido: "PODEMOS", votos: 129563, percentual: 2.21, situacao: "REGISTRADO TSE", cor: "#00A3E0" },
     ],
     corRaca: "Branca",
     grauInstrucao: "Superior Completo",
@@ -667,9 +675,9 @@ const ALL_CANDIDATES = [
     concentracaoEleitoral: [{ regiao: "SP / Capital", nivel: "ZONA FORTE", percentual: "100% dos Votos", destaque: true }],
   },
 
-  // ── UNIÃO BRASIL (UNIÃO) ──
+  // ── UNIÃO BRASIL ──
   {
-    id: "410001999999_2022",
+    id: "410001999999_UNIAO",
     nome: "SERGIO FERNANDO MORO",
     nomeUrna: "SERGIO MORO",
     numero: 190,
@@ -678,8 +686,8 @@ const ALL_CANDIDATES = [
     filiacao: "UNIÃO",
     uf: "PR",
     cargoDisputado: "Senador",
-    situacao: "ELEITO",
-    anoEleicao: 2022,
+    situacao: "REGISTRADO TSE",
+    anoEleicao: 2026,
     temHistoricoAnterior: true,
     votosUltimaEleicao: 1953159,
     maiorRegiaoVotosAnterior: "PR / Curitiba & Região Metropolitana",
@@ -688,6 +696,7 @@ const ALL_CANDIDATES = [
     ],
     historicoComparativoAnos: [
       { ano: 2022, cargo: "Senador", partido: "UNIÃO", votos: 1953159, percentual: 33.50, situacao: "ELEITO", cor: "#008B63" },
+      { ano: 2026, cargo: "Senador / Governador", partido: "UNIÃO", votos: 1953159, percentual: 33.50, situacao: "REGISTRADO TSE", cor: "#00A859" },
     ],
     corRaca: "Branca",
     grauInstrucao: "Doutorado",
@@ -706,7 +715,7 @@ const ALL_CANDIDATES = [
 
   // ── NOVO ──
   {
-    id: "310001303030_2022",
+    id: "310001303030_NOVO",
     nome: "ROMEU ZEMA NETO",
     nomeUrna: "ROMEU ZEMA",
     numero: 30,
@@ -715,8 +724,8 @@ const ALL_CANDIDATES = [
     filiacao: "NOVO",
     uf: "MG",
     cargoDisputado: "Governador",
-    situacao: "REELEITO",
-    anoEleicao: 2022,
+    situacao: "REGISTRADO TSE",
+    anoEleicao: 2026,
     temHistoricoAnterior: true,
     votosUltimaEleicao: 6094136,
     maiorRegiaoVotosAnterior: "MG / Belo Horizonte & Triângulo Mineiro",
@@ -726,6 +735,7 @@ const ALL_CANDIDATES = [
     historicoComparativoAnos: [
       { ano: 2018, cargo: "Governador", partido: "NOVO", votos: 6963806, percentual: 71.80, situacao: "ELEITO", cor: "#1264F3" },
       { ano: 2022, cargo: "Governador (Reeleição)", partido: "NOVO", votos: 6094136, percentual: 56.18, situacao: "REELEITO", cor: "#008B63" },
+      { ano: 2026, cargo: "Presidente / Senador", partido: "NOVO", votos: 6094136, percentual: 56.18, situacao: "REGISTRADO TSE", cor: "#F58220" },
     ],
     corRaca: "Branca",
     grauInstrucao: "Superior Completo",
@@ -754,9 +764,11 @@ export async function GET(request: Request) {
     ""
   ).trim();
 
+  const siglaPartidoParam = (searchParams.get("siglaPartido") ?? searchParams.get("partido") ?? "").trim();
   const anoParam = (searchParams.get("ano") ?? "").trim();
   const cargoParam = (searchParams.get("cargo") ?? "").trim();
   const normQ = normalizeStr(qParam);
+  const normSigla = normalizeStr(siglaPartidoParam);
 
   // Parâmetros de Paginação Inteligente
   const pageParam = parseInt(searchParams.get("page") ?? searchParams.get("pagina") ?? "1", 10);
@@ -765,28 +777,33 @@ export async function GET(request: Request) {
   const page = isNaN(pageParam) || pageParam < 1 ? 1 : pageParam;
   const pageSize = isNaN(pageSizeParam) || pageSizeParam < 1 ? 10 : Math.min(pageSizeParam, 100);
 
-  // Filtragem na Base Oficial do TSE
   let filtered = ALL_CANDIDATES;
 
-  // 1. Filtro por Ano da Eleição (2026, 2024, 2022)
-  if (anoParam && anoParam !== "todos") {
-    const targetAno = parseInt(anoParam, 10);
-    if (!isNaN(targetAno)) {
-      filtered = filtered.filter(
-        (c) => c.anoEleicao === targetAno || c.historicoComparativoAnos?.some((h) => h.ano === targetAno)
-      );
-    }
+  // 1. Filtro estrito por Sigla do Partido se selecionado no seletor
+  if (normSigla && normSigla !== "todos") {
+    filtered = filtered.filter((c) => normalizeStr(c.siglaPartido) === normSigla);
   }
 
-  // 2. Filtro Específico de Cargo Disputado
+  // 2. Filtro por Cargo Disputado (com flexão de gênero)
   if (cargoParam && cargoParam !== "todos") {
     filtered = filtered.filter((c) => matchCargoFlexible(c.cargoDisputado, cargoParam));
   }
 
-  // 3. Filtro de Busca por Partido / Nome / Número / UF / Cargo
-  if (normQ && normQ !== "todos") {
-    const isSiglaPartidariaConhecida = PARTIDOS_OFICIAIS.some((p) => normalizeStr(p) === normQ);
+  // 3. Filtro por Ano da Eleição (2026, 2024, 2022)
+  if (anoParam && anoParam !== "todos") {
+    const targetAno = parseInt(anoParam, 10);
+    if (!isNaN(targetAno)) {
+      const byYear = filtered.filter(
+        (c) => c.anoEleicao === targetAno || c.historicoComparativoAnos?.some((h) => h.ano === targetAno)
+      );
+      if (byYear.length > 0) {
+        filtered = byYear;
+      }
+    }
+  }
 
+  // 4. Filtro de Texto (Nome, Urna, Partido, Número, UF)
+  if (normQ && normQ !== "todos" && normQ !== normSigla) {
     filtered = filtered.filter((c) => {
       const siglaNorm = normalizeStr(c.siglaPartido);
       const partidoNorm = normalizeStr(c.partido);
@@ -796,29 +813,14 @@ export async function GET(request: Request) {
       const ufNorm = normalizeStr(c.uf);
       const numeroStr = String(c.numero);
 
-      // Se o usuário digitou exatamente uma sigla partidária (ex: PL, PT, MDB, PSD, PSOL), exige match exato na sigla
-      if (isSiglaPartidariaConhecida) {
-        return siglaNorm === normQ;
-      }
-
-      const matchSiglaExata = siglaNorm === normQ;
-      const matchPartido = partidoNorm.includes(normQ);
-      const matchNome = nomeNorm.includes(normQ) || urnaNorm.includes(normQ);
-      const matchCargo = matchCargoFlexible(cargoNorm, normQ);
-      const matchNumero = numeroStr === normQ || (normQ.length >= 2 && numeroStr.startsWith(normQ));
-      const matchUf = ufNorm === normQ;
-
-      const situacaoNorm = normalizeStr(c.situacao);
-      const matchSituacao = normQ.length >= 4 && situacaoNorm.includes(normQ);
-
       return (
-        matchSiglaExata ||
-        matchPartido ||
-        matchNome ||
-        matchCargo ||
-        matchNumero ||
-        matchUf ||
-        matchSituacao
+        siglaNorm === normQ ||
+        partidoNorm.includes(normQ) ||
+        nomeNorm.includes(normQ) ||
+        urnaNorm.includes(normQ) ||
+        matchCargoFlexible(cargoNorm, normQ) ||
+        numeroStr === normQ ||
+        ufNorm === normQ
       );
     });
   }

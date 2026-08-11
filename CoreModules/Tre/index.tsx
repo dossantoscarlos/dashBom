@@ -139,6 +139,7 @@ export function TrePanel() {
   const [busca, setBusca] = useState("");
   const [ano, setAno] = useState("todos");
   const [cargoFiltro, setCargoFiltro] = useState("todos");
+  const [partidoFiltro, setPartidoFiltro] = useState("todos");
   const [paginaAtual, setPaginaAtual] = useState(1);
   const [totalPaginas, setTotalPaginas] = useState(1);
   const [totalEncontrados, setTotalEncontrados] = useState(0);
@@ -195,14 +196,17 @@ export function TrePanel() {
     searchTerm: string = busca,
     searchAno: string = ano,
     selectedCargo: string = cargoFiltro,
-    targetPage: number = 1
+    targetPage: number = 1,
+    selectedPartido: string = partidoFiltro
   ) {
     setLoadingConsulta(true);
     setErrorMsg(null);
 
     try {
+      const finalQuery = (searchTerm || (selectedPartido !== "todos" ? selectedPartido : "")).trim();
       const params = new URLSearchParams({
-        q: searchTerm,
+        q: finalQuery,
+        siglaPartido: selectedPartido !== "todos" ? selectedPartido : "",
         ano: searchAno,
         cargo: selectedCargo !== "todos" ? selectedCargo : "",
         page: String(targetPage),
@@ -253,7 +257,7 @@ export function TrePanel() {
 
   useEffect(() => {
     loadTseData();
-    executeCandidateSearch("", "todos");
+    executeCandidateSearch("", "todos", "todos", 1, "todos");
 
     // Sincronização automática em tempo real a cada 30 segundos
     const liveInterval = setInterval(() => {
@@ -265,7 +269,7 @@ export function TrePanel() {
 
   function handleSearchSubmit(e: React.FormEvent) {
     e.preventDefault();
-    executeCandidateSearch(busca, ano);
+    executeCandidateSearch(busca, ano, cargoFiltro, 1, partidoFiltro);
   }
 
   const noticiasFiltradas = noticias.filter((n) => {
@@ -681,13 +685,43 @@ export function TrePanel() {
 
             <div className="w-full sm:w-44 flex flex-col gap-1.5">
               <label className="text-[10px] font-extrabold tracking-wider text-[#64748B] uppercase">
+                PARTIDO / LEGENDA
+              </label>
+              <select
+                value={partidoFiltro}
+                onChange={(e) => {
+                  setPartidoFiltro(e.target.value);
+                  executeCandidateSearch(busca, ano, cargoFiltro, 1, e.target.value);
+                }}
+                className="w-full h-10 px-3 rounded-lg border border-[#E2E8F0] text-xs outline-none bg-white font-medium cursor-pointer"
+              >
+                <option value="todos">Todos os Partidos</option>
+                <option value="PL">PL - Partido Liberal</option>
+                <option value="PT">PT - Partido dos Trabalhadores</option>
+                <option value="MDB">MDB - Movimento Democrático Brasileiro</option>
+                <option value="PSD">PSD - Partido Social Democrático</option>
+                <option value="PP">PP - Progressistas</option>
+                <option value="UNIÃO">UNIÃO - União Brasil</option>
+                <option value="REPUBLICANOS">REPUBLICANOS - Republicanos</option>
+                <option value="PSDB">PSDB - Partido da Social Democracia Brasileira</option>
+                <option value="PSB">PSB - Partido Socialista Brasileiro</option>
+                <option value="PDT">PDT - Partido Trabalhista Brasileiro</option>
+                <option value="PSOL">PSOL - Partido Socialismo e Liberdade</option>
+                <option value="PODEMOS">PODEMOS - Podemos</option>
+                <option value="NOVO">NOVO - Partido Novo</option>
+                <option value="PRTB">PRTB - Partido Renovador Trabalhista Brasileiro</option>
+              </select>
+            </div>
+
+            <div className="w-full sm:w-40 flex flex-col gap-1.5">
+              <label className="text-[10px] font-extrabold tracking-wider text-[#64748B] uppercase">
                 CARGO DISPUTADO
               </label>
               <select
                 value={cargoFiltro}
                 onChange={(e) => {
                   setCargoFiltro(e.target.value);
-                  executeCandidateSearch(busca, ano, e.target.value);
+                  executeCandidateSearch(busca, ano, e.target.value, 1, partidoFiltro);
                 }}
                 className="w-full h-10 px-3 rounded-lg border border-[#E2E8F0] text-xs outline-none bg-white font-medium cursor-pointer"
               >
@@ -710,7 +744,7 @@ export function TrePanel() {
                 value={ano}
                 onChange={(e) => {
                   setAno(e.target.value);
-                  executeCandidateSearch(busca, e.target.value, cargoFiltro);
+                  executeCandidateSearch(busca, e.target.value, cargoFiltro, 1, partidoFiltro);
                 }}
                 className="w-full h-10 px-3 rounded-lg border border-[#E2E8F0] text-xs outline-none bg-white font-medium cursor-pointer"
               >

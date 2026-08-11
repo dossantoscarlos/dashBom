@@ -512,7 +512,7 @@ export function AgendaPanel() {
                 <div>📍 <strong>Local:</strong> {selectedEventDetails.local}</div>
                 <div>📅 <strong>Data:</strong> {selectedEventDetails.dataInicio}</div>
                 <div>⏰ <strong>Horário:</strong> {selectedEventDetails.diaInteiro ? "Dia Inteiro" : `${selectedEventDetails.horaInicio} às ${selectedEventDetails.horaFim}`}</div>
-                {selectedEventDetails.convidados.length > 0 && (
+                {selectedEventDetails.convidados && selectedEventDetails.convidados.length > 0 && (
                   <div>✉️ <strong>Convidados:</strong> {selectedEventDetails.convidados.join(", ")}</div>
                 )}
               </div>

@@ -92,15 +92,22 @@ export function DashboardProvider({
   );
   const [isMounted, setIsMounted] = useState(false);
 
-  // Carregar do localStorage após a hidratação (evita Hydration Mismatch)
+  // Carregar do localStorage após a hidratação (limpando qualquer resíduo mockado antigo)
   useEffect(() => {
     setIsMounted(true);
     try {
       const saved = localStorage.getItem("dashbom_locations");
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setLocations(parsed);
+        if (Array.isArray(parsed)) {
+          // Filtra estritamente itens que eram das bases mockadas antigas (loc-1, loc-2, etc)
+          const realLocations = parsed.filter((loc: any) => loc.id && !loc.id.startsWith("loc-"));
+          if (realLocations.length > 0) {
+            setLocations(realLocations);
+          } else {
+            setLocations([]);
+            localStorage.removeItem("dashbom_locations");
+          }
         }
       }
     } catch {}
