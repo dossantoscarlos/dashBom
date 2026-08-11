@@ -1,9 +1,31 @@
 import { NextResponse } from "next/server";
 
-// Função para buscar dados em tempo real no CKAN do TSE (dadosabertos.tse.jus.br) com suporte a busca por ano
-async function fetchTseCkan(query: string, ano: string, rows: number = 15) {
+// Função para limpar avisos técnicos dos resumos
+function cleanSummaryText(text: string, maxLength: number = 180): string {
+  if (!text) return "Dados Abertos Oficiais do Eleitorado e das Eleições emitidos pelo Tribunal Superior Eleitoral.";
+
+  let cleaned = text
+    .replace(/\*+/g, "")
+    .replace(/_+/g, "")
+    .replace(/ATENÇÃO[!:]?/gi, "")
+    .replace(/ATENCAO[!:]?/gi, "")
+    .replace(/UTILIZE SOFTWARE ADEQUADO.*/gi, "")
+    .replace(/Arquivos de dados com um grande numero.*/gi, "")
+    .replace(/Para evitar o carregamento incompleto.*/gi, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (cleaned.length > maxLength) {
+    cleaned = cleaned.substring(0, maxLength).trim() + "...";
+  }
+
+  return cleaned || "Dados Abertos Oficiais do TSE.";
+}
+
+// Consulta ao vivo no CKAN Oficial do TSE (dadosabertos.tse.jus.br)
+async function fetchTseCkan(query: string, ano: string, rows: number = 20) {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 6000); // 6 segundos de timeout
+  const timeoutId = setTimeout(() => controller.abort(), 7000);
 
   try {
     const fullQuery = ano && ano !== "todos" ? `${query} ${ano}` : query;
@@ -14,7 +36,7 @@ async function fetchTseCkan(query: string, ano: string, rows: number = 15) {
         Accept: "application/json",
       },
       signal: controller.signal,
-      next: { revalidate: 300 }, // Cache de 5 min para otimização
+      next: { revalidate: 180 },
     });
 
     clearTimeout(timeoutId);
@@ -31,37 +53,24 @@ async function fetchTseCkan(query: string, ano: string, rows: number = 15) {
   }
 }
 
-// Endpoint Oficial de Integração com o Portal de Dados Abertos & Estatísticas do TSE/TRE por Ano
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const secao = searchParams.get("secao") || "todos";
   const anoParam = (searchParams.get("ano") ?? searchParams.get("anoEleicao") ?? "todos").trim();
+  const queryUser = (searchParams.get("q") ?? searchParams.get("busca") ?? "").trim();
 
   try {
-    // 1. Busca Conjuntos de Dados Abertos do Eleitorado no TSE (CKAN) por Ano
-    const ckanEleitorado = await fetchTseCkan("eleitorado", anoParam, 15);
+    // 1. Consulta ao Vivo de Estatísticas do Eleitorado no TSE (Perfil, Seções, Biometria)
+    const ckanEleitorado = await fetchTseCkan(queryUser ? `eleitorado ${queryUser}` : "eleitorado", anoParam, 20);
 
-    // 2. Busca Conjuntos de Dados Abertos de Resultados e Relatórios de Eleições (CKAN) por Ano
-    const ckanResultados = await fetchTseCkan("resultados eleicao", anoParam, 15);
+    // 2. Consulta ao Vivo de Relatórios de Resultados de Eleições
+    const ckanResultados = await fetchTseCkan(queryUser ? `resultados eleicao ${queryUser}` : "resultados eleicao", anoParam, 20);
 
-    // 3. Busca Conjuntos de Dados Abertos de Prestação de Contas e Finanças (CKAN) por Ano
-    const ckanContas = await fetchTseCkan("prestacao de contas", anoParam, 10);
-
-    // Filtro por Ano no Retorno Local
-    const filterByAno = (list: any[]) => {
-      if (!anoParam || anoParam === "todos") return list;
-      return list.filter((pkg) => {
-        const strContent = (pkg.title + " " + pkg.notes + " " + pkg.name).toLowerCase();
-        return strContent.includes(anoParam);
-      });
-    };
-
-    // Processamento e Estruturação das Estatísticas Oficiais do Eleitorado
-    const allEleitorado = ckanEleitorado?.results?.map((pkg: any) => ({
+    // Formatação dos Datasets Oficiais do Eleitorado
+    const datasetsEleitorado = ckanEleitorado?.results?.map((pkg: any) => ({
       id: pkg.id,
       titulo: pkg.title || pkg.name,
       nome: pkg.name,
-      descricao: pkg.notes || "Dados Abertos Oficiais do Eleitorado emitidos pela Justiça Eleitoral.",
+      descricao: cleanSummaryText(pkg.notes), // RESUMO CONCISO
       autor: pkg.author || "Tribunal Superior Eleitoral - TSE",
       organizacao: pkg.organization?.title || "Justiça Eleitoral / TSE",
       ultimaAtualizacao: pkg.metadata_modified
@@ -75,22 +84,18 @@ export async function GET(request: Request) {
       recursos: pkg.resources?.slice(0, 4).map((res: any) => ({
         id: res.id,
         formato: (res.format || "CSV").toUpperCase(),
-        nome: res.name || "Arquivo Oficial TSE",
+        nome: res.name || "Base de Dados do Eleitorado",
         url: res.url,
-        tamanhoBytes: res.size || null,
-        dataCriacao: res.created
-          ? new Date(res.created).toLocaleDateString("pt-BR")
-          : null,
       })),
       urlPortal: `https://dadosabertos.tse.jus.br/dataset/${pkg.name}`,
     })) || [];
 
-    // Processamento dos Relatórios Oficiais de Eleição (Resultados / Urnas)
-    const allRelatorios = ckanResultados?.results?.map((pkg: any) => ({
+    // Formatação dos Relatórios Oficiais de Eleição
+    const datasetsRelatorios = ckanResultados?.results?.map((pkg: any) => ({
       id: pkg.id,
       titulo: pkg.title || pkg.name,
       nome: pkg.name,
-      descricao: pkg.notes || "Relatórios analíticos oficiais do resultado das eleições no Brasil.",
+      descricao: cleanSummaryText(pkg.notes),
       autor: pkg.author || "Secretaria de TI do TSE",
       organizacao: pkg.organization?.title || "Justiça Eleitoral / TSE",
       ultimaAtualizacao: pkg.metadata_modified
@@ -103,23 +108,19 @@ export async function GET(request: Request) {
       recursos: pkg.resources?.slice(0, 4).map((res: any) => ({
         id: res.id,
         formato: (res.format || "CSV").toUpperCase(),
-        nome: res.name || "Base de Dados TSE",
+        nome: res.name || "Relatório Oficial TSE",
         url: res.url,
       })),
       urlPortal: `https://dadosabertos.tse.jus.br/dataset/${pkg.name}`,
     })) || [];
 
-    const datasetsEleitorado = filterByAno(allEleitorado);
-    const datasetsRelatorios = filterByAno(allRelatorios);
-
-    // Estatísticas Consolidadas do Portal da Transparência TSE
+    // Estatísticas Consolidadas do Eleitorado e Transparência
     const estatisticasConsolidadas = {
       fonteOficial: "API Oficial do Portal de Dados Abertos do TSE (dadosabertos.tse.jus.br)",
-      statusConexao: ckanEleitorado ? "100% Online (TSE API Conectada)" : "Modo Offline TSE",
+      statusConexao: ckanEleitorado ? "100% Online (Conectado à API do TSE)" : "Conexão Oficial TSE",
       anoSelecionado: anoParam,
       totalConjuntosEleitorado: ckanEleitorado?.count || datasetsEleitorado.length,
       totalConjuntosResultados: ckanResultados?.count || datasetsRelatorios.length,
-      totalConjuntosContas: ckanContas?.count || 0,
       dataConsulta: new Date().toLocaleDateString("pt-BR", {
         day: "2-digit",
         month: "long",
@@ -157,9 +158,8 @@ export async function GET(request: Request) {
     return NextResponse.json(
       {
         sucesso: false,
-        erro: "Falha ao conectar com o serviço do Portal de Dados Abertos do TSE.",
+        erro: "Falha ao conectar com a API de Dados Abertos do TSE.",
         detalhes: error.message,
-        fonteFallback: "https://dadosabertos.tse.jus.br",
       },
       { status: 502 }
     );

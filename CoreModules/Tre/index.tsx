@@ -635,7 +635,7 @@ export function TrePanel() {
                       <h4 className="text-sm font-bold text-[#10213D] group-hover:text-[#1264F3] transition-colors leading-snug">
                         {n.titulo}
                       </h4>
-                      <p className="text-[11px] text-[#64748B]">{n.resumo}</p>
+                      <p className="text-[11px] text-[#64748B] line-clamp-2 leading-relaxed mt-0.5">{n.resumo}</p>
                     </div>
                   </div>
 
