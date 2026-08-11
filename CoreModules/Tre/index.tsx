@@ -121,12 +121,16 @@ export function TrePanel() {
   const [activeSubTab, setActiveSubTab] = useState<"monitor" | "consulta">("monitor");
 
   // Estado da Consulta de Candidatos no TSE / TRE
-  const [busca, setBusca] = useState("Jair Bolsonaro");
+  const [busca, setBusca] = useState("");
   const [ano, setAno] = useState("todos");
+  const [cargoFiltro, setCargoFiltro] = useState("todos");
+  const [paginaAtual, setPaginaAtual] = useState(1);
+  const [totalPaginas, setTotalPaginas] = useState(1);
+  const [totalEncontrados, setTotalEncontrados] = useState(0);
   const [results, setResults] = useState<ApiTseCandidate[]>([]);
   const [loadingConsulta, setLoadingConsulta] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [expandedCandidateId, setExpandedCandidateId] = useState<string | null>("280001618036");
+  const [expandedCandidateId, setExpandedCandidateId] = useState<string | null>(null);
 
   // Estados da Matriz de Cruzamento Dinâmico de Dados
   const [eixoLinha, setEixoLinha] = useState("Cor / Raça");
@@ -157,12 +161,23 @@ export function TrePanel() {
     }
   }
 
-  async function executeCandidateSearch(searchTerm: string, searchAno: string) {
+  async function executeCandidateSearch(
+    searchTerm: string = busca,
+    searchAno: string = ano,
+    selectedCargo: string = cargoFiltro,
+    targetPage: number = 1
+  ) {
     setLoadingConsulta(true);
     setErrorMsg(null);
 
     try {
-      const params = new URLSearchParams({ q: searchTerm, ano: searchAno });
+      const params = new URLSearchParams({
+        q: searchTerm,
+        ano: searchAno,
+        cargo: selectedCargo !== "todos" ? selectedCargo : "",
+        page: String(targetPage),
+        pageSize: "10",
+      });
       const res = await fetch(`/api/tre/consulta?${params.toString()}`);
       const data = await res.json();
 
@@ -172,8 +187,14 @@ export function TrePanel() {
 
       const list: ApiTseCandidate[] = data.candidatos ?? [];
       setResults(list);
+      setPaginaAtual(data.paginaAtual ?? targetPage);
+      setTotalPaginas(data.totalPaginas ?? 1);
+      setTotalEncontrados(data.totalEncontrados ?? list.length);
+
       if (list.length > 0) {
         setExpandedCandidateId(list[0].id);
+      } else {
+        setExpandedCandidateId(null);
       }
     } catch (err: any) {
       setErrorMsg(err.message ?? "Falha ao conectar com o serviço do TSE");
@@ -184,7 +205,7 @@ export function TrePanel() {
 
   useEffect(() => {
     loadTseData();
-    executeCandidateSearch("Jair Bolsonaro", "todos");
+    executeCandidateSearch("", "todos");
 
     // Sincronização automática em tempo real a cada 30 segundos
     const liveInterval = setInterval(() => {
@@ -587,26 +608,49 @@ export function TrePanel() {
           <form onSubmit={handleSearchSubmit} className="bg-white p-4 rounded-xl border border-[#E2E8F0] shadow-2xs flex flex-col sm:flex-row items-end gap-3">
             <div className="flex flex-1 flex-col gap-1.5 w-full">
               <label className="text-[10px] font-extrabold tracking-wider text-[#64748B] uppercase">
-                NOME DO CANDIDATO OU PARTIDO
+                NOME DO CANDIDATO, PARTIDO OU NÚMERO
               </label>
               <input
                 type="text"
                 value={busca}
                 onChange={(e) => setBusca(e.target.value)}
-                placeholder="Ex: Jair Bolsonaro, LULA, PL, 22..."
+                placeholder="Ex: Jair Bolsonaro, Lula, Tarcísio, PL, PT, 22..."
                 className="w-full h-10 px-3 rounded-lg border border-[#E2E8F0] text-xs outline-none focus:border-[#1264F3] bg-white font-medium"
               />
             </div>
 
-            <div className="w-full sm:w-48 flex flex-col gap-1.5">
+            <div className="w-full sm:w-44 flex flex-col gap-1.5">
               <label className="text-[10px] font-extrabold tracking-wider text-[#64748B] uppercase">
-                ANO DA ELEIÇÃO
+                CARGO DISPUTADO
+              </label>
+              <select
+                value={cargoFiltro}
+                onChange={(e) => {
+                  setCargoFiltro(e.target.value);
+                  executeCandidateSearch(busca, ano, e.target.value);
+                }}
+                className="w-full h-10 px-3 rounded-lg border border-[#E2E8F0] text-xs outline-none bg-white font-medium cursor-pointer"
+              >
+                <option value="todos">Todos os Cargos</option>
+                <option value="Presidente">Presidente / Vice</option>
+                <option value="Governador">Governador</option>
+                <option value="Senador">Senador</option>
+                <option value="Deputado Federal">Deputado Federal</option>
+                <option value="Deputado Estadual">Deputado Estadual</option>
+                <option value="Prefeito">Prefeito / Vice</option>
+                <option value="Vereador">Vereador</option>
+              </select>
+            </div>
+
+            <div className="w-full sm:w-36 flex flex-col gap-1.5">
+              <label className="text-[10px] font-extrabold tracking-wider text-[#64748B] uppercase">
+                ELEIÇÃO / ANO
               </label>
               <select
                 value={ano}
                 onChange={(e) => {
                   setAno(e.target.value);
-                  executeCandidateSearch(busca, e.target.value);
+                  executeCandidateSearch(busca, e.target.value, cargoFiltro);
                 }}
                 className="w-full h-10 px-3 rounded-lg border border-[#E2E8F0] text-xs outline-none bg-white font-medium cursor-pointer"
               >
@@ -620,9 +664,9 @@ export function TrePanel() {
             <button
               type="submit"
               disabled={loadingConsulta}
-              className="h-10 px-5 rounded-lg bg-[#0F172A] hover:bg-black text-white font-bold text-xs transition shadow-2xs flex items-center justify-center gap-2 cursor-pointer w-full sm:w-auto"
+              className="h-10 px-5 rounded-lg bg-[#0F172A] hover:bg-black text-white font-bold text-xs transition shadow-2xs flex items-center justify-center gap-2 cursor-pointer w-full sm:w-auto shrink-0"
             >
-              {loadingConsulta ? "Pesquisando..." : "Pesquisar Candidato / Partido"}
+              {loadingConsulta ? "Pesquisando..." : "Pesquisar Candidatos"}
             </button>
           </form>
 
@@ -713,6 +757,52 @@ export function TrePanel() {
                 </tbody>
               </table>
             </div>
+
+            {/* BARRA DE PAGINAÇÃO DAS CANDIDATURAS */}
+            {totalPaginas > 1 && (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3.5 px-4 bg-[#F8FAFC] border-t border-[#E2E8F0] text-xs">
+                <div className="text-[#64748B] font-medium">
+                  Mostrando página <span className="font-bold text-[#10213D]">{paginaAtual}</span> de{" "}
+                  <span className="font-bold text-[#10213D]">{totalPaginas}</span> (<span className="font-bold text-[#008B63]">{totalEncontrados}</span> candidatos localizados na base)
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    disabled={paginaAtual <= 1 || loadingConsulta}
+                    onClick={() => executeCandidateSearch(busca, ano, cargoFiltro, paginaAtual - 1)}
+                    className="px-3 py-1.5 rounded-lg border border-[#CBD5E1] bg-white font-bold text-[#334155] hover:bg-[#F1F5F9] disabled:opacity-40 cursor-pointer transition"
+                  >
+                    ◄ Anterior
+                  </button>
+
+                  {Array.from({ length: totalPaginas }, (_, i) => i + 1).map((pNum) => (
+                    <button
+                      key={pNum}
+                      type="button"
+                      disabled={loadingConsulta}
+                      onClick={() => executeCandidateSearch(busca, ano, cargoFiltro, pNum)}
+                      className={`h-8 w-8 rounded-lg font-bold transition cursor-pointer text-xs ${
+                        pNum === paginaAtual
+                          ? "bg-[#008B63] text-white shadow-2xs"
+                          : "bg-white border border-[#CBD5E1] text-[#334155] hover:bg-[#F1F5F9]"
+                      }`}
+                    >
+                      {pNum}
+                    </button>
+                  ))}
+
+                  <button
+                    type="button"
+                    disabled={paginaAtual >= totalPaginas || loadingConsulta}
+                    onClick={() => executeCandidateSearch(busca, ano, cargoFiltro, paginaAtual + 1)}
+                    className="px-3 py-1.5 rounded-lg border border-[#CBD5E1] bg-white font-bold text-[#334155] hover:bg-[#F1F5F9] disabled:opacity-40 cursor-pointer transition"
+                  >
+                    Próxima ►
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* FICHA DETALHADA DO CANDIDATO SELECIONADO */}
