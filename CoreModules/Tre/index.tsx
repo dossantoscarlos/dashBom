@@ -62,6 +62,15 @@ export type ApiTseCandidate = {
     percentual: string;
     destaque: boolean;
   }>;
+  concorrenteDireto?: {
+    nomeAdversario: string;
+    partidoAdversario: string;
+    votosAdversario: number;
+    percentualAdversario: number;
+    diferencaVotos: number;
+    situacaoAdversario: string;
+    observacaoComparativa: string;
+  };
 };
 
 type TseResumo = {
@@ -178,11 +187,11 @@ export function TrePanel() {
         page: String(targetPage),
         pageSize: "10",
       });
-      const res = await fetch(`/api/tre/consulta?${params.toString()}`);
+      const res = await fetch(`/api/tre/candidatos?${params.toString()}`);
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error ?? "Erro ao consultar API do TSE");
+        throw new Error(data.erro ?? data.error ?? "Erro ao consultar API oficial do TSE");
       }
 
       const list: ApiTseCandidate[] = data.candidatos ?? [];
@@ -192,14 +201,32 @@ export function TrePanel() {
       setTotalEncontrados(data.totalEncontrados ?? list.length);
 
       if (list.length > 0) {
-        setExpandedCandidateId(list[0].id);
+        // Busca ficha detalhada do primeiro candidato via API /api/tre/candidatos/[id]
+        fetchCandidateDetail(list[0].id);
       } else {
         setExpandedCandidateId(null);
       }
     } catch (err: any) {
-      setErrorMsg(err.message ?? "Falha ao conectar com o serviço do TSE");
+      setErrorMsg(err.message ?? "Falha ao conectar com o serviço oficial do TSE");
     } finally {
       setLoadingConsulta(false);
+    }
+  }
+
+  async function fetchCandidateDetail(candidateId: string) {
+    setExpandedCandidateId(candidateId);
+    try {
+      const res = await fetch(`/api/tre/candidatos/${candidateId}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.candidato) {
+          setResults((prev) =>
+            prev.map((item) => (item.id === candidateId ? { ...item, ...data.candidato } : item))
+          );
+        }
+      }
+    } catch (e) {
+      console.warn("Falha ao buscar perfil detalhado:", e);
     }
   }
 
@@ -723,7 +750,13 @@ export function TrePanel() {
                     return (
                       <tr
                         key={c.id}
-                        onClick={() => setExpandedCandidateId(isExpanded ? null : c.id)}
+                        onClick={() => {
+                          if (isExpanded) {
+                            setExpandedCandidateId(null);
+                          } else {
+                            fetchCandidateDetail(c.id);
+                          }
+                        }}
                         className={`cursor-pointer transition ${
                           isExpanded ? "bg-[#EAF2FF]/40 font-semibold" : "hover:bg-[#F8FAFC]"
                         }`}
@@ -1247,6 +1280,76 @@ export function TrePanel() {
                   </div>
                 </div>
               </div>
+
+              {/* COMPARATIVO COM O CONCORRENTE DIRETO NO PLEITO */}
+              {cand.concorrenteDireto && (
+                <div className="p-4 rounded-xl border border-[#EF4444]/30 bg-[#FEF2F2]/40 flex flex-col gap-3 shadow-2xs border-t border-[#F1F5F9] mt-2">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[#EF4444]/20 pb-2.5 gap-2">
+                    <div>
+                      <h4 className="text-xs font-extrabold text-[#991B1B] uppercase tracking-wider flex items-center gap-1.5">
+                        <span>⚔️</span> COMPARATIVO COM O CONCORRENTE DIRETO NO PLEITO (PORTAL DA TRANSPARÊNCIA TSE)
+                      </h4>
+                      <p className="text-[10px] text-[#7F1D1D] mt-0.5">
+                        Confronto direto de votação, percentuais válidos e margem de diferença no pleito oficial
+                      </p>
+                    </div>
+                    <span className="bg-[#DC2626] text-white text-[9px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider self-start sm:self-center">
+                      Confronto Direto
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                    {/* CANDIDATO ATUAL */}
+                    <div className="p-3.5 rounded-lg border border-[#00A978]/40 bg-[#E8F7F1] flex flex-col gap-1.5">
+                      <span className="text-[9px] font-extrabold text-[#008B63] uppercase">CANDIDATO EM ANÁLISE</span>
+                      <span className="text-base font-extrabold text-[#10213D]">{cand.nomeUrna}</span>
+                      <div className="flex items-center justify-between text-xs mt-1">
+                        <span className="font-semibold text-[#64748B]">{cand.partido} (Nº {cand.numero})</span>
+                        <span className="px-2 py-0.5 rounded text-[9px] font-extrabold bg-[#008B63] text-white uppercase">
+                          {cand.situacao}
+                        </span>
+                      </div>
+                      <div className="border-t border-[#00A978]/30 pt-2 mt-1 flex justify-between items-center">
+                        <span className="text-[10px] text-[#008B63] font-bold">VOTAÇÃO ALCANÇADA:</span>
+                        <span className="font-mono font-extrabold text-sm text-[#008B63]">
+                          {cand.votosUltimaEleicao?.toLocaleString("pt-BR")} votos
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* CONCORRENTE DIRETO */}
+                    <div className="p-3.5 rounded-lg border border-[#EF4444]/40 bg-white flex flex-col gap-1.5">
+                      <span className="text-[9px] font-extrabold text-[#DC2626] uppercase">CONCORRENTE DIRETO NO PLEITO</span>
+                      <span className="text-base font-extrabold text-[#10213D]">{cand.concorrenteDireto.nomeAdversario}</span>
+                      <div className="flex items-center justify-between text-xs mt-1">
+                        <span className="font-semibold text-[#64748B]">PARTIDO: {cand.concorrenteDireto.partidoAdversario}</span>
+                        <span className="px-2 py-0.5 rounded text-[9px] font-extrabold bg-[#EF4444] text-white uppercase">
+                          {cand.concorrenteDireto.situacaoAdversario}
+                        </span>
+                      </div>
+                      <div className="border-t border-[#EF4444]/20 pt-2 mt-1 flex justify-between items-center">
+                        <span className="text-[10px] text-[#DC2626] font-bold">VOTAÇÃO DO ADVERSÁRIO:</span>
+                        <span className="font-mono font-extrabold text-sm text-[#DC2626]">
+                          {cand.concorrenteDireto.votosAdversario?.toLocaleString("pt-BR")} votos ({cand.concorrenteDireto.percentualAdversario}%)
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* BARRA DE DIFERENÇA DE VOTOS */}
+                  <div className="bg-white p-3 rounded-lg border border-[#EF4444]/20 flex flex-col gap-2">
+                    <div className="flex items-center justify-between text-xs font-bold text-[#10213D]">
+                      <span>Margem / Diferença no Resultado:</span>
+                      <span className="font-mono text-[#008B63]">
+                        {cand.concorrenteDireto.diferencaVotos?.toLocaleString("pt-BR")} VOTOS DE DIFERENÇA
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-[#64748B] italic">
+                      "{cand.concorrenteDireto.observacaoComparativa}"
+                    </p>
+                  </div>
+                </div>
+              )}
 
             </div>
           ))}
