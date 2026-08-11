@@ -25,6 +25,8 @@ import {
   UserCheck,
   Menu,
   X,
+  FolderKanban,
+  Plus,
 } from "lucide-react";
 
 // Import modules from CoreModules
@@ -44,6 +46,7 @@ import { RedeSocialPanel } from "@/CoreModules/RedeSocial";
 import { AutoridadesPanel } from "@/CoreModules/Autoridades";
 import { AgendaPanel } from "@/CoreModules/Agenda";
 import { VoluntariadoPanel } from "@/CoreModules/Voluntariado";
+import { DemandasProjetosPanel } from "@/CoreModules/DemandasProjetos";
 import { PushNotifier } from "@/components/notifications/PushNotifier";
 
 type ExtJSWorkspaceProps = {
@@ -76,6 +79,8 @@ type MenuItem = {
 
 const TAB_ICONS_MAP: Record<string, React.ReactNode> = {
   dashboard: <LayoutGrid className="h-3.5 w-3.5 text-[#008B63]" strokeWidth={2} />,
+  demandas: <FolderKanban className="h-3.5 w-3.5 text-[#008B63]" strokeWidth={2} />,
+  novademanda: <Plus className="h-3.5 w-3.5 text-[#008B63]" strokeWidth={2} />,
   campanhas: <Megaphone className="h-3.5 w-3.5 text-[#1264F3]" strokeWidth={2} />,
   agenda: <CalendarDays className="h-3.5 w-3.5 text-[#1264F3]" strokeWidth={2} />,
   financeiro: <Wallet className="h-3.5 w-3.5 text-[#F59E0B]" strokeWidth={2} />,
@@ -107,15 +112,14 @@ export function ExtJSWorkspace({ userName, userEmail }: ExtJSWorkspaceProps) {
     mode: "light",
   });
 
-  // Iniciar obrigatoriamente no Dashboard com abas padronizadas usando os mesmos ícones Lucide
+  // Iniciar na aba "Nova demanda" com as abas Dashboard, Demandas e Projetos, e Nova demanda ativas
   const [openTabs, setOpenTabs] = useState<TabItem[]>(() => [
     { id: "dashboard", title: "Dashboard", iconNode: TAB_ICONS_MAP["dashboard"], closable: true },
-    { id: "tre", title: "Monitor TSE", iconNode: TAB_ICONS_MAP["tre"], closable: true },
-    { id: "perfil", title: "Configurações de Perfil", iconNode: TAB_ICONS_MAP["perfil"], closable: true },
-    { id: "permissoes", title: "Matriz de Permissões", iconNode: TAB_ICONS_MAP["permissoes"], closable: true },
+    { id: "demandas", title: "Demandas e Projetos", iconNode: TAB_ICONS_MAP["demandas"], closable: true },
+    { id: "novademanda", title: "Nova demanda", iconNode: TAB_ICONS_MAP["novademanda"], closable: true },
   ]);
 
-  const [activeTab, setActiveTab] = useState<string>("dashboard");
+  const [activeTab, setActiveTab] = useState<string>("novademanda");
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [showTabOverflow, setShowTabOverflow] = useState(false);
@@ -141,7 +145,7 @@ export function ExtJSWorkspace({ userName, userEmail }: ExtJSWorkspaceProps) {
     localStorage.setItem("user_profile_settings", JSON.stringify(newSettings));
   };
 
-  // Grupos do Menu da Sidebar conforme a imagem de referência do campanhaPRO
+  // Grupos do Menu da Sidebar conforme especificação do campanhaPRO
   const menuGroups: Array<{ id: string; title: string; items: MenuItem[] }> = [
     {
       id: "operacao",
@@ -150,6 +154,7 @@ export function ExtJSWorkspace({ userName, userEmail }: ExtJSWorkspaceProps) {
         { id: "dashboard", label: "Dashboard", iconNode: <LayoutGrid className="h-[18px] w-[18px]" strokeWidth={2} />, permission: "dashboard:visualizar" },
         { id: "campanhas", label: "Campanhas", iconNode: <Megaphone className="h-[18px] w-[18px]" strokeWidth={2} />, permission: "campanhas:gerenciar" },
         { id: "agenda", label: "Agenda do Candidato", iconNode: <CalendarDays className="h-[18px] w-[18px]" strokeWidth={2} />, permission: "campanhas:gerenciar" },
+        { id: "demandas", label: "Demandas e Projetos", iconNode: <FolderKanban className="h-[18px] w-[18px]" strokeWidth={2} />, permission: "campanhas:gerenciar" },
         { id: "financeiro", label: "Área Financeira", iconNode: <Wallet className="h-[18px] w-[18px]" strokeWidth={2} />, permission: "financeiro:visualizar" },
       ],
     },
@@ -186,6 +191,14 @@ export function ExtJSWorkspace({ userName, userEmail }: ExtJSWorkspaceProps) {
     dashboard: {
       title: "Dashboard",
       component: can("dashboard:visualizar") ? <DashboardPanel /> : <div className="p-6 text-red-600 font-bold">Acesso Negado</div>
+    },
+    demandas: {
+      title: "Demandas e Projetos",
+      component: <DemandasProjetosPanel />
+    },
+    novademanda: {
+      title: "Nova demanda",
+      component: <DemandasProjetosPanel />
     },
     campanhas: {
       title: "Campanhas",
@@ -263,7 +276,7 @@ export function ExtJSWorkspace({ userName, userEmail }: ExtJSWorkspaceProps) {
   const [panelExtras, setPanelExtras] = useState<Record<string, { title: string; component: React.ReactNode }>>({});
   const allPanels = { ...panelDefinitions, ...panelExtras };
 
-  // Abertura dinâmica de aba conforme menu selecionado replicando os ícones idênticos
+  // Abertura dinâmica de aba conforme menu selecionado
   const handleOpenTab = (id: string) => {
     const tabDef = allPanels[id];
     if (!tabDef) return;
@@ -376,7 +389,7 @@ export function ExtJSWorkspace({ userName, userEmail }: ExtJSWorkspaceProps) {
 
             <ul className="space-y-1">
               {group.items.map((item) => {
-                const isActive = activeTab === item.id;
+                const isActive = activeTab === item.id || (activeTab === "novademanda" && item.id === "demandas");
                 return (
                   <li key={item.id}>
                     <button
@@ -385,7 +398,7 @@ export function ExtJSWorkspace({ userName, userEmail }: ExtJSWorkspaceProps) {
                       title={collapsed ? item.label : undefined}
                       className={`flex w-full items-center gap-3 px-3 py-2.5 text-xs font-bold rounded-xl transition-all text-left cursor-pointer ${
                         isActive
-                          ? "bg-[#008B63] text-white shadow-md"
+                          ? "bg-[#008B63] text-white shadow-md font-black"
                           : "text-[#94A3B8] hover:bg-[#093566] hover:text-white"
                       } ${collapsed ? "justify-center px-0" : ""}`}
                     >
@@ -463,7 +476,7 @@ export function ExtJSWorkspace({ userName, userEmail }: ExtJSWorkspaceProps) {
 
             <div>
               <h2 className="text-sm sm:text-base font-extrabold text-[#10213D] leading-tight">
-                {allPanels[activeTab]?.title || "Dashboard"}
+                {allPanels[activeTab]?.title || "Nova demanda"}
               </h2>
               <p className="text-[10px] sm:text-[11px] text-[#64748B] truncate max-w-[200px] sm:max-w-none">
                 Acompanhamento do cenário político e eleitoral em tempo real
@@ -615,7 +628,7 @@ export function ExtJSWorkspace({ userName, userEmail }: ExtJSWorkspaceProps) {
           </div>
         )}
 
-        {/* ── 4. SISTEMA DE ABAS ABERTAS REPLICANDO OS ÍCONES DA SIDEBAR ── */}
+        {/* ── 4. SISTEMA DE ABAS ABERTAS REPLICANDO A ESPECIFICAÇÃO ── */}
         <div className="campaignpro-workspace-tabs bg-[#F6F8FB] border-b border-[#E2E8F0] px-4 sm:px-6 flex items-center justify-between shrink-0 h-11 select-none">
           <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
             {openTabs.map((tab) => {
@@ -680,7 +693,7 @@ export function ExtJSWorkspace({ userName, userEmail }: ExtJSWorkspaceProps) {
           </div>
         </div>
 
-        {/* ── 5. CONTEÚDO DO MÓDULO ATIVO (TOTALMENTE RESPONSIVO) ── */}
+        {/* ── 5. CONTEÚDO DO MÓDULO ATIVO ── */}
         <main className="flex-1 overflow-y-auto bg-[#F6F8FB]">
           <div className="w-full h-full p-3 sm:p-5 lg:p-7">
             {allPanels[activeTab]?.component || (
