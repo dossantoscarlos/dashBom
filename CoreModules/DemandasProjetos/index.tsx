@@ -746,8 +746,8 @@ export function DemandasProjetosPanel() {
                       onChange={(e) => setRegionId(e.target.value)}
                       className="h-10 px-3.5 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] text-xs font-medium cursor-pointer"
                     >
-                      {regions.map((r) => (
-                        <option key={r.id} value={r.id}>
+                      {regions.map((r, idx) => (
+                        <option key={`reg-${r.id}-${idx}`} value={r.id}>
                           {r.name}
                         </option>
                       ))}
@@ -806,8 +806,8 @@ export function DemandasProjetosPanel() {
                       onChange={(e) => setResponsible(e.target.value)}
                       className="h-10 px-3.5 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] text-xs font-medium cursor-pointer"
                     >
-                      {users.map((u) => (
-                        <option key={u.id} value={u.name}>
+                      {users.map((u, idx) => (
+                        <option key={`user-${u.id}-${idx}`} value={u.name}>
                           {u.name} ({u.email})
                         </option>
                       ))}
