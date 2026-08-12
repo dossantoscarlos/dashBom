@@ -7,6 +7,18 @@ import { RoleHint } from "@/components/dashboard/RoleHint";
 import { ConfirmDialog } from "@/components/dashboard/ConfirmDialog";
 import { buttonPrimaryClass, buttonSecondaryClass, inputClass, labelClass } from "@/components/dashboard/form-styles";
 import { useDashboard } from "@/contexts/DashboardProvider";
+import {
+  Banknote,
+  WalletCards,
+  Coins,
+  Lock,
+  CirclePlus,
+  CircleMinus,
+  Scale,
+  Receipt,
+  ExternalLink,
+  ChevronRight,
+} from "lucide-react";
 import { formatCurrencyBR } from "@/lib/data/financeiro-store";
 import type {
   FinancialContextType,
@@ -57,8 +69,25 @@ export function FinanceiroPanel() {
     totalOrcado: 0,
     totalComprometido: 0,
     totalDisponivel: 0,
+    pctArrecadadoTarget: 100,
+    pctDespesasPagas: 0,
+    pctSaldoDisponivel: 0,
+    pctValorComprometido: 0,
     alertasPendentesCount: 0,
   });
+
+  const [cashFlowData, setCashFlowData] = useState<{ mes: string; receita: number; despesa: number }[]>([]);
+  const [categoryBudgetsList, setCategoryBudgetsList] = useState<{ id: string; name: string; planned: number; committed: number; paid: number; balance: number; pctUsed: number; color: string }[]>([]);
+  const [complianceData, setComplianceData] = useState({
+    recibosPendentesCount: 0,
+    conciliacoesPendentesCount: 0,
+    situacao: "Em dia",
+    pctExigenciasAtendidas: 100,
+    lastCheckTimestamp: "—",
+  });
+  const [projectionsData, setProjectionsData] = useState({ dias30: 0, dias60: 0, dias90: 0 });
+  const [recentTx, setRecentTx] = useState<any[]>([]);
+  const [periodFilter, setPeriodFilter] = useState("mensal");
 
   const [accounts, setAccounts] = useState<BankAccount[]>([]);
   const [costCenters, setCostCenters] = useState<CostCenter[]>([]);
@@ -117,6 +146,11 @@ export function FinanceiroPanel() {
       const data = await res.json();
       if (res.ok) {
         setSummary(data.summary || {});
+        setCashFlowData(data.cashFlow || []);
+        setCategoryBudgetsList(data.categoryBudgets || []);
+        setComplianceData(data.compliance || { recibosPendentesCount: 0, conciliacoesPendentesCount: 0, situacao: "Em dia", pctExigenciasAtendidas: 100, lastCheckTimestamp: "—" });
+        setProjectionsData(data.projections || { dias30: 0, dias60: 0, dias90: 0 });
+        setRecentTx(data.recentTransactions || []);
         setAccounts(data.accounts || []);
         setCostCenters(data.costCenters || []);
         setBudgets(data.budgets || []);
@@ -461,91 +495,378 @@ export function FinanceiroPanel() {
 
         {/* ---------------- 3. SUB-VISÃO 1: VISÃO GERAL (DASHBOARD PAINEL) ---------------- */}
         {activeSubTab === "visao_geral" && (
-          <div className="flex flex-col gap-5">
-            {/* CARDS DE KPIS FINANCEIROS */}
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <div className="rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950 shadow-xs relative overflow-hidden">
-                <p className="text-[9px] font-bold uppercase tracking-wider text-zinc-400">Receitas Acumuladas</p>
-                <p className="text-xl font-black text-emerald-600 mt-1">{formatCurrencyBR(summary.totalReceitas)}</p>
-                <span className="text-[10px] text-emerald-600 font-bold mt-1 block">✓ Confirmadas e Conciliadas</span>
-                <span className="absolute right-3 bottom-2 text-3xl opacity-10">📈</span>
-              </div>
-
-              <div className="rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950 shadow-xs relative overflow-hidden">
-                <p className="text-[9px] font-bold uppercase tracking-wider text-zinc-400">Despesas Totais</p>
-                <p className="text-xl font-black text-rose-600 mt-1">{formatCurrencyBR(summary.totalDespesas)}</p>
-                <span className="text-[10px] text-rose-600 font-bold mt-1 block">✓ Pagas e Comprometidas</span>
-                <span className="absolute right-3 bottom-2 text-3xl opacity-10">📉</span>
-              </div>
-
-              <div className="rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950 shadow-xs relative overflow-hidden">
-                <p className="text-[9px] font-bold uppercase tracking-wider text-zinc-400">Saldo Líquido em Conta</p>
-                <p className={`text-xl font-black mt-1 ${summary.saldoLiquido >= 0 ? "text-indigo-600" : "text-amber-600"}`}>
-                  {formatCurrencyBR(summary.saldoLiquido)}
+          <div className="flex flex-col gap-6">
+            {/* CABEÇALHO INTERNO DA VISÃO GERAL */}
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-black text-zinc-900 dark:text-zinc-100 tracking-tight">
+                  Financeiro da campanha
+                </h2>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">
+                  Arrecadação, despesas, orçamento e conformidade
                 </p>
-                <span className="text-[10px] text-indigo-600 font-bold mt-1 block">Disponível em Bancos</span>
-                <span className="absolute right-3 bottom-2 text-3xl opacity-10">⚖️</span>
               </div>
 
-              <div className="rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950 shadow-xs relative overflow-hidden">
-                <p className="text-[9px] font-bold uppercase tracking-wider text-zinc-400">Saldo Orçamentário</p>
-                <p className="text-xl font-black text-blue-600 mt-1">{formatCurrencyBR(summary.totalDisponivel)}</p>
-                <span className="text-[10px] text-blue-600 font-bold mt-1 block">Teto Livre de Gastos</span>
-                <span className="absolute right-3 bottom-2 text-3xl opacity-10">🎯</span>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setShowRevenueModal(true)}
+                  disabled={!canManage}
+                  className="flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-emerald-700 transition shadow-sm disabled:opacity-50"
+                >
+                  <CirclePlus className="h-4 w-4" />
+                  Registrar receita
+                </button>
+                <button
+                  onClick={() => setShowExpenseModal(true)}
+                  disabled={!canManage}
+                  className="flex items-center gap-2 rounded-xl border border-emerald-600 bg-white px-4 py-2.5 text-xs font-bold text-emerald-600 hover:bg-emerald-50 dark:bg-zinc-900 dark:hover:bg-emerald-950/30 transition shadow-xs disabled:opacity-50"
+                >
+                  <CircleMinus className="h-4 w-4" />
+                  Registrar despesa
+                </button>
               </div>
             </div>
 
-            {/* ORÇAMENTO PLANEJADO VS RESERVADO VS PAGO */}
-            <div className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950 shadow-xs flex flex-col gap-4">
-              <div className="flex justify-between items-center border-b border-zinc-100 dark:border-zinc-850 pb-3">
-                <h3 className="text-xs font-extrabold uppercase text-zinc-800 dark:text-zinc-200 tracking-wider">
-                  Execução Orçamentária por Centro de Custo ({activeContext.toUpperCase()})
-                </h3>
-                <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400">
-                  Orçado: {formatCurrencyBR(summary.totalOrcado)} | Disponível: {formatCurrencyBR(summary.totalDisponivel)}
-                </span>
+            {/* 4 CARDS DE INDICADORES PRINCIPAIS */}
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {/* INDICADOR 1 — TOTAL ARRECADADO */}
+              <div className="rounded-2xl border border-emerald-100 bg-white p-5 dark:border-emerald-900/30 dark:bg-zinc-950 shadow-xs flex items-center justify-between relative overflow-hidden">
+                <div className="flex flex-col">
+                  <span className="text-[11px] font-bold text-zinc-500 dark:text-zinc-400">Total arrecadado</span>
+                  <span className="text-2xl font-black text-emerald-600 mt-1">
+                    {formatCurrencyBR(summary.totalReceitas)}
+                  </span>
+                  <span className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400 mt-1">
+                    {summary.pctArrecadadoTarget ?? 100}% das receitas
+                  </span>
+                </div>
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 shrink-0">
+                  <Banknote className="h-6 w-6" />
+                </div>
               </div>
 
-              <div className="grid gap-3 sm:grid-cols-2">
-                {budgets.map((b) => {
-                  const pctPaid = Math.min(100, Math.round((b.paid / b.planned) * 100)) || 0;
-                  return (
-                    <div key={b.id} className="rounded-xl border border-zinc-100 bg-zinc-50 p-3 dark:border-zinc-850 dark:bg-zinc-900 flex flex-col gap-2">
-                      <div className="flex justify-between items-center text-xs">
-                        <span className="font-bold text-zinc-800 dark:text-zinc-200">{b.costCenterName}</span>
-                        <span className="font-mono font-bold text-blue-600 dark:text-blue-400">{formatCurrencyBR(b.planned)}</span>
-                      </div>
-                      <div className="h-2 w-full bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden">
-                        <div className="h-full bg-blue-600 rounded-full transition-all" style={{ width: `${pctPaid}%` }} />
-                      </div>
-                      <div className="flex justify-between items-center text-[10px] text-zinc-500">
-                        <span>Pago: {formatCurrencyBR(b.paid)} ({pctPaid}%)</span>
-                        <span>Disponível: {formatCurrencyBR(b.available)}</span>
-                      </div>
+              {/* INDICADOR 2 — DESPESAS PAGAS */}
+              <div className="rounded-2xl border border-blue-100 bg-white p-5 dark:border-blue-900/30 dark:bg-zinc-950 shadow-xs flex items-center justify-between relative overflow-hidden">
+                <div className="flex flex-col">
+                  <span className="text-[11px] font-bold text-zinc-500 dark:text-zinc-400">Despesas pagas</span>
+                  <span className="text-2xl font-black text-blue-600 mt-1">
+                    {formatCurrencyBR(summary.totalDespesas)}
+                  </span>
+                  <span className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400 mt-1">
+                    {summary.pctDespesasPagas ?? 0}% do total arrecadado
+                  </span>
+                </div>
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-100 dark:bg-blue-950/60 text-blue-600 shrink-0">
+                  <WalletCards className="h-6 w-6" />
+                </div>
+              </div>
+
+              {/* INDICADOR 3 — SALDO DISPONÍVEL */}
+              <div className="rounded-2xl border border-emerald-100 bg-white p-5 dark:border-emerald-900/30 dark:bg-zinc-950 shadow-xs flex items-center justify-between relative overflow-hidden">
+                <div className="flex flex-col">
+                  <span className="text-[11px] font-bold text-zinc-500 dark:text-zinc-400">Saldo disponível</span>
+                  <span className="text-2xl font-black text-emerald-600 mt-1">
+                    {formatCurrencyBR(summary.totalDisponivel)}
+                  </span>
+                  <span className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400 mt-1">
+                    {summary.pctSaldoDisponivel ?? 0}% do total arrecadado
+                  </span>
+                </div>
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 shrink-0">
+                  <Coins className="h-6 w-6" />
+                </div>
+              </div>
+
+              {/* INDICADOR 4 — VALOR COMPROMETIDO */}
+              <div className="rounded-2xl border border-amber-100 bg-white p-5 dark:border-amber-900/30 dark:bg-zinc-950 shadow-xs flex items-center justify-between relative overflow-hidden">
+                <div className="flex flex-col">
+                  <span className="text-[11px] font-bold text-zinc-500 dark:text-zinc-400">Valor comprometido</span>
+                  <span className="text-2xl font-black text-amber-600 mt-1">
+                    {formatCurrencyBR(summary.totalComprometido)}
+                  </span>
+                  <span className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400 mt-1">
+                    {summary.pctValorComprometido ?? 0}% do total arrecadado
+                  </span>
+                </div>
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100 dark:bg-amber-950/60 text-amber-600 shrink-0">
+                  <Lock className="h-6 w-6" />
+                </div>
+              </div>
+            </div>
+
+            {/* LAYOUT EM 3 COLUNAS CONFORME ESPECIFICAÇÃO */}
+            <div className="grid gap-6 lg:grid-cols-12 items-start">
+              
+              {/* COLUNA ESQUERDA (~47%): FLUXO FINANCEIRO + ÚLTIMOS LANÇAMENTOS */}
+              <div className="lg:col-span-6 flex flex-col gap-6">
+                
+                {/* GRÁFICO DE FLUXO FINANCEIRO */}
+                <div className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950 shadow-xs flex flex-col gap-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-extrabold text-zinc-900 dark:text-zinc-100">Fluxo financeiro</h3>
+                    <select
+                      value={periodFilter}
+                      onChange={(e) => setPeriodFilter(e.target.value)}
+                      className="rounded-lg border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-xs font-bold text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300"
+                    >
+                      <option value="mensal">Mensal</option>
+                      <option value="trimestral">Trimestral</option>
+                      <option value="anual">Anual</option>
+                    </select>
+                  </div>
+
+                  <div className="flex items-center gap-6 text-xs font-semibold">
+                    <span className="flex items-center gap-2 text-zinc-600 dark:text-zinc-400">
+                      <span className="h-3 w-3 rounded-sm bg-emerald-600" /> Receitas (R$)
+                    </span>
+                    <span className="flex items-center gap-2 text-zinc-600 dark:text-zinc-400">
+                      <span className="h-3 w-3 rounded-sm bg-blue-600" /> Despesas (R$)
+                    </span>
+                  </div>
+
+                  {/* BARRAS DE FLUXO MENSAL */}
+                  <div className="h-44 w-full flex items-end justify-between gap-2 pt-4 pb-2 border-b border-zinc-100 dark:border-zinc-850 px-2">
+                    {cashFlowData.map((cf, i) => {
+                      const maxVal = Math.max(...cashFlowData.map((d) => Math.max(d.receita, d.despesa)), 1000);
+                      const hRev = Math.max(4, Math.round((cf.receita / maxVal) * 120));
+                      const hExp = Math.max(4, Math.round((cf.despesa / maxVal) * 120));
+                      return (
+                        <div key={i} className="flex flex-col items-center gap-1 flex-1">
+                          <div className="flex items-end gap-1 h-32 w-full justify-center">
+                            <div
+                              title={`Receita: ${formatCurrencyBR(cf.receita)}`}
+                              className="w-2.5 sm:w-3.5 bg-emerald-500 rounded-t-sm transition-all hover:bg-emerald-600"
+                              style={{ height: `${hRev}px` }}
+                            />
+                            <div
+                              title={`Despesa: ${formatCurrencyBR(cf.despesa)}`}
+                              className="w-2.5 sm:w-3.5 bg-blue-600 rounded-t-sm transition-all hover:bg-blue-700"
+                              style={{ height: `${hExp}px` }}
+                            />
+                          </div>
+                          <span className="text-[10px] font-bold text-zinc-500">{cf.mes}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* TABELA DE ÚLTIMOS LANÇAMENTOS */}
+                <div className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950 shadow-xs flex flex-col gap-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-extrabold text-zinc-900 dark:text-zinc-100">Últimos lançamentos</h3>
+                    <button
+                      onClick={() => setActiveSubTab("receitas")}
+                      className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1"
+                    >
+                      Ver todos os lançamentos <ChevronRight className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs">
+                      <thead>
+                        <tr className="border-b border-zinc-100 text-[10px] uppercase font-bold text-zinc-400 dark:border-zinc-850">
+                          <th className="py-2 px-1">Data</th>
+                          <th className="py-2 px-1">Tipo</th>
+                          <th className="py-2 px-1">Descrição</th>
+                          <th className="py-2 px-1">Categoria</th>
+                          <th className="py-2 px-1 text-right">Valor (R$)</th>
+                          <th className="py-2 px-1 text-center">Situação</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-zinc-100 dark:divide-zinc-850 font-medium">
+                        {recentTx.length === 0 ? (
+                          <tr>
+                            <td colSpan={6} className="py-6 text-center text-zinc-400">
+                              Nenhum lançamento registrado no contexto selecionado.
+                            </td>
+                          </tr>
+                        ) : (
+                          recentTx.map((tx, idx) => (
+                            <tr key={tx.id || idx} className="hover:bg-zinc-50 dark:hover:bg-zinc-900/50">
+                              <td className="py-2.5 px-1 font-mono text-[11px] text-zinc-500">{tx.date}</td>
+                              <td className="py-2.5 px-1">
+                                <span className={`inline-flex items-center gap-1 font-bold text-[10px] px-1.5 py-0.5 rounded ${tx.type === "Receita" ? "text-emerald-700 bg-emerald-50 dark:bg-emerald-950/40" : "text-blue-700 bg-blue-50 dark:bg-blue-950/40"}`}>
+                                  {tx.type === "Receita" ? "⇡ Receita" : "⇣ Despesa"}
+                                </span>
+                              </td>
+                              <td className="py-2.5 px-1 font-bold text-zinc-800 dark:text-zinc-200">{tx.description}</td>
+                              <td className="py-2.5 px-1 text-zinc-500 text-[11px]">{tx.category}</td>
+                              <td className={`py-2.5 px-1 text-right font-mono font-bold ${tx.type === "Receita" ? "text-emerald-600" : "text-blue-600"}`}>
+                                {formatCurrencyBR(tx.amount)}
+                              </td>
+                              <td className="py-2.5 px-1 text-center">
+                                <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold ${tx.status === "Confirmado" || tx.status === "Pago" ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300" : "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"}`}>
+                                  {tx.status}
+                                </span>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+              {/* COLUNA MEIO (~28%): ORÇAMENTO POR CATEGORIA */}
+              <div className="lg:col-span-3 flex flex-col gap-6">
+                <div className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950 shadow-xs flex flex-col gap-4">
+                  <div className="flex items-center justify-between border-b border-zinc-100 pb-3 dark:border-zinc-850">
+                    <h3 className="text-sm font-extrabold text-zinc-900 dark:text-zinc-100">Orçamento por categoria</h3>
+                    <span className="text-[10px] font-bold text-zinc-400">% utilizado ▾</span>
+                  </div>
+
+                  <div className="flex flex-col gap-4">
+                    {categoryBudgetsList.length === 0 ? (
+                      <p className="text-xs text-center text-zinc-400 py-6">Nenhum orçamento cadastrado para este contexto.</p>
+                    ) : (
+                      categoryBudgetsList.map((cat, idx) => (
+                        <div key={cat.id || idx} className="flex flex-col gap-1.5">
+                          <div className="flex items-center justify-between text-xs font-bold">
+                            <span className="text-zinc-800 dark:text-zinc-200">{cat.name}</span>
+                            <span className="font-mono text-zinc-700 dark:text-zinc-300">{cat.pctUsed}%</span>
+                          </div>
+                          <div className="h-2 w-full bg-zinc-100 dark:bg-zinc-850 rounded-full overflow-hidden">
+                            <div
+                              className={`h-full rounded-full transition-all ${
+                                cat.color === "red" ? "bg-red-500" : cat.color === "orange" ? "bg-amber-500" : cat.color === "blue" ? "bg-blue-600" : "bg-emerald-500"
+                              }`}
+                              style={{ width: `${Math.min(100, cat.pctUsed)}%` }}
+                            />
+                          </div>
+                          <span className="text-[10px] font-medium text-zinc-400">
+                            {formatCurrencyBR(cat.paid + cat.committed)} de {formatCurrencyBR(cat.planned)}
+                          </span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  <button
+                    onClick={() => setActiveSubTab("orcamentos")}
+                    className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline pt-2 flex items-center justify-between"
+                  >
+                    <span>Ver todas as categorias</span>
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+
+              {/* COLUNA DIREITA (~25%): CONFORMIDADE */}
+              <div className="lg:col-span-3 flex flex-col gap-4">
+                <div className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950 shadow-xs flex flex-col gap-4">
+                  <h3 className="text-sm font-extrabold text-zinc-900 dark:text-zinc-100">Conformidade</h3>
+
+                  {/* ALERTA 1: RECIBOS PENDENTES */}
+                  <div className="rounded-xl border border-red-200 bg-red-50 p-4 dark:border-red-900/40 dark:bg-red-950/30 flex flex-col gap-2 relative">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-extrabold text-red-800 dark:text-red-300 flex items-center gap-1.5">
+                        <Receipt className="h-4 w-4 text-red-600" /> Recibos pendentes
+                      </span>
+                      <span className="h-5 w-5 rounded-full bg-red-600 text-white font-bold text-[11px] flex items-center justify-center">
+                        {complianceData.recibosPendentesCount}
+                      </span>
                     </div>
-                  );
-                })}
+                    <p className="text-[11px] text-red-700 dark:text-red-300 font-medium">
+                      {complianceData.recibosPendentesCount > 0
+                        ? "Existem recibos de doações que precisam ser anexados."
+                        : "Todos os recibos e comprovantes fiscais estão devidamente vinculados."}
+                    </p>
+                    <button
+                      onClick={() => setActiveSubTab("receitas")}
+                      className="text-xs font-extrabold text-red-700 dark:text-red-300 hover:underline flex items-center justify-between pt-1"
+                    >
+                      <span>Ver recibos pendentes</span>
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+                  </div>
+
+                  {/* ALERTA 2: CONCILIAÇÕES PENDENTES */}
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/40 dark:bg-amber-950/30 flex flex-col gap-2 relative">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-extrabold text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
+                        <Scale className="h-4 w-4 text-amber-600" /> Conciliações pendentes
+                      </span>
+                      <span className="h-5 w-5 rounded-full bg-amber-600 text-white font-bold text-[11px] flex items-center justify-center">
+                        {complianceData.conciliacoesPendentesCount}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-amber-700 dark:text-amber-300 font-medium">
+                      {complianceData.conciliacoesPendentesCount > 0
+                        ? "Há lançamentos que precisam ser conciliados."
+                        : "Todas as contas bancárias estão com conciliação OFX em dia."}
+                    </p>
+                    <button
+                      onClick={() => setActiveSubTab("conciliacao")}
+                      className="text-xs font-extrabold text-amber-700 dark:text-amber-300 hover:underline flex items-center justify-between pt-1"
+                    >
+                      <span>Ver conciliações pendentes</span>
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+                  </div>
+
+                  {/* SITUAÇÃO DA CONFORMIDADE */}
+                  <div className="flex flex-col gap-2 border-t border-zinc-100 dark:border-zinc-850 pt-3">
+                    <div className="flex items-center justify-between text-xs font-bold">
+                      <span className="text-zinc-800 dark:text-zinc-200">Situação da conformidade</span>
+                      <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                        {complianceData.situacao}
+                      </span>
+                    </div>
+                    <span className="text-[10px] text-zinc-400">
+                      Última verificação: {complianceData.lastCheckTimestamp}
+                    </span>
+                    <div className="h-2 w-full bg-zinc-100 dark:bg-zinc-850 rounded-full overflow-hidden mt-1">
+                      <div
+                        className="h-full bg-emerald-500 rounded-full transition-all"
+                        style={{ width: `${complianceData.pctExigenciasAtendidas}%` }}
+                      />
+                    </div>
+                    <span className="text-[10px] font-bold text-emerald-600">
+                      {complianceData.pctExigenciasAtendidas}% das exigências atendidas
+                    </span>
+
+                    <button
+                      onClick={() => setActiveSubTab("prestacao_contas")}
+                      className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1.5 pt-2"
+                    >
+                      <span>Ir para o Monitor TSE</span>
+                      <ExternalLink className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* FLUXO DE CAIXA PROJETADO (30, 60 E 90 DIAS) */}
-            <div className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950 shadow-xs flex flex-col gap-3">
-              <h3 className="text-xs font-extrabold uppercase text-zinc-800 dark:text-zinc-200 tracking-wider">
-                Projeção de Fluxo de Caixa Futuro (30, 60 e 90 Dias)
+            {/* PROJEÇÃO DE FLUXO DE CAIXA FUTURO (30, 60 E 90 DIAS) */}
+            <div className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950 shadow-xs flex flex-col gap-4">
+              <h3 className="text-sm font-extrabold text-zinc-900 dark:text-zinc-100">
+                Projeção de fluxo de caixa futuro (30, 60 e 90 dias)
               </h3>
-              <div className="grid grid-cols-3 gap-3 text-xs text-center">
-                <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900">
-                  <span className="text-[9px] font-bold uppercase text-blue-700 dark:text-blue-300 block">30 Dias</span>
-                  <span className="text-base font-extrabold text-blue-800 dark:text-blue-200 mt-1 block">{formatCurrencyBR(summary.saldoLiquido + 25000)}</span>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
+                <div className="p-4 rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900/50 flex flex-col items-center justify-center">
+                  <span className="text-[10px] font-extrabold uppercase text-blue-700 dark:text-blue-400 tracking-wider">30 DIAS</span>
+                  <span className="text-xl font-black text-blue-800 dark:text-blue-200 mt-1">
+                    {formatCurrencyBR(projectionsData.dias30)}
+                  </span>
                 </div>
-                <div className="p-3 rounded-xl bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-900">
-                  <span className="text-[9px] font-bold uppercase text-indigo-700 dark:text-indigo-300 block">60 Dias</span>
-                  <span className="text-base font-extrabold text-indigo-800 dark:text-indigo-200 mt-1 block">{formatCurrencyBR(summary.saldoLiquido + 45000)}</span>
+                <div className="p-4 rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900/50 flex flex-col items-center justify-center">
+                  <span className="text-[10px] font-extrabold uppercase text-blue-700 dark:text-blue-400 tracking-wider">60 DIAS</span>
+                  <span className="text-xl font-black text-blue-800 dark:text-blue-200 mt-1">
+                    {formatCurrencyBR(projectionsData.dias60)}
+                  </span>
                 </div>
-                <div className="p-3 rounded-xl bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-900">
-                  <span className="text-[9px] font-bold uppercase text-purple-700 dark:text-purple-300 block">90 Dias</span>
-                  <span className="text-base font-extrabold text-purple-800 dark:text-purple-200 mt-1 block">{formatCurrencyBR(summary.saldoLiquido + 70000)}</span>
+                <div className="p-4 rounded-xl bg-purple-50 dark:bg-purple-950/30 border border-purple-100 dark:border-purple-900/50 flex flex-col items-center justify-center">
+                  <span className="text-[10px] font-extrabold uppercase text-purple-700 dark:text-purple-400 tracking-wider">90 DIAS</span>
+                  <span className="text-xl font-black text-purple-800 dark:text-purple-200 mt-1">
+                    {formatCurrencyBR(projectionsData.dias90)}
+                  </span>
                 </div>
+              </div>
+              <div className="flex items-center justify-end gap-1.5 pt-1 text-[11px] font-bold text-emerald-600">
+                <span className="h-2 w-2 rounded-full bg-emerald-500" /> Dados Integrados
               </div>
             </div>
           </div>
