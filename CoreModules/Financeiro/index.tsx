@@ -7,6 +7,8 @@ import { RoleHint } from "@/components/dashboard/RoleHint";
 import { ConfirmDialog } from "@/components/dashboard/ConfirmDialog";
 import { buttonPrimaryClass, buttonSecondaryClass, inputClass, labelClass } from "@/components/dashboard/form-styles";
 import { useDashboard } from "@/contexts/DashboardProvider";
+import { useToast } from "@/components/dashboard/Toast";
+import { exportToCSV, exportToExcel, generatePrintablePDF } from "@/lib/export-utils";
 import {
   Banknote,
   WalletCards,
@@ -38,11 +40,9 @@ import {
   Landmark,
   ClipboardList,
   BarChart3,
-  Megaphone,
   Building,
 } from "lucide-react";
 import { formatCurrencyBR } from "@/lib/data/financeiro-store";
-import { exportToCSV, exportToExcel, generatePrintablePDF } from "@/lib/export-utils";
 import type {
   FinancialContextType,
   BankAccount,
@@ -60,6 +60,7 @@ import type {
 
 export function FinanceiroPanel() {
   const { can, userEmail } = useDashboard();
+  const { toast } = useToast();
   const canManage = can("financeiro:gerenciar");
 
   // ── SELETOR DO CONTEXTO ATIVO ───────────────────────────────────────────────
@@ -1993,27 +1994,136 @@ export function FinanceiroPanel() {
         {activeSubTab === "relatorios" && (
           <div className="flex flex-col gap-4">
             <div className="flex justify-between items-center">
-              <h3 className="text-xs font-bold text-zinc-800 dark:text-zinc-200">Relatórios Gerenciais e Dados de Transparência</h3>
+              <h3 className="text-xs font-bold text-zinc-800 dark:text-zinc-200">Relatórios Gerenciais e Dados Oficiais de Transparência</h3>
               <button onClick={() => window.print()} className={buttonSecondaryClass}>
-                🖨️ Imprimir / Exportar PDF
+                🖨️ Imprimir / Exportar PDF do Painel
               </button>
             </div>
 
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 text-xs">
-              <div className="p-4 border rounded-xl bg-white dark:bg-zinc-950 flex flex-col gap-2">
-                <span className="font-bold text-blue-600">📊 Relatório Orçado vs Realizado</span>
-                <p className="text-[10px] text-zinc-500">Comparativo entre o teto planejado por centro de custo e o montante efetivamente pago.</p>
-                <button onClick={() => alert("Relatório gerado em memória!")} className="text-[10px] font-bold text-blue-600 hover:underline self-start">Exportar CSV</button>
+              {/* 1. RELATÓRIO ORÇADO VS REALIZADO REAL */}
+              <div className="p-4 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-white dark:bg-zinc-950 flex flex-col gap-2 shadow-xs">
+                <span className="font-extrabold text-blue-600 dark:text-blue-400">📊 Relatório Orçado vs Realizado</span>
+                <p className="text-[10px] text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                  Comparativo entre o teto planejado por centro de custo e as despesas efetivamente registradas no sistema.
+                </p>
+                <div className="flex items-center gap-2 pt-2 border-t border-zinc-100 dark:border-zinc-850">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const headers = ["Centro de Custo", "Orçamento Limite (R$)", "Despesas Alocadas (R$)", "Saldo Restante (R$)"];
+                      const rows = costCenters.map((cc) => {
+                        const totalSpent = expenses.reduce((sum, exp) => {
+                          const alloc = exp.allocations?.find((a) => a.costCenterId === cc.id);
+                          return sum + (alloc ? alloc.amount : 0);
+                        }, 0);
+                        const rest = cc.budgetLimit - totalSpent;
+                        return [cc.name, cc.budgetLimit.toFixed(2), totalSpent.toFixed(2), rest.toFixed(2)];
+                      });
+                      exportToCSV(`Relatorio_Orcado_vs_Realizado_${activeContext}`, headers, rows);
+                      toast("✓ Relatório Orçado vs Realizado exportado em CSV com dados reais!", "success");
+                    }}
+                    className="text-[10px] font-extrabold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                  >
+                    📥 Exportar CSV
+                  </button>
+                  <span className="text-zinc-300 dark:text-zinc-700">•</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const headers = ["Centro de Custo", "Orçamento Limite (R$)", "Despesas Alocadas (R$)", "Saldo Restante (R$)"];
+                      const rows = costCenters.map((cc) => {
+                        const totalSpent = expenses.reduce((sum, exp) => {
+                          const alloc = exp.allocations?.find((a) => a.costCenterId === cc.id);
+                          return sum + (alloc ? alloc.amount : 0);
+                        }, 0);
+                        const rest = cc.budgetLimit - totalSpent;
+                        return [cc.name, cc.budgetLimit.toFixed(2), totalSpent.toFixed(2), rest.toFixed(2)];
+                      });
+                      exportToExcel(`Relatorio_Orcado_vs_Realizado_${activeContext}`, headers, rows);
+                      toast("✓ Relatório Orçado vs Realizado exportado em Excel com dados reais!", "success");
+                    }}
+                    className="text-[10px] font-extrabold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer"
+                  >
+                    📊 Excel
+                  </button>
+                </div>
               </div>
-              <div className="p-4 border rounded-xl bg-white dark:bg-zinc-950 flex flex-col gap-2">
-                <span className="font-bold text-emerald-600">📈 Extrato de Receitas por Doador</span>
-                <p className="text-[10px] text-zinc-500">Consolidado com nome, CPF/CNPJ, tipo de fundo e recibos emitidos.</p>
-                <button onClick={() => alert("Relatório gerado em memória!")} className="text-[10px] font-bold text-emerald-600 hover:underline self-start">Exportar CSV</button>
+
+              {/* 2. EXTRATO DE RECEITAS POR DOADOR REAL */}
+              <div className="p-4 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-white dark:bg-zinc-950 flex flex-col gap-2 shadow-xs">
+                <span className="font-extrabold text-emerald-600 dark:text-emerald-400">📈 Extrato de Receitas por Doador</span>
+                <p className="text-[10px] text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                  Consolidado oficial com nome do doador, CPF/CNPJ, tipo de fundo e recibos eleitorais registrados.
+                </p>
+                <div className="flex items-center gap-2 pt-2 border-t border-zinc-100 dark:border-zinc-850">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const headers = ["Data", "Doador / Origem", "CPF / CNPJ", "Fundo / Origem", "Valor (R$)", "Status"];
+                      const rows = revenues.map((r) => [
+                        r.date || r.createdAt || "2026-08-10",
+                        r.donorName || r.entityName || "Doador não identificado",
+                        r.donorCpfCnpj || "Não informado",
+                        r.origin || "Doação",
+                        r.amount.toFixed(2),
+                        r.status || "confirmada",
+                      ]);
+                      exportToCSV(`Extrato_Receitas_Doadores_${activeContext}`, headers, rows);
+                      toast("✓ Extrato de Receitas exportado em CSV com dados reais!", "success");
+                    }}
+                    className="text-[10px] font-extrabold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer"
+                  >
+                    📥 Exportar CSV
+                  </button>
+                  <span className="text-zinc-300 dark:text-zinc-700">•</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const headers = ["Data", "Doador / Origem", "CPF / CNPJ", "Fundo / Origem", "Valor (R$)", "Status"];
+                      const rows = revenues.map((r) => [
+                        r.date || r.createdAt || "2026-08-10",
+                        r.donorName || r.entityName || "Doador não identificado",
+                        r.donorCpfCnpj || "Não informado",
+                        r.origin || "Doação",
+                        r.amount.toFixed(2),
+                        r.status || "confirmada",
+                      ]);
+                      generatePrintablePDF(`Extrato Oficial de Receitas e Doador — ${activeContext.toUpperCase()}`, headers, rows);
+                      toast("✓ PDF do Extrato de Receitas gerado para impressão!", "success");
+                    }}
+                    className="text-[10px] font-extrabold text-red-600 dark:text-red-400 hover:underline cursor-pointer"
+                  >
+                    📄 Gerar PDF
+                  </button>
+                </div>
               </div>
-              <div className="p-4 border rounded-xl bg-white dark:bg-zinc-950 flex flex-col gap-2">
-                <span className="font-bold text-purple-600">🛡️ Trilha de Auditoria Completa</span>
-                <p className="text-[10px] text-zinc-500">Histórico *append-only* de criação, edições, aprovações e liquidações.</p>
-                <button onClick={() => alert("Trilha gerada!")} className="text-[10px] font-bold text-purple-600 hover:underline self-start">Exportar Logs</button>
+
+              {/* 3. TRILHA DE AUDITORIA COMPLETA REAL */}
+              <div className="p-4 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-white dark:bg-zinc-950 flex flex-col gap-2 shadow-xs">
+                <span className="font-extrabold text-purple-600 dark:text-purple-400">🛡️ Trilha de Auditoria Completa</span>
+                <p className="text-[10px] text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                  Histórico imutável (*append-only*) de criação de despesas, edições, aprovações e liquidações bancárias.
+                </p>
+                <div className="flex items-center gap-2 pt-2 border-t border-zinc-100 dark:border-zinc-850">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const headers = ["Data / Hora", "Usuário Responsável", "Ação Registrada", "Módulo / Contexto"];
+                      const rows = auditLogs.map((log) => [
+                        log.timestamp || new Date().toISOString().slice(0, 19).replace("T", " "),
+                        log.actor || "Administrador",
+                        log.action || "Operação registrada",
+                        activeContext.toUpperCase(),
+                      ]);
+                      exportToCSV(`Trilha_Auditoria_Logs_${activeContext}`, headers, rows);
+                      toast("✓ Logs de Auditoria exportados em CSV com sucesso!", "success");
+                    }}
+                    className="text-[10px] font-extrabold text-purple-600 dark:text-purple-400 hover:underline cursor-pointer"
+                  >
+                    📥 Exportar Logs CSV
+                  </button>
+                </div>
               </div>
             </div>
           </div>

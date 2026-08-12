@@ -24,6 +24,7 @@ export type CandidateEvent = {
   diasSemana?: string[];
   mapeadoNoMaps?: boolean;
   datasRecorrencia?: string[];
+  datasCanceladas?: string[];
 };
 
 // Repositório de Agenda Limpo (0% Dados Mockados)
@@ -97,8 +98,8 @@ export async function POST(request: Request) {
     const recurringDates: string[] = [];
 
     if (isRecurring && body.dataFim) {
-      const start = new Date(dateVal);
-      const end = new Date(body.dataFim);
+      const start = new Date(`${dateVal}T12:00:00`);
+      const end = new Date(`${body.dataFim}T12:00:00`);
 
       const targetDayIndices = Array.isArray(body.diasSemana) && body.diasSemana.length > 0
         ? body.diasSemana.map((d: string) => WEEKDAY_MAP[d]).filter((idx: number) => idx !== undefined)

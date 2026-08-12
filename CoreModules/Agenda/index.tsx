@@ -15,6 +15,30 @@ const WEEKDAYS = [
   { id: "domingo", label: "Domingo" },
 ];
 
+function isEventOnDate(evt: CandidateEvent, dateStr: string): boolean {
+  if (!evt) return false;
+  if (evt.dataInicio === dateStr || evt.dataCompleta === dateStr) return true;
+  if (evt.datasRecorrencia && Array.isArray(evt.datasRecorrencia) && evt.datasRecorrencia.includes(dateStr)) {
+    return true;
+  }
+  if (evt.recorrente && evt.dataInicio && evt.dataFim && dateStr >= evt.dataInicio && dateStr <= evt.dataFim) {
+    if (!evt.diasSemana || evt.diasSemana.length === 0) return true;
+    const d = new Date(`${dateStr}T12:00:00`).getDay();
+    const dayMap: Record<number, string> = {
+      0: "domingo",
+      1: "segunda",
+      2: "terca",
+      3: "quarta",
+      4: "quinta",
+      5: "sexta",
+      6: "sabado",
+    };
+    const dayId = dayMap[d];
+    return Boolean(dayId && evt.diasSemana.includes(dayId));
+  }
+  return false;
+}
+
 export function AgendaPanel() {
   const [eventos, setEventos] = useState<CandidateEvent[]>([]);
   const [loading, setLoading] = useState(false);
@@ -33,6 +57,102 @@ export function AgendaPanel() {
   const [selectedEventDetails, setSelectedEventDetails] = useState<CandidateEvent | null>(null);
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
   const [statusInput, setStatusInput] = useState<CandidateEvent["status"]>("confirmado");
+
+  // Estado para Modal de Adiar Ocorrência Específica
+  const [showAdiarModal, setShowAdiarModal] = useState(false);
+  const [targetAdiarDate, setTargetAdiarDate] = useState("");
+  const [novaDataAdiada, setNovaDataAdiada] = useState("");
+  const [adiarEventTarget, setAdiarEventTarget] = useState<CandidateEvent | null>(null);
+
+  // 1. Cancelar apenas a ocorrência do dia selecionado
+  function handleCancelSingleOccurrence(evt: CandidateEvent, dateStr: string) {
+    const cancelDate = dateStr || evt.dataInicio || "";
+    
+    // Atualiza datasCanceladas no evento pai/recorrente
+    setEventos((prev) => {
+      const updated = prev.map((item) => {
+        if (item.id === evt.id) {
+          const canceladas = item.datasCanceladas || [];
+          if (!canceladas.includes(cancelDate)) canceladas.push(cancelDate);
+          return { ...item, datasCanceladas: canceladas };
+        }
+        return item;
+      });
+      if (typeof window !== "undefined") {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      }
+      return updated;
+    });
+
+    // Cria registro filho de cancelamento no dia específico para visualização visual no calendário
+    const canceledChild: CandidateEvent = {
+      ...evt,
+      id: `${evt.id}_canceled_${cancelDate}`,
+      dataInicio: cancelDate,
+      dataCompleta: cancelDate,
+      status: "nao_realizado",
+      titulo: `${evt.titulo.replace(" (Recorrente)", "")} (Cancelado neste dia)`,
+      recorrente: false,
+    };
+
+    setEventos((prev) => {
+      const filtered = prev.filter((item) => item.id !== canceledChild.id);
+      const updated = [canceledChild, ...filtered];
+      if (typeof window !== "undefined") {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      }
+      return updated;
+    });
+
+    setSuccessMsg(`🚫 Ocorrência do dia ${cancelDate} cancelada especificamente nesta data!`);
+    setSelectedEventDetails(null);
+  }
+
+  // 2. Abrir Modal de Adiar Ocorrência Específica
+  function handleOpenAdiarModal(evt: CandidateEvent, currentDateStr: string) {
+    setAdiarEventTarget(evt);
+    setTargetAdiarDate(currentDateStr || evt.dataInicio || "");
+    setNovaDataAdiada(currentDateStr || evt.dataInicio || "");
+    setShowAdiarModal(true);
+  }
+
+  // 3. Confirmar Adiar Ocorrência para Nova Data
+  function handleConfirmAdiarSingleOccurrence() {
+    if (!adiarEventTarget || !novaDataAdiada) return;
+    const oldDate = targetAdiarDate || adiarEventTarget.dataInicio || "";
+
+    const postponedChild: CandidateEvent = {
+      ...adiarEventTarget,
+      id: `${adiarEventTarget.id}_adiado_${Date.now()}`,
+      dataInicio: novaDataAdiada,
+      dataCompleta: novaDataAdiada,
+      status: "pendente",
+      titulo: `${adiarEventTarget.titulo.replace(" (Recorrente)", "")} (Adiado de ${oldDate.slice(-2)})`,
+      descricao: `${adiarEventTarget.descricao || ""} [Evento adiado especificamente do dia ${oldDate} para a nova data ${novaDataAdiada}]`,
+      recorrente: false,
+    };
+
+    setEventos((prev) => {
+      const canceladasMap = prev.map((item) => {
+        if (item.id === adiarEventTarget.id) {
+          const canceladas = item.datasCanceladas || [];
+          if (!canceladas.includes(oldDate)) canceladas.push(oldDate);
+          return { ...item, datasCanceladas: canceladas };
+        }
+        return item;
+      });
+      const updated = [postponedChild, ...canceladasMap];
+      if (typeof window !== "undefined") {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      }
+      return updated;
+    });
+
+    setSuccessMsg(`⏩ Ocorrência do dia ${oldDate} foi adiada para ${novaDataAdiada}!`);
+    setShowAdiarModal(false);
+    setSelectedEventDetails(null);
+    setAdiarEventTarget(null);
+  }
 
   // Campos do Formulário de Evento (exatamente como solicitado)
   const [titulo, setTitulo] = useState("");
@@ -526,57 +646,68 @@ export function AgendaPanel() {
 
         {/* ─── VISÃO 1: GRADE DO CALENDÁRIO MENSAL (7 COLUNAS X 5 SEMANAS) ────────────────── */}
         {(viewMode === "mes" || viewMode === "semana" || viewMode === "dia") && (
-          <div className="overflow-x-auto rounded-xl border border-zinc-200 bg-white shadow-xs dark:border-zinc-800 dark:bg-zinc-950">
-            {/* Cabeçalho dos 7 dias da semana (dom., seg., ter., qua., qui., sex., sáb.) */}
-            <div className="grid grid-cols-7 border-b border-zinc-200 bg-zinc-50 text-center font-bold text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900/80 dark:text-zinc-400 text-[11px] py-2">
-              <div>dom.</div>
-              <div>seg.</div>
-              <div>ter.</div>
-              <div>qua.</div>
-              <div>qui.</div>
-              <div>sex.</div>
-              <div>sáb.</div>
+          <div className="overflow-x-auto rounded-2xl border border-zinc-200 bg-white shadow-xs dark:border-zinc-800 dark:bg-zinc-950">
+            {/* Cabeçalho dos 7 dias da semana (DOM. SEG. TER. QUA. QUI. SEX. SÁB.) */}
+            <div className="grid grid-cols-7 border-b border-zinc-200 bg-slate-100/90 text-center font-extrabold text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900/90 dark:text-zinc-300 text-xs py-3 tracking-wider uppercase">
+              <div>DOM.</div>
+              <div>SEG.</div>
+              <div>TER.</div>
+              <div>QUA.</div>
+              <div>QUI.</div>
+              <div>SEX.</div>
+              <div>SÁB.</div>
             </div>
 
             {/* Células do Calendário Mensal */}
-            <div className="grid grid-cols-7 divide-x divide-y divide-zinc-200 dark:divide-zinc-800 min-h-[560px]">
+            <div className="grid grid-cols-7 divide-x divide-y divide-zinc-200 dark:divide-zinc-800 min-h-[620px]">
               {monthGridDays.map((cell, idx) => {
-                // Filtra os eventos que ocorrem nesta data específica
-                const cellEvents = filteredEventos.filter((evt) => evt.dataInicio === cell.dateStr);
+                // Filtra os eventos que ocorrem nesta data específica (incluindo ocorrências de eventos recorrentes)
+                const cellEventsMap = new Map<string, CandidateEvent>();
+                filteredEventos.forEach((evt) => {
+                  if (isEventOnDate(evt, cell.dateStr)) {
+                    const key = `${evt.titulo}_${evt.horaInicio}_${cell.dateStr}`;
+                    if (!cellEventsMap.has(key)) {
+                      cellEventsMap.set(key, evt);
+                    }
+                  }
+                });
+                const cellEvents = Array.from(cellEventsMap.values());
                 const isToday = cell.dateStr === new Date().toISOString().slice(0, 10);
 
                 return (
                   <div
                     key={idx}
                     onClick={() => handleOpenModalForDate(cell.dateStr)}
-                    className={`group relative flex flex-col p-1.5 transition min-h-[110px] cursor-pointer hover:bg-blue-50/30 dark:hover:bg-blue-950/10 ${
-                      cell.isCurrentMonth
+                    className={`group relative flex flex-col p-2 transition min-h-[125px] sm:min-h-[140px] cursor-pointer hover:bg-blue-50/40 dark:hover:bg-blue-950/20 ${
+                      isToday
+                        ? "bg-blue-50/30 dark:bg-blue-950/20 ring-1 ring-blue-500/20"
+                        : cell.isCurrentMonth
                         ? "bg-white dark:bg-zinc-950"
-                        : "bg-zinc-50/60 text-zinc-400 dark:bg-zinc-900/40 dark:text-zinc-600"
+                        : "bg-zinc-50/70 text-zinc-400 dark:bg-zinc-900/40 dark:text-zinc-600"
                     }`}
                   >
                     {/* Número do Dia na célula */}
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between mb-1">
                       <span
-                        className={`inline-flex h-5 w-5 items-center justify-center text-[11px] font-bold rounded-full ${
+                        className={`inline-flex h-6 w-6 items-center justify-center text-xs font-bold rounded-full transition ${
                           isToday
-                            ? "bg-blue-600 text-white shadow-2xs"
+                            ? "bg-blue-600 text-white shadow-xs font-black ring-2 ring-blue-400/40"
                             : cell.isCurrentMonth
-                            ? "text-zinc-700 dark:text-zinc-300"
+                            ? "text-zinc-800 dark:text-zinc-200"
                             : "text-zinc-400 dark:text-zinc-600"
                         }`}
                       >
                         {cell.dayNum}
                       </span>
 
-                      {/* Botão + rápido ao passar o mouse */}
-                      <span className="opacity-0 group-hover:opacity-100 text-[10px] font-bold text-blue-600 dark:text-blue-400">
+                      {/* Botão + novo rápido ao passar o mouse */}
+                      <span className="opacity-0 group-hover:opacity-100 text-[11px] font-extrabold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950 px-1.5 py-0.5 rounded border border-blue-200 dark:border-blue-800 transition">
                         + novo
                       </span>
                     </div>
 
                     {/* Lista de Pílulas de Eventos dentro do dia do calendário */}
-                    <div className="mt-1 flex flex-col gap-1 overflow-y-auto max-h-[85px]">
+                    <div className="mt-1 flex flex-col gap-1.5 overflow-y-auto max-h-[105px] no-scrollbar">
                       {cellEvents.map((evt) => (
                         <div
                           key={evt.id}
@@ -584,17 +715,25 @@ export function AgendaPanel() {
                             e.stopPropagation();
                             setSelectedEventDetails(evt);
                           }}
-                          className="flex flex-col gap-0.5 rounded bg-blue-100/80 hover:bg-blue-200 dark:bg-blue-950/80 dark:hover:bg-blue-900 border border-blue-200 dark:border-blue-800/60 p-1 text-[9px] text-blue-950 dark:text-blue-200 transition shadow-2xs"
+                          className={`calendar-event-pill flex flex-col gap-0.5 rounded-lg p-1.5 transition shadow-2xs border text-xs cursor-pointer ${
+                            evt.status === "realizado"
+                              ? "bg-blue-50/90 text-blue-950 border-blue-200 hover:bg-blue-100 dark:bg-blue-950/80 dark:text-blue-200 dark:border-blue-800/80"
+                              : evt.status === "nao_realizado"
+                              ? "bg-red-50/90 text-red-950 border-red-200 hover:bg-red-100 dark:bg-red-950/80 dark:text-red-200 dark:border-red-800/80"
+                              : evt.status === "confirmado"
+                              ? "bg-emerald-50/90 text-emerald-950 border-emerald-200 hover:bg-emerald-100 dark:bg-emerald-950/80 dark:text-emerald-200 dark:border-emerald-800/80"
+                              : "bg-amber-50/90 text-amber-950 border-amber-200 hover:bg-amber-100 dark:bg-amber-950/80 dark:text-amber-200 dark:border-amber-800/80"
+                          }`}
                           title={`${evt.titulo} - ${evt.local}`}
                         >
-                          <div className="flex items-center justify-between font-bold truncate">
-                            <span className="truncate">{evt.titulo}</span>
-                            <span className="font-mono text-[8px] text-blue-700 dark:text-blue-300 shrink-0">
+                          <div className="flex items-center justify-between font-extrabold gap-1">
+                            <span className="truncate leading-tight">{evt.titulo}</span>
+                            <span className="font-mono text-[10px] shrink-0 opacity-90 bg-white/70 dark:bg-black/40 px-1 py-0.2 rounded border border-black/5 dark:border-white/10">
                               {evt.diaInteiro ? "Dia Todo" : evt.horaInicio}
                             </span>
                           </div>
                           {evt.local && (
-                            <span className="truncate opacity-75 text-[8px]">
+                            <span className="truncate text-[10px] opacity-80">
                               📍 {evt.local.split(",")[0]}
                             </span>
                           )}
@@ -833,6 +972,47 @@ export function AgendaPanel() {
                 </div>
               )}
 
+              {/* SE O EVENTO É RECORRENTE OU SÉRIE: EXIBE AÇÕES EXCLUSIVAS PARA ESTE DIA */}
+              {(selectedEventDetails.recorrente || selectedEventDetails.datasRecorrencia) && (
+                <div className="rounded-xl border border-purple-200 bg-purple-50/70 p-3 dark:border-purple-900/60 dark:bg-purple-950/40 flex flex-col gap-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-extrabold text-purple-950 dark:text-purple-200 text-xs flex items-center gap-1.5">
+                      <span>🔄</span>
+                      <span>Opções para o Dia Selecionado ({selectedEventDetails.dataInicio}):</span>
+                    </span>
+                    <span className="bg-purple-600 text-white text-[9px] font-black px-2 py-0.5 rounded-full">
+                      Recorrente
+                    </span>
+                  </div>
+
+                  <p className="text-[10px] text-purple-800 dark:text-purple-300">
+                    Você pode alterar individualmente apenas esta data ({selectedEventDetails.dataInicio}) sem modificar os outros dias da série:
+                  </p>
+
+                  <div className="flex flex-wrap items-center gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => handleCancelSingleOccurrence(selectedEventDetails, selectedEventDetails.dataInicio || "")}
+                      className="px-2.5 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white font-extrabold text-[10px] flex items-center gap-1 shadow-xs transition cursor-pointer"
+                      title="Cancela o evento exclusivamente no dia selecionado"
+                    >
+                      <span>🚫</span>
+                      <span>Cancelar apenas no dia {selectedEventDetails.dataInicio}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleOpenAdiarModal(selectedEventDetails, selectedEventDetails.dataInicio || "")}
+                      className="px-2.5 py-1.5 rounded-lg bg-purple-700 hover:bg-purple-800 text-white font-extrabold text-[10px] flex items-center gap-1 shadow-xs transition cursor-pointer"
+                      title="Adia o evento especificamente desta data para outro dia"
+                    >
+                      <span>⏩</span>
+                      <span>Adiar apenas este dia</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* PAINEL DE MARCAÇÃO NO GOOGLE MAPS PARA EVENTOS RECORRENTES */}
               {(selectedEventDetails.recorrente || selectedEventDetails.dataFim) && (
                 <div className="rounded-lg bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 p-2.5 flex flex-col gap-1 text-[11px]">
@@ -875,6 +1055,63 @@ export function AgendaPanel() {
                   className="px-3 py-1 rounded bg-zinc-200 dark:bg-zinc-800 font-bold"
                 >
                   Fechar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* MODAL PARA ADIAR OCORRÊNCIA ÚNICA DE EVENTO RECORRENTE */}
+        {showAdiarModal && adiarEventTarget && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+            <div className="w-full max-w-md rounded-2xl border border-zinc-200 bg-white p-5 shadow-2xl dark:border-zinc-800 dark:bg-zinc-950 flex flex-col gap-4 text-xs">
+              <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800 pb-2">
+                <h3 className="font-extrabold text-purple-700 dark:text-purple-400 text-sm flex items-center gap-1.5">
+                  <span>⏩</span>
+                  <span>Adiar Ocorrência do Dia ({targetAdiarDate})</span>
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setShowAdiarModal(false)}
+                  className="font-bold text-zinc-400 hover:text-zinc-600"
+                >
+                  ×
+                </button>
+              </div>
+
+              <p className="text-zinc-600 dark:text-zinc-300">
+                Selecione a nova data para remarcar o evento <strong>"{adiarEventTarget.titulo}"</strong> previsto para o dia <strong>{targetAdiarDate}</strong>:
+              </p>
+
+              <div className="flex flex-col gap-1 bg-purple-50/50 dark:bg-purple-950/20 p-3 rounded-xl border border-purple-200 dark:border-purple-800">
+                <label htmlFor="nova-data-adiar" className="font-bold text-purple-900 dark:text-purple-300">
+                  Nova Data Remarcada *
+                </label>
+                <input
+                  id="nova-data-adiar"
+                  type="date"
+                  required
+                  className={inputClass}
+                  value={novaDataAdiada}
+                  onChange={(e) => setNovaDataAdiada(e.target.value)}
+                />
+              </div>
+
+              <div className="flex justify-between items-center pt-2 border-t border-zinc-100 dark:border-zinc-800">
+                <button
+                  type="button"
+                  onClick={() => setShowAdiarModal(false)}
+                  className="px-3 py-1.5 rounded-lg bg-zinc-200 dark:bg-zinc-800 font-bold cursor-pointer"
+                >
+                  Cancelar
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleConfirmAdiarSingleOccurrence}
+                  className="px-4 py-1.5 rounded-lg bg-purple-700 hover:bg-purple-800 text-white font-extrabold shadow-xs transition cursor-pointer"
+                >
+                  Confirmar Adiar Este Dia
                 </button>
               </div>
             </div>

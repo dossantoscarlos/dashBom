@@ -12,44 +12,98 @@ export type PushNotificationItem = {
   link?: string;
 };
 
-const INITIAL_NOTIFICATIONS: PushNotificationItem[] = [
-  {
-    id: "notif-01",
-    type: "agenda",
-    title: "🗓️ Lembrete de Agenda",
-    message: "Evento em 30 min: Caminhada e Panfletagem na Zona Norte (Av. Tucuruvi, 450).",
-    timestamp: "Agora mesmo",
-    read: false,
-  },
-  {
-    id: "notif-02",
-    type: "tse",
-    title: "🏛️ Atualização TSE / TRE",
-    message: "Novo boletim oficial: DivulgaCandContas liberou o painel de receita de campanhas.",
-    timestamp: "Há 12 min",
-    read: false,
-  },
-  {
-    id: "notif-03",
-    type: "tse",
-    title: "⚖️ Urnas Eletrônicas UE2026",
-    message: "Relatório de auditoria criptográfica de código-fonte concluído com 100% de aprovação.",
-    timestamp: "Há 45 min",
-    read: false,
-  },
-];
-
 export function PushNotifier() {
-  const [notifications, setNotifications] = useState<PushNotificationItem[]>(INITIAL_NOTIFICATIONS);
+  const [notifications, setNotifications] = useState<PushNotificationItem[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [toast, setToast] = useState<PushNotificationItem | null>(null);
   const [pushPermission, setPushPermission] = useState<NotificationPermission>("default");
 
-  // Verifica permissão nativa de Web Push Notifications do Navegador
+  // Carrega notificações em tempo real da API /api/notificacoes + Agenda local
+  const fetchRealNotifications = async () => {
+    try {
+      const res = await fetch("/api/notificacoes", { cache: "no-store" });
+      let list: PushNotificationItem[] = [];
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.notificacoes && Array.isArray(data.notificacoes)) {
+          list = data.notificacoes;
+        }
+      }
+
+      // Adiciona alertas dos eventos locais salvos na agenda do navegador
+      if (typeof window !== "undefined") {
+        const localAgenda = localStorage.getItem("campanhapro_agenda_events");
+        if (localAgenda) {
+          try {
+            const parsed = JSON.parse(localAgenda);
+            if (Array.isArray(parsed)) {
+              const todayStr = new Date().toISOString().slice(0, 10);
+              parsed.slice(0, 5).forEach((evt: any) => {
+                const localId = `notif_local_evt_${evt.id}`;
+                if (!list.some((n) => n.id === localId)) {
+                  const isToday = evt.dataInicio === todayStr || evt.dataCompleta === todayStr;
+                  const isCanceled = evt.status === "nao_realizado" || evt.status === "cancelado";
+
+                  list.unshift({
+                    id: localId,
+                    type: "agenda",
+                    title: isCanceled
+                      ? `❌ Evento Cancelado: ${evt.titulo}`
+                      : isToday
+                      ? `🚨 ALERTA HOJE NA AGENDA: ${evt.titulo}`
+                      : `🗓️ Compromisso da Agenda: ${evt.titulo}`,
+                    message: `${evt.local ? `📍 ${evt.local} · ` : ""}⏰ ${evt.diaInteiro ? "Dia Inteiro" : `${evt.horaInicio || "09:00"} às ${evt.horaFim || "11:00"}`} (${evt.dataInicio || "Recorrente"})`,
+                    timestamp: isToday ? "HOJE" : evt.dataInicio || "Agendado",
+                    read: false,
+                    link: "/modulos?tab=agenda",
+                  });
+                }
+              });
+            }
+          } catch (e) {}
+        }
+      }
+
+      setNotifications(list);
+
+      // Verifica se há alguma notificação nova não lida para disparar toast/push
+      const latestUnread = list.find((n: PushNotificationItem) => !n.read);
+      if (latestUnread && typeof window !== "undefined") {
+        const lastNotifiedId = sessionStorage.getItem("last_push_id");
+        if (lastNotifiedId !== latestUnread.id) {
+          sessionStorage.setItem("last_push_id", latestUnread.id);
+          setToast(latestUnread);
+
+          if ("Notification" in window && Notification.permission === "granted") {
+            new Notification(latestUnread.title, {
+              body: latestUnread.message,
+              icon: "🔔",
+            });
+          }
+
+          setTimeout(() => setToast(null), 6000);
+        }
+      }
+    } catch (e) {
+      console.warn("[PUSH NOTIFIER]: Erro ao buscar notificações da API:", e);
+    }
+  };
+
+  // Verifica permissão nativa de Web Push Notifications e busca dados reais
   useEffect(() => {
     if (typeof window !== "undefined" && "Notification" in window) {
       setPushPermission(Notification.permission);
     }
+
+    fetchRealNotifications();
+
+    // Polling a cada 20 segundos para consultar a API/banco de dados por novos eventos e notícias
+    const interval = setInterval(() => {
+      fetchRealNotifications();
+    }, 20000);
+
+    return () => clearInterval(interval);
   }, []);
 
   // Solicita permissão para Notificações Push nativas
@@ -59,50 +113,35 @@ export function PushNotifier() {
       setPushPermission(permission);
       if (permission === "granted") {
         new Notification("Notificações Push Ativadas", {
-          body: "Você receberá alertas em tempo real sobre eventos da agenda e atualizações do TSE/TRE.",
+          body: "Você receberá alertas em tempo real sobre eventos da agenda, tarefas e atualizações do TSE/TRE.",
           icon: "🔔",
         });
       }
     }
   }
 
-  // Simulação de recebimento de notificações Push em tempo real (agenda & TSE)
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      const newNotif: PushNotificationItem = {
-        id: `notif-${Date.now()}`,
-        type: "tse",
-        title: "🔴 Alerta ao Vivo TSE / TRE",
-        message: "O TSE registrou novo lote de prestação de contas de candidatos no sistema CAND.",
-        timestamp: "Agora",
-        read: false,
-      };
-
-      setNotifications((prev) => [newNotif, ...prev]);
-      setToast(newNotif);
-
-      // Dispara Web Push Nativo do Navegador se permitido
-      if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
-        new Notification(newNotif.title, {
-          body: newNotif.message,
-        });
-      }
-
-      // Oculta o toast em 6 segundos
-      setTimeout(() => setToast(null), 6000);
-    }, 12000);
-
-    return () => clearTimeout(timer);
-  }, []);
-
   const unreadCount = notifications.filter((n) => !n.read).length;
 
-  function markAllAsRead() {
+  async function markAllAsRead() {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    try {
+      await fetch("/api/notificacoes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "mark_all_read" }),
+      });
+    } catch (e) {}
   }
 
-  function markAsRead(id: string) {
+  async function markAsRead(id: string) {
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+    try {
+      await fetch("/api/notificacoes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "mark_read", id }),
+      });
+    } catch (e) {}
   }
 
   return (

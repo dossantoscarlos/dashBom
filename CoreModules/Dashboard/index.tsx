@@ -228,22 +228,63 @@ const MOCK_SURVEYS: any[] = [];
 
 // ─── Main Dashboard Panel ─────────────────────────────────────────────────────
 
-export function DashboardPanel() {
+type DashboardPanelProps = {
+  onNavigateToTab?: (tabId: string) => void;
+};
+
+export function DashboardPanel({ onNavigateToTab }: DashboardPanelProps) {
   const { regions, campaigns, partners, locations, users } = useDashboard();
   const [agendaEventos, setAgendaEventos] = useState<any[]>([]);
   const [voluntarios, setVoluntarios] = useState<any[]>([]);
   const [lastUpdateText, setLastUpdateText] = useState("Atualizado agora");
 
   useEffect(() => {
-    fetch("/api/agenda")
-      .then((res) => res.json())
-      .then((data) => { if (data.eventos) setAgendaEventos(data.eventos); })
-      .catch(() => {});
+    const loadAgendaEvents = async () => {
+      let events: any[] = [];
+      try {
+        const res = await fetch("/api/agenda");
+        const data = await res.json();
+        if (data.eventos && Array.isArray(data.eventos)) {
+          events = data.eventos;
+        }
+      } catch (e) {}
+
+      if (typeof window !== "undefined") {
+        const localData = localStorage.getItem("campanhapro_agenda_events");
+        if (localData) {
+          try {
+            const parsed = JSON.parse(localData);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              const map = new Map<string, any>();
+              events.forEach((evt) => map.set(String(evt.id), evt));
+              parsed.forEach((evt) => map.set(String(evt.id), evt));
+              events = Array.from(map.values());
+            }
+          } catch (e) {}
+        }
+      }
+      setAgendaEventos(events);
+    };
+
+    loadAgendaEvents();
+
     fetch("/api/voluntarios")
       .then((res) => res.json())
       .then((data) => { if (data.voluntarios) setVoluntarios(data.voluntarios); })
       .catch(() => {});
   }, []);
+
+  const getEventDateParts = (dateStr: string) => {
+    if (!dateStr) return { day: "12", month: "AGO" };
+    const parts = dateStr.split("-");
+    if (parts.length === 3) {
+      const monthIdx = parseInt(parts[1], 10) - 1;
+      const day = parts[2];
+      const monthNames = ["JAN", "FEV", "MAR", "ABR", "MAI", "JUN", "JUL", "AGO", "SET", "OUT", "NOV", "DEZ"];
+      return { day, month: monthNames[monthIdx] || "AGO" };
+    }
+    return { day: "12", month: "AGO" };
+  };
 
   const handleRefresh = () => {
     const now = new Date();
@@ -447,69 +488,77 @@ export function DashboardPanel() {
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2 text-xs">
-          <a
-            href="/voluntarios"
-            className="flex flex-col items-center justify-center p-3 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] hover:bg-[#EAF2FF] hover:border-[#1264F3] transition text-center group"
+          <button
+            type="button"
+            onClick={() => (onNavigateToTab ? onNavigateToTab("voluntarios") : (window.location.href = "/voluntarios"))}
+            className="flex flex-col items-center justify-center p-3 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] hover:bg-[#EAF2FF] hover:border-[#1264F3] transition text-center group cursor-pointer"
           >
             <UsersRound className="h-6 w-6 text-[#008B63] mb-1.5 group-hover:scale-110 transition-transform" strokeWidth={2} />
             <span className="text-[11px] font-bold text-[#10213D]">Voluntários</span>
-          </a>
+          </button>
 
-          <a
-            href="/locais"
-            className="flex flex-col items-center justify-center p-3 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] hover:bg-[#EAF2FF] hover:border-[#1264F3] transition text-center group"
+          <button
+            type="button"
+            onClick={() => (onNavigateToTab ? onNavigateToTab("locais") : (window.location.href = "/locais"))}
+            className="flex flex-col items-center justify-center p-3 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] hover:bg-[#EAF2FF] hover:border-[#1264F3] transition text-center group cursor-pointer"
           >
             <Building2 className="h-6 w-6 text-[#1264F3] mb-1.5 group-hover:scale-110 transition-transform" strokeWidth={2} />
             <span className="text-[11px] font-bold text-[#10213D]">Comitês / Locais</span>
-          </a>
+          </button>
 
-          <a
-            href="/campanhas"
-            className="flex flex-col items-center justify-center p-3 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] hover:bg-[#EAF2FF] hover:border-[#1264F3] transition text-center group"
+          <button
+            type="button"
+            onClick={() => (onNavigateToTab ? onNavigateToTab("campanhas") : (window.location.href = "/campanhas"))}
+            className="flex flex-col items-center justify-center p-3 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] hover:bg-[#EAF2FF] hover:border-[#1264F3] transition text-center group cursor-pointer"
           >
             <Megaphone className="h-6 w-6 text-[#7928F5] mb-1.5 group-hover:scale-110 transition-transform" strokeWidth={2} />
             <span className="text-[11px] font-bold text-[#10213D]">Campanhas</span>
-          </a>
+          </button>
 
-          <a
-            href="/modulos"
-            className="flex flex-col items-center justify-center p-3 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] hover:bg-[#EAF2FF] hover:border-[#1264F3] transition text-center group"
+          <button
+            type="button"
+            onClick={() => (onNavigateToTab ? onNavigateToTab("financeiro") : (window.location.href = "/modulos"))}
+            className="flex flex-col items-center justify-center p-3 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] hover:bg-[#EAF2FF] hover:border-[#1264F3] transition text-center group cursor-pointer"
           >
             <CircleDollarSign className="h-6 w-6 text-[#F59E0B] mb-1.5 group-hover:scale-110 transition-transform" strokeWidth={2} />
             <span className="text-[11px] font-bold text-[#10213D]">Financeiro</span>
-          </a>
+          </button>
 
-          <a
-            href="/modulos"
-            className="flex flex-col items-center justify-center p-3 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] hover:bg-[#EAF2FF] hover:border-[#1264F3] transition text-center group"
+          <button
+            type="button"
+            onClick={() => (onNavigateToTab ? onNavigateToTab("agenda") : (window.location.href = "/modulos"))}
+            className="flex flex-col items-center justify-center p-3 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] hover:bg-[#EAF2FF] hover:border-[#1264F3] transition text-center group cursor-pointer"
           >
             <CalendarDays className="h-6 w-6 text-[#1264F3] mb-1.5 group-hover:scale-110 transition-transform" strokeWidth={2} />
             <span className="text-[11px] font-bold text-[#10213D]">Agenda</span>
-          </a>
+          </button>
 
-          <a
-            href="/tre"
-            className="flex flex-col items-center justify-center p-3 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] hover:bg-[#EAF2FF] hover:border-[#1264F3] transition text-center group"
+          <button
+            type="button"
+            onClick={() => (onNavigateToTab ? onNavigateToTab("tre") : (window.location.href = "/tre"))}
+            className="flex flex-col items-center justify-center p-3 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] hover:bg-[#EAF2FF] hover:border-[#1264F3] transition text-center group cursor-pointer"
           >
             <Scale className="h-6 w-6 text-[#008B63] mb-1.5 group-hover:scale-110 transition-transform" strokeWidth={2} />
-            <span className="text-[11px] font-bold text-[#10213D]">Notícias TSE</span>
-          </a>
+            <span className="text-[11px] font-bold text-[#10213D]">Monitor TSE</span>
+          </button>
 
-          <a
-            href="/relatorios"
-            className="flex flex-col items-center justify-center p-3 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] hover:bg-[#EAF2FF] hover:border-[#1264F3] transition text-center group"
+          <button
+            type="button"
+            onClick={() => (onNavigateToTab ? onNavigateToTab("relatorios") : (window.location.href = "/relatorios"))}
+            className="flex flex-col items-center justify-center p-3 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] hover:bg-[#EAF2FF] hover:border-[#1264F3] transition text-center group cursor-pointer"
           >
             <ChartNoAxesCombined className="h-6 w-6 text-[#7928F5] mb-1.5 group-hover:scale-110 transition-transform" strokeWidth={2} />
             <span className="text-[11px] font-bold text-[#10213D]">Relatórios</span>
-          </a>
+          </button>
 
-          <a
-            href="/usuarios"
-            className="flex flex-col items-center justify-center p-3 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] hover:bg-[#EAF2FF] hover:border-[#1264F3] transition text-center group"
+          <button
+            type="button"
+            onClick={() => (onNavigateToTab ? onNavigateToTab("usuarios") : (window.location.href = "/usuarios"))}
+            className="flex flex-col items-center justify-center p-3 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] hover:bg-[#EAF2FF] hover:border-[#1264F3] transition text-center group cursor-pointer"
           >
             <UserRoundCog className="h-6 w-6 text-[#1264F3] mb-1.5 group-hover:scale-110 transition-transform" strokeWidth={2} />
             <span className="text-[11px] font-bold text-[#10213D]">Usuários</span>
-          </a>
+          </button>
         </div>
       </div>
 
@@ -534,43 +583,59 @@ export function DashboardPanel() {
                 <p className="text-[10px] text-[#64748B]">Compromissos e eventos agendados</p>
               </div>
             </div>
-            <span className="bg-[#EAF2FF] text-[#1264F3] font-mono text-[9px] font-extrabold px-2.5 py-1 rounded border border-[#1264F3]/30">
-              {agendaEventos.length} eventos agendados
-            </span>
+            <button
+              type="button"
+              onClick={() => (onNavigateToTab ? onNavigateToTab("agenda") : (window.location.href = "/modulos"))}
+              className="bg-[#EAF2FF] hover:bg-[#D4E4FF] text-[#1264F3] font-mono text-[9px] font-extrabold px-2.5 py-1 rounded border border-[#1264F3]/30 transition cursor-pointer"
+            >
+              {agendaEventos.length} eventos (Ver Agenda)
+            </button>
           </div>
 
-          <div className="flex flex-col gap-2.5 max-h-64 overflow-y-auto pr-1">
+          <div className="flex flex-col gap-2.5 max-h-72 overflow-y-auto pr-1">
             {agendaEventos.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-6 text-center gap-1">
                 <CalendarDays className="h-8 w-8 text-[#64748B]" strokeWidth={1.5} />
                 <p className="text-xs text-[#64748B] font-medium">Nenhum compromisso registrado para esta semana.</p>
               </div>
             ) : (
-              agendaEventos.slice(0, 4).map((evt) => (
-                <div
-                  key={evt.id}
-                  className="flex items-center justify-between p-3 rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] text-xs hover:border-[#1264F3] transition"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="flex flex-col items-center justify-center h-10 w-11 rounded-lg bg-[#1264F3] text-white font-extrabold leading-tight text-[11px] shrink-0 shadow-2xs">
-                      <span>{evt.dataInicio ? evt.dataInicio.slice(-2) : "10"}</span>
-                      <span className="text-[8px] uppercase font-mono">JUN</span>
+              agendaEventos.slice(0, 6).map((evt) => {
+                const dateParts = getEventDateParts(evt.dataInicio);
+                return (
+                  <div
+                    key={evt.id}
+                    onClick={() => (onNavigateToTab ? onNavigateToTab("agenda") : (window.location.href = "/modulos"))}
+                    className="flex items-center justify-between p-3 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] text-xs hover:border-[#1264F3] hover:bg-[#EAF2FF]/40 transition cursor-pointer"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="flex flex-col items-center justify-center h-10 w-11 rounded-lg bg-[#1264F3] text-white font-extrabold leading-tight text-[11px] shrink-0 shadow-2xs">
+                        <span>{dateParts.day}</span>
+                        <span className="text-[8px] uppercase font-mono">{dateParts.month}</span>
+                      </div>
+
+                      <div className="flex flex-col gap-0.5 min-w-0">
+                        <h4 className="font-bold text-[#10213D] truncate leading-snug">{evt.titulo}</h4>
+                        <span className="text-[10px] text-[#64748B] truncate">📍 {evt.local || "Comitê Central"}</span>
+                      </div>
                     </div>
 
-                    <div className="flex flex-col gap-0.5 min-w-0">
-                      <h4 className="font-bold text-[#10213D] truncate leading-snug">{evt.titulo}</h4>
-                      <span className="text-[10px] text-[#64748B] truncate">📍 {evt.local || "Comitê Central"}</span>
+                    <div className="text-right shrink-0">
+                      <span className="font-mono font-bold text-[#1264F3] text-[11px] block">
+                        {evt.diaInteiro ? "Dia Inteiro" : `${evt.horaInicio} - ${evt.horaFim}`}
+                      </span>
+                      {evt.status === "realizado" ? (
+                        <span className="text-[9px] font-extrabold text-blue-600 block mt-0.5">● Realizado</span>
+                      ) : evt.status === "nao_realizado" ? (
+                        <span className="text-[9px] font-extrabold text-red-600 block mt-0.5">● Não Realizado</span>
+                      ) : evt.status === "confirmado" ? (
+                        <span className="text-[9px] font-extrabold text-[#008B63] block mt-0.5">● Confirmado</span>
+                      ) : (
+                        <span className="text-[9px] font-extrabold text-amber-600 block mt-0.5">● Pendente</span>
+                      )}
                     </div>
                   </div>
-
-                  <div className="text-right shrink-0">
-                    <span className="font-mono font-bold text-[#1264F3] text-[11px] block">
-                      {evt.diaInteiro ? "Dia Inteiro" : `${evt.horaInicio} - ${evt.horaFim}`}
-                    </span>
-                    <span className="text-[9px] font-extrabold text-[#008B63] block mt-0.5">● Confirmado</span>
-                  </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         </div>

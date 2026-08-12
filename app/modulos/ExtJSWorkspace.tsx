@@ -68,6 +68,7 @@ type ProfileSettings = {
   phone: string;
   theme: string;
   mode: string;
+  avatarUrl?: string;
 };
 
 type MenuItem = {
@@ -110,7 +111,30 @@ export function ExtJSWorkspace({ userName, userEmail }: ExtJSWorkspaceProps) {
     phone: "(11) 99999-9999",
     theme: "triton",
     mode: "light",
+    avatarUrl: "",
   });
+
+  // Carrega configurações salvas do usuário (foto de perfil e tema) no carregamento inicial
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("user_profile_settings");
+      if (saved) {
+        try {
+          const parsed: ProfileSettings = JSON.parse(saved);
+          setProfileSettings(parsed);
+
+          if (parsed.mode === "dark") {
+            document.documentElement.classList.add("dark");
+          } else if (parsed.mode === "light") {
+            document.documentElement.classList.remove("dark");
+          } else if (parsed.mode === "system") {
+            const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+            document.documentElement.classList.toggle("dark", prefersDark);
+          }
+        } catch (e) {}
+      }
+    }
+  }, []);
 
   // Iniciar na aba "Nova demanda" com as abas Dashboard, Demandas e Projetos, e Nova demanda ativas
   const [openTabs, setOpenTabs] = useState<TabItem[]>(() => [
@@ -142,7 +166,18 @@ export function ExtJSWorkspace({ userName, userEmail }: ExtJSWorkspaceProps) {
 
   const handleUpdateProfile = (newSettings: ProfileSettings) => {
     setProfileSettings(newSettings);
-    localStorage.setItem("user_profile_settings", JSON.stringify(newSettings));
+    if (typeof window !== "undefined") {
+      localStorage.setItem("user_profile_settings", JSON.stringify(newSettings));
+
+      if (newSettings.mode === "dark") {
+        document.documentElement.classList.add("dark");
+      } else if (newSettings.mode === "light") {
+        document.documentElement.classList.remove("dark");
+      } else if (newSettings.mode === "system") {
+        const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        document.documentElement.classList.toggle("dark", prefersDark);
+      }
+    }
   };
 
   // Grupos do Menu da Sidebar conforme especificação do campanhaPRO
@@ -187,10 +222,32 @@ export function ExtJSWorkspace({ userName, userEmail }: ExtJSWorkspaceProps) {
     },
   ];
 
+  const [panelExtras, setPanelExtras] = useState<Record<string, { title: string; component: React.ReactNode }>>({});
+
+  // Abertura dinâmica de aba conforme menu selecionado
+  function handleOpenTab(id: string) {
+    const tabTitle = panelDefinitions[id]?.title || panelExtras[id]?.title || id;
+    setOpenTabs((prev) => {
+      const exists = prev.find((t) => t.id === id);
+      if (exists) return prev;
+      return [
+        ...prev,
+        {
+          id,
+          title: tabTitle,
+          iconNode: TAB_ICONS_MAP[id] || <LayoutGrid className="h-3.5 w-3.5 text-[#1264F3]" />,
+          closable: true,
+        },
+      ];
+    });
+    setActiveTab(id);
+    setIsMobileDrawerOpen(false);
+  }
+
   const panelDefinitions: Record<string, { title: string; component: React.ReactNode }> = {
     dashboard: {
       title: "Dashboard",
-      component: can("dashboard:visualizar") ? <DashboardPanel /> : <div className="p-6 text-red-600 font-bold">Acesso Negado</div>
+      component: can("dashboard:visualizar") ? <DashboardPanel onNavigateToTab={handleOpenTab} /> : <div className="p-6 text-red-600 font-bold">Acesso Negado</div>
     },
     demandas: {
       title: "Demandas e Projetos",
@@ -273,30 +330,7 @@ export function ExtJSWorkspace({ userName, userEmail }: ExtJSWorkspaceProps) {
     },
   };
 
-  const [panelExtras, setPanelExtras] = useState<Record<string, { title: string; component: React.ReactNode }>>({});
   const allPanels = { ...panelDefinitions, ...panelExtras };
-
-  // Abertura dinâmica de aba conforme menu selecionado
-  const handleOpenTab = (id: string) => {
-    const tabDef = allPanels[id];
-    if (!tabDef) return;
-
-    setOpenTabs((prev) => {
-      const exists = prev.find((t) => t.id === id);
-      if (exists) return prev;
-      return [
-        ...prev,
-        {
-          id,
-          title: tabDef.title,
-          iconNode: TAB_ICONS_MAP[id] || <LayoutGrid className="h-3.5 w-3.5 text-[#1264F3]" />,
-          closable: true,
-        },
-      ];
-    });
-    setActiveTab(id);
-    setIsMobileDrawerOpen(false);
-  };
 
   const handleCloseTab = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -495,14 +529,22 @@ export function ExtJSWorkspace({ userName, userEmail }: ExtJSWorkspaceProps) {
                 className="flex items-center gap-2 pl-2 sm:pl-3 border-l border-[#E2E8F0] hover:opacity-85 transition cursor-pointer text-left"
                 title="Clique para abrir as Configurações de Perfil"
               >
-                <div className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full bg-[#06284F] text-white font-extrabold text-xs shadow-2xs border border-[#00A978]">
-                  {userInitials}
-                </div>
+                {profileSettings.avatarUrl ? (
+                  <img
+                    src={profileSettings.avatarUrl}
+                    alt={profileSettings.displayName}
+                    className="h-8 w-8 sm:h-9 sm:w-9 rounded-full object-cover shadow-2xs border border-[#00A978]"
+                  />
+                ) : (
+                  <div className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full bg-[#06284F] text-white font-extrabold text-xs shadow-2xs border border-[#00A978]">
+                    {userInitials}
+                  </div>
+                )}
                 <div className="hidden sm:flex flex-col text-left">
-                  <span className="text-xs font-bold text-[#10213D] flex items-center gap-1">
+                  <span className="text-xs font-bold text-[#10213D] dark:text-zinc-100 flex items-center gap-1">
                     {profileSettings.displayName} <span className="text-[9px] text-[#64748B]">▼</span>
                   </span>
-                  <span className="text-[9px] font-extrabold text-[#008B63] bg-[#E8F7F1] px-1.5 py-0.2 rounded border border-[#00A978]/30">
+                  <span className="text-[9px] font-extrabold text-[#008B63] bg-[#E8F7F1] dark:bg-[#008B63]/20 px-1.5 py-0.2 rounded border border-[#00A978]/30">
                     {currentRole?.name ?? "Administrador"}
                   </span>
                 </div>
@@ -510,10 +552,23 @@ export function ExtJSWorkspace({ userName, userEmail }: ExtJSWorkspaceProps) {
 
               {/* Dropdown Popover de Perfil */}
               {showProfileMenu && (
-                <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl border border-[#E2E8F0] shadow-xl py-2 z-40 text-xs flex flex-col gap-1">
-                  <div className="px-3.5 py-2 border-b border-[#F1F5F9] bg-[#F8FAFC]">
-                    <p className="font-extrabold text-[#10213D]">{profileSettings.displayName}</p>
-                    <p className="text-[10px] text-[#64748B] truncate">{profileSettings.email}</p>
+                <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-zinc-950 rounded-xl border border-[#E2E8F0] dark:border-zinc-800 shadow-xl py-2 z-40 text-xs flex flex-col gap-1">
+                  <div className="px-3.5 py-2 border-b border-[#F1F5F9] dark:border-zinc-850 bg-[#F8FAFC] dark:bg-zinc-900 flex items-center gap-2.5">
+                    {profileSettings.avatarUrl ? (
+                      <img
+                        src={profileSettings.avatarUrl}
+                        alt={profileSettings.displayName}
+                        className="h-9 w-9 rounded-full object-cover shadow-2xs border border-[#00A978] shrink-0"
+                      />
+                    ) : (
+                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#06284F] text-white font-extrabold text-xs shadow-2xs border border-[#00A978] shrink-0">
+                        {userInitials}
+                      </div>
+                    )}
+                    <div className="flex flex-col min-w-0">
+                      <p className="font-extrabold text-[#10213D] dark:text-zinc-100 truncate">{profileSettings.displayName}</p>
+                      <p className="text-[10px] text-[#64748B] dark:text-zinc-400 truncate">{profileSettings.email}</p>
+                    </div>
                   </div>
 
                   <button
