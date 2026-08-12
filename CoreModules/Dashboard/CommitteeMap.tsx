@@ -74,16 +74,31 @@ const UF_COORDS_MAP: Record<string, { lat: number; lon: number; city: string; st
 // Tabela de Geocodificação de Bairros e Zonas Regionais (Zona Norte, Zona Sul, Zona Oeste, etc)
 const NEIGHBORHOOD_COORDS_MAP: Record<string, { lat: number; lon: number; city: string; state: string }> = {
   // Rio de Janeiro — Zona Norte
+  quintino: { lat: -22.8872, lon: -43.3175, city: "Quintino Bocaiúva (Zona Norte)", state: "RJ" },
   cascadura: { lat: -22.8806, lon: -43.3278, city: "Cascadura (Zona Norte)", state: "RJ" },
   madureira: { lat: -22.8717, lon: -43.3396, city: "Madureira (Zona Norte)", state: "RJ" },
+  piedade: { lat: -22.8942, lon: -43.3050, city: "Piedade (Zona Norte)", state: "RJ" },
+  campinho: { lat: -22.8880, lon: -43.3480, city: "Campinho (Zona Norte)", state: "RJ" },
   meier: { lat: -22.9022, lon: -43.2806, city: "Méier (Zona Norte)", state: "RJ" },
   tijuca: { lat: -22.9248, lon: -43.2325, city: "Tijuca (Zona Norte)", state: "RJ" },
   maracana: { lat: -22.9122, lon: -43.2302, city: "Maracanã (Zona Norte)", state: "RJ" },
   inhauma: { lat: -22.8800, lon: -43.2700, city: "Inhaúma (Zona Norte)", state: "RJ" },
   "del castilho": { lat: -22.8800, lon: -43.2700, city: "Del Castilho (Zona Norte)", state: "RJ" },
+  pilares: { lat: -22.8840, lon: -43.2920, city: "Pilares (Zona Norte)", state: "RJ" },
+  "vaz lobo": { lat: -22.8630, lon: -43.3280, city: "Vaz Lobo (Zona Norte)", state: "RJ" },
+  "bento ribeiro": { lat: -22.8680, lon: -43.3610, city: "Bento Ribeiro (Zona Norte)", state: "RJ" },
+  "marechal hermes": { lat: -22.8610, lon: -43.3710, city: "Marechal Hermes (Zona Norte)", state: "RJ" },
+  "rocha miranda": { lat: -22.8530, lon: -43.3480, city: "Rocha Miranda (Zona Norte)", state: "RJ" },
+  iraja: { lat: -22.8330, lon: -43.3250, city: "Irajá (Zona Norte)", state: "RJ" },
+  bonsucesso: { lat: -22.8620, lon: -43.2540, city: "Bonsucesso (Zona Norte)", state: "RJ" },
+  olaria: { lat: -22.8420, lon: -43.2620, city: "Olaria (Zona Norte)", state: "RJ" },
+  ramos: { lat: -22.8500, lon: -43.2560, city: "Ramos (Zona Norte)", state: "RJ" },
   penha: { lat: -22.8447, lon: -43.2781, city: "Penha (Zona Norte)", state: "RJ" },
   pavuna: { lat: -22.8067, lon: -43.3653, city: "Pavuna (Zona Norte)", state: "RJ" },
-  "zona norte": { lat: -22.8806, lon: -43.3278, city: "Rio de Janeiro (Zona Norte)", state: "RJ" },
+  "vila isabel": { lat: -22.9150, lon: -43.2420, city: "Vila Isabel (Zona Norte)", state: "RJ" },
+  grajau: { lat: -22.9220, lon: -43.2600, city: "Grajaú (Zona Norte)", state: "RJ" },
+  andarai: { lat: -22.9260, lon: -43.2480, city: "Andaraí (Zona Norte)", state: "RJ" },
+  "zona norte": { lat: -22.8872, lon: -43.3175, city: "Rio de Janeiro (Zona Norte)", state: "RJ" },
 
   // Rio de Janeiro — Zona Oeste
   bangu: { lat: -22.8753, lon: -43.4658, city: "Bangu (Zona Oeste)", state: "RJ" },
