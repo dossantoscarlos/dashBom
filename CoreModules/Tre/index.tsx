@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { formatCurrencyBR } from "@/lib/data/financeiro-store";
+import { exportToCSV, exportToExcel, generatePrintablePDF } from "@/lib/export-utils";
 import {
   Activity,
   Scale,
@@ -803,7 +804,21 @@ export function TrePanel() {
             <div className="flex items-center gap-2 shrink-0">
               <button
                 type="button"
-                onClick={() => alert("Exportando CSV da base oficial...")}
+                onClick={() => {
+                  const headers = ["Nome de Urna", "Nome Completo", "Cargo Disputado", "Número", "Partido", "UF", "Votos ÚLtimas Eleições", "Situação TSE", "DRE"];
+                  const rows = results.map((c) => [
+                    c.nomeUrna,
+                    c.nome,
+                    c.cargoDisputado,
+                    c.numero,
+                    c.siglaPartido,
+                    c.uf,
+                    c.votosUltimaEleicao ? c.votosUltimaEleicao.toLocaleString("pt-BR") : "0",
+                    c.situacao,
+                    c.dreStatus || "DEFERIDO",
+                  ]);
+                  exportToCSV("Candidatos_TSE_Oficial", headers, rows);
+                }}
                 className="px-3 py-1.5 rounded-md bg-[#008B63] hover:bg-[#007855] text-white text-[11px] font-bold transition shadow-2xs flex items-center gap-1.5 cursor-pointer"
               >
                 <Download className="w-3.5 h-3.5" />
@@ -811,7 +826,21 @@ export function TrePanel() {
               </button>
               <button
                 type="button"
-                onClick={() => alert("Exportando planilha Excel...")}
+                onClick={() => {
+                  const headers = ["Nome de Urna", "Nome Completo", "Cargo Disputado", "Número", "Partido", "UF", "Votos ÚLtimas Eleições", "Situação TSE", "DRE"];
+                  const rows = results.map((c) => [
+                    c.nomeUrna,
+                    c.nome,
+                    c.cargoDisputado,
+                    c.numero,
+                    c.siglaPartido,
+                    c.uf,
+                    c.votosUltimaEleicao ? c.votosUltimaEleicao.toLocaleString("pt-BR") : "0",
+                    c.situacao,
+                    c.dreStatus || "DEFERIDO",
+                  ]);
+                  exportToExcel("Candidatos_TSE_Oficial", headers, rows);
+                }}
                 className="px-3 py-1.5 rounded-md bg-[#008B63] hover:bg-[#007855] text-white text-[11px] font-bold transition shadow-2xs flex items-center gap-1.5 cursor-pointer"
               >
                 <FileSpreadsheet className="w-3.5 h-3.5" />
@@ -819,7 +848,21 @@ export function TrePanel() {
               </button>
               <button
                 type="button"
-                onClick={() => window.print()}
+                onClick={() => {
+                  const headers = ["Nome de Urna", "Nome Completo", "Cargo Disputado", "Número", "Partido", "UF", "Votos ÚLtimas Eleições", "Situação TSE", "DRE"];
+                  const rows = results.map((c) => [
+                    c.nomeUrna,
+                    c.nome,
+                    c.cargoDisputado,
+                    c.numero,
+                    c.siglaPartido,
+                    c.uf,
+                    c.votosUltimaEleicao ? c.votosUltimaEleicao.toLocaleString("pt-BR") : "0",
+                    c.situacao,
+                    c.dreStatus || "DEFERIDO",
+                  ]);
+                  generatePrintablePDF("Relatório Oficial de Consulta de Candidatos no TSE", headers, rows);
+                }}
                 className="px-3 py-1.5 rounded-md bg-[#EF4444] hover:bg-[#DC2626] text-white text-[11px] font-bold transition shadow-2xs flex items-center gap-1.5 cursor-pointer"
               >
                 <FileText className="w-3.5 h-3.5" />

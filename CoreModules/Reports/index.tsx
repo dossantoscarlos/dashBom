@@ -11,6 +11,8 @@ import { generateMockReportResults } from "@/lib/domain/rules";
 import { reportTemplates } from "@/lib/data/reports";
 import { ModuleBlock } from "@/components/dashboard/ModuleBlock";
 import type { ReportTemplate } from "@/lib/domain/types";
+import { exportToCSV, exportToExcel, generatePrintablePDF } from "@/lib/export-utils";
+import { Download, FileSpreadsheet, FileText } from "lucide-react";
 
 // ─── Inline Report Viewer ─────────────────────────────────────────────────────
 // Usado tanto na aba dedicada de relatório quanto internamente
@@ -76,10 +78,58 @@ export function ReportViewer({ report }: ReportViewerProps) {
         {loading && <LoadingSkeleton rows={5} className="mt-2" />}
 
         {result && !loading && (
-          <div className="mt-2">
-            <h4 className="mb-2 text-xs font-bold uppercase tracking-wider text-zinc-400">
-              Pré-visualização — {periodo}
-            </h4>
+          <div className="mt-2 flex flex-col gap-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-zinc-200 dark:border-zinc-800 pb-2">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                Pré-visualização do Relatório — {periodo}
+              </h4>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const headers = result.columns;
+                    const rows = result.rows.map((row) =>
+                      result.columns.map((col) => row[col] ?? "")
+                    );
+                    exportToCSV(`Relatorio_${report.id}_${periodo}`, headers, rows);
+                  }}
+                  className="px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Exportar CSV</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const headers = result.columns;
+                    const rows = result.rows.map((row) =>
+                      result.columns.map((col) => row[col] ?? "")
+                    );
+                    exportToExcel(`Relatorio_${report.id}_${periodo}`, headers, rows);
+                  }}
+                  className="px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+                >
+                  <FileSpreadsheet className="w-3.5 h-3.5" />
+                  <span>Exportar Excel</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const headers = result.columns;
+                    const rows = result.rows.map((row) =>
+                      result.columns.map((col) => row[col] ?? "")
+                    );
+                    generatePrintablePDF(`${report.title} (${periodo})`, headers, rows);
+                  }}
+                  className="px-2.5 py-1 rounded bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+                >
+                  <FileText className="w-3.5 h-3.5" />
+                  <span>Gerar PDF (Imprimir)</span>
+                </button>
+              </div>
+            </div>
+
             <DataTable
               data={result.rows.map((row, i) => ({ ...row, _id: String(i) }))}
               keyExtractor={(row) => row._id}

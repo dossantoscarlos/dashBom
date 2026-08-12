@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useDashboard } from "@/contexts/DashboardProvider";
 import { useToast } from "@/components/dashboard/Toast";
 
@@ -79,15 +79,12 @@ export function DemandasProjetosPanel() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // MODO PRINCIPAL DO MÓDULO:
-  // "nova_demanda": TELA 1 — CADASTRO DE NOVA DEMANDA (FORMULÁRIO LIMPO PARA DADOS REAIS)
-  // "analise_demanda": TELA 2 & 3 — ANÁLISE TÉCNICA E AVALIAÇÃO DE CRITÉRIOS DA DEMANDA REAL CADASTRADA
-  // "projeto_ativo": TELAS 4 A 10 — ACOMPANHAMENTO DO PROJETO CRIADO DINAMICAMENTE
   const [mainMode, setMainMode] = useState<"nova_demanda" | "analise_demanda" | "projeto_ativo">("nova_demanda");
 
   // Sub-aba ativa do projeto
   const [projectSubTab, setProjectSubTab] = useState<ProjectSubTab>("kanban");
 
-  // Lista de Demandas Cadastradas no Sistema (Inicia vazia ou com registros reais)
+  // Lista de Demandas Cadastradas no Sistema
   const [registeredDemands, setRegisteredDemands] = useState<DemandaItem[]>([]);
 
   // Demanda Ativa sendo cadastrada/analisada
@@ -105,6 +102,184 @@ export function DemandasProjetosPanel() {
   const [raciItems, setRaciItems] = useState<RaciItem[]>([]);
   const [projectFiles, setProjectFiles] = useState<ProjectFileItem[]>([]);
   const [auditEvents, setAuditEvents] = useState<AuditEvent[]>([]);
+
+  // ── SISTEMA DE PERSISTÊNCIA EM LOCALSTORAGE E API ──
+  const STORAGE_KEYS = {
+    REGISTERED_DEMANDS: "campanhapro_demandas_list",
+    CURRENT_DEMANDA: "campanhapro_current_demanda",
+    PROJECT_STATE: "campanhapro_project_state",
+    MAIN_MODE: "campanhapro_demandas_main_mode",
+    PROJECT_SUBTAB: "campanhapro_project_subtab",
+    KANBAN_TASKS: "campanhapro_kanban_tasks",
+    CRONOGRAMA_DATA: "campanhapro_cronograma_data",
+    CATEGORIAS: "campanhapro_orcamento_categorias",
+    TRANSACOES: "campanhapro_financial_transactions",
+    MEMBERS: "campanhapro_team_members",
+    RACI_ITEMS: "campanhapro_raci_items",
+    PROJECT_FILES: "campanhapro_project_files",
+    AUDIT_EVENTS: "campanhapro_audit_events",
+    TECHNICAL_REPORT: "campanhapro_technical_report",
+  };
+
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  // Carregar dados salvos no recarregamento da página (Mount)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    try {
+      const savedDemands = localStorage.getItem(STORAGE_KEYS.REGISTERED_DEMANDS);
+      if (savedDemands) {
+        const parsed = JSON.parse(savedDemands);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setRegisteredDemands(parsed);
+        }
+      }
+
+      const savedCurrentDemanda = localStorage.getItem(STORAGE_KEYS.CURRENT_DEMANDA);
+      if (savedCurrentDemanda) {
+        setCurrentDemanda(JSON.parse(savedCurrentDemanda));
+      }
+
+      const savedProjectState = localStorage.getItem(STORAGE_KEYS.PROJECT_STATE);
+      if (savedProjectState) {
+        setProjectState(JSON.parse(savedProjectState));
+      }
+
+      const savedMainMode = localStorage.getItem(STORAGE_KEYS.MAIN_MODE);
+      if (savedMainMode) {
+        setMainMode(savedMainMode as any);
+      }
+
+      const savedSubTab = localStorage.getItem(STORAGE_KEYS.PROJECT_SUBTAB);
+      if (savedSubTab) {
+        setProjectSubTab(savedSubTab as any);
+      }
+
+      const savedKanban = localStorage.getItem(STORAGE_KEYS.KANBAN_TASKS);
+      if (savedKanban) {
+        setKanbanTasks(JSON.parse(savedKanban));
+      }
+
+      const savedCronograma = localStorage.getItem(STORAGE_KEYS.CRONOGRAMA_DATA);
+      if (savedCronograma) {
+        setCronogramaData(JSON.parse(savedCronograma));
+      }
+
+      const savedCategorias = localStorage.getItem(STORAGE_KEYS.CATEGORIAS);
+      if (savedCategorias) {
+        setCategorias(JSON.parse(savedCategorias));
+      }
+
+      const savedTransacoes = localStorage.getItem(STORAGE_KEYS.TRANSACOES);
+      if (savedTransacoes) {
+        setTransacoes(JSON.parse(savedTransacoes));
+      }
+
+      const savedMembers = localStorage.getItem(STORAGE_KEYS.MEMBERS);
+      if (savedMembers) {
+        setMembers(JSON.parse(savedMembers));
+      }
+
+      const savedRaci = localStorage.getItem(STORAGE_KEYS.RACI_ITEMS);
+      if (savedRaci) {
+        setRaciItems(JSON.parse(savedRaci));
+      }
+
+      const savedFiles = localStorage.getItem(STORAGE_KEYS.PROJECT_FILES);
+      if (savedFiles) {
+        setProjectFiles(JSON.parse(savedFiles));
+      }
+
+      const savedAudit = localStorage.getItem(STORAGE_KEYS.AUDIT_EVENTS);
+      if (savedAudit) {
+        setAuditEvents(JSON.parse(savedAudit));
+      }
+
+      const savedReport = localStorage.getItem(STORAGE_KEYS.TECHNICAL_REPORT);
+      if (savedReport) {
+        setTechnicalReport(savedReport);
+      }
+    } catch (e) {
+      console.error("Erro ao recarregar dados de demandas do localStorage:", e);
+    } finally {
+      setIsLoaded(true);
+    }
+  }, []);
+
+  // Salvar automaticamente no localStorage sempre que houver modificação nos dados
+  useEffect(() => {
+    if (!isLoaded || typeof window === "undefined") return;
+    localStorage.setItem(STORAGE_KEYS.REGISTERED_DEMANDS, JSON.stringify(registeredDemands));
+  }, [registeredDemands, isLoaded]);
+
+  useEffect(() => {
+    if (!isLoaded || typeof window === "undefined") return;
+    if (currentDemanda) {
+      localStorage.setItem(STORAGE_KEYS.CURRENT_DEMANDA, JSON.stringify(currentDemanda));
+    } else {
+      localStorage.removeItem(STORAGE_KEYS.CURRENT_DEMANDA);
+    }
+  }, [currentDemanda, isLoaded]);
+
+  useEffect(() => {
+    if (!isLoaded || typeof window === "undefined") return;
+    if (projectState) {
+      localStorage.setItem(STORAGE_KEYS.PROJECT_STATE, JSON.stringify(projectState));
+    } else {
+      localStorage.removeItem(STORAGE_KEYS.PROJECT_STATE);
+    }
+  }, [projectState, isLoaded]);
+
+  useEffect(() => {
+    if (!isLoaded || typeof window === "undefined") return;
+    localStorage.setItem(STORAGE_KEYS.MAIN_MODE, mainMode);
+  }, [mainMode, isLoaded]);
+
+  useEffect(() => {
+    if (!isLoaded || typeof window === "undefined") return;
+    localStorage.setItem(STORAGE_KEYS.PROJECT_SUBTAB, projectSubTab);
+  }, [projectSubTab, isLoaded]);
+
+  useEffect(() => {
+    if (!isLoaded || typeof window === "undefined") return;
+    localStorage.setItem(STORAGE_KEYS.KANBAN_TASKS, JSON.stringify(kanbanTasks));
+  }, [kanbanTasks, isLoaded]);
+
+  useEffect(() => {
+    if (!isLoaded || typeof window === "undefined") return;
+    localStorage.setItem(STORAGE_KEYS.CRONOGRAMA_DATA, JSON.stringify(cronogramaData));
+  }, [cronogramaData, isLoaded]);
+
+  useEffect(() => {
+    if (!isLoaded || typeof window === "undefined") return;
+    localStorage.setItem(STORAGE_KEYS.CATEGORIAS, JSON.stringify(categorias));
+  }, [categorias, isLoaded]);
+
+  useEffect(() => {
+    if (!isLoaded || typeof window === "undefined") return;
+    localStorage.setItem(STORAGE_KEYS.TRANSACOES, JSON.stringify(transacoes));
+  }, [transacoes, isLoaded]);
+
+  useEffect(() => {
+    if (!isLoaded || typeof window === "undefined") return;
+    localStorage.setItem(STORAGE_KEYS.MEMBERS, JSON.stringify(members));
+  }, [members, isLoaded]);
+
+  useEffect(() => {
+    if (!isLoaded || typeof window === "undefined") return;
+    localStorage.setItem(STORAGE_KEYS.RACI_ITEMS, JSON.stringify(raciItems));
+  }, [raciItems, isLoaded]);
+
+  useEffect(() => {
+    if (!isLoaded || typeof window === "undefined") return;
+    localStorage.setItem(STORAGE_KEYS.PROJECT_FILES, JSON.stringify(projectFiles));
+  }, [projectFiles, isLoaded]);
+
+  useEffect(() => {
+    if (!isLoaded || typeof window === "undefined") return;
+    localStorage.setItem(STORAGE_KEYS.AUDIT_EVENTS, JSON.stringify(auditEvents));
+  }, [auditEvents, isLoaded]);
 
   // ── ESTADOS DO FORMULÁRIO DE NOVA DEMANDA (INICIAM 100% LIMPOS) ──
   const [title, setTitle] = useState("");
@@ -131,7 +306,7 @@ export function DemandasProjetosPanel() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
 
-  // Parecer Técnico da Análise (Inicia limpo)
+  // Parecer Técnico da Análise
   const [technicalReport, setTechnicalReport] = useState("");
 
   // Busca Automática de Endereço por CEP Real
@@ -241,6 +416,13 @@ export function DemandasProjetosPanel() {
     setCurrentDemanda(newDemanda);
     setTechnicalReport(""); // Limpa o parecer técnico para nova análise
     setIsSubmitting(false);
+
+    // Sincroniza via API REST no servidor
+    fetch("/api/demandas", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newDemanda),
+    }).catch(() => {});
 
     // Reseta campos do formulário para o próximo uso
     setTitle("");

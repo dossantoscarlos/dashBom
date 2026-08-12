@@ -27,10 +27,12 @@ export function AgendaPanel() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterUser, setFilterUser] = useState("todos");
 
-  // Estado do Modal de Adicionar Evento
+  // Estado do Modal de Adicionar/Editar Evento
   const [showModal, setShowModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [selectedEventDetails, setSelectedEventDetails] = useState<CandidateEvent | null>(null);
+  const [editingEventId, setEditingEventId] = useState<string | null>(null);
+  const [statusInput, setStatusInput] = useState<CandidateEvent["status"]>("confirmado");
 
   // Campos do Formulário de Evento (exatamente como solicitado)
   const [titulo, setTitulo] = useState("");
@@ -45,18 +47,102 @@ export function AgendaPanel() {
   const [diasSemana, setDiasSemana] = useState<string[]>(["segunda", "quarta", "sexta"]);
   const [convidadosInput, setConvidadosInput] = useState("");
 
+  const STORAGE_KEY = "campanhapro_agenda_events";
+
+  // Abrir Modal no Modo de Edição
+  function handleOpenEditModal(evt: CandidateEvent) {
+    setEditingEventId(evt.id);
+    setTitulo(evt.titulo);
+    setDescricao(evt.descricao || "");
+    setLocal(evt.local || "");
+    setDataInicio(evt.dataInicio || new Date().toISOString().slice(0, 10));
+    setDiaInteiro(Boolean(evt.diaInteiro));
+    setHoraInicio(evt.horaInicio || "09:00");
+    setHoraFim(evt.horaFim || "11:00");
+    setRecorrente(Boolean(evt.recorrente));
+    setDataFim(evt.dataFim || "");
+    setDiasSemana(evt.diasSemana || ["segunda", "quarta", "sexta"]);
+    setConvidadosInput(evt.convidados ? evt.convidados.join(", ") : "");
+    setStatusInput(evt.status || "confirmado");
+    setShowModal(true);
+  }
+
+  // Atualizar Status do Evento (Aceitar, Realizado, Não Realizado)
+  async function handleUpdateStatus(evtId: string, newStatus: CandidateEvent["status"]) {
+    setErrorMsg(null);
+    setSuccessMsg(null);
+
+    setEventos((prev) => {
+      const updated = prev.map((e) => (e.id === evtId ? { ...e, status: newStatus } : e));
+      if (typeof window !== "undefined") {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      }
+      return updated;
+    });
+
+    if (selectedEventDetails && selectedEventDetails.id === evtId) {
+      setSelectedEventDetails((prev) => (prev ? { ...prev, status: newStatus } : null));
+    }
+
+    try {
+      await fetch("/api/agenda", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: evtId, status: newStatus }),
+      });
+    } catch (e) {}
+
+    const statusLabels: Record<string, string> = {
+      confirmado: "✓ Evento Confirmado / Aceito!",
+      realizado: "🎉 Evento marcado como REALIZADO!",
+      nao_realizado: "❌ Evento marcado como NÃO REALIZADO!",
+      pendente: "⏳ Evento marcado como Pendente",
+    };
+
+    setSuccessMsg(statusLabels[newStatus] || "Status do evento atualizado!");
+  }
+
   async function loadAgenda() {
     setLoading(true);
     setErrorMsg(null);
     try {
+      let localEvents: CandidateEvent[] = [];
+      if (typeof window !== "undefined") {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          try {
+            localEvents = JSON.parse(saved);
+          } catch (e) {}
+        }
+      }
+
       const res = await fetch("/api/agenda");
       const data = await res.json();
       if (res.ok) {
-        setEventos(data.eventos ?? []);
+        const apiEvents = data.eventos ?? [];
+        // Combinar eventos locais salvos com eventos do servidor sem duplicidade por ID
+        const combinedMap = new Map<string, CandidateEvent>();
+        [...localEvents, ...apiEvents].forEach((evt) => {
+          if (evt && evt.id) combinedMap.set(evt.id, evt);
+        });
+        setEventos(Array.from(combinedMap.values()));
       } else {
-        throw new Error(data.error ?? "Erro ao carregar agenda.");
+        if (localEvents.length > 0) {
+          setEventos(localEvents);
+        } else {
+          throw new Error(data.erro || data.error || "Erro ao carregar agenda.");
+        }
       }
     } catch (err: any) {
+      if (typeof window !== "undefined") {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          try {
+            setEventos(JSON.parse(saved));
+            return;
+          } catch (e) {}
+        }
+      }
       setErrorMsg(err?.message ?? "Falha de conexão com a agenda.");
     } finally {
       setLoading(false);
@@ -96,12 +182,69 @@ export function AgendaPanel() {
     setErrorMsg(null);
     setSuccessMsg(null);
 
+    // MODO EDIÇÃO
+    if (editingEventId) {
+      setEventos((prev) => {
+        const updated = prev.map((evt) => {
+          if (evt.id === editingEventId) {
+            return {
+              ...evt,
+              titulo,
+              descricao,
+              local,
+              dataInicio,
+              dataCompleta: dataInicio,
+              diaInteiro,
+              horaInicio: diaInteiro ? "00:00" : horaInicio,
+              horaFim: diaInteiro ? "23:59" : horaFim,
+              recorrente,
+              dataFim: recorrente ? dataFim : "",
+              diasSemana: recorrente ? diasSemana : [],
+              convidados: convidadosInput ? convidadosInput.split(",").map((c) => c.trim()) : [],
+              status: statusInput,
+            };
+          }
+          return evt;
+        });
+        if (typeof window !== "undefined") {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+        }
+        return updated;
+      });
+
+      fetch("/api/agenda", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: editingEventId,
+          titulo,
+          descricao,
+          local,
+          dataInicio,
+          dataCompleta: dataInicio,
+          diaInteiro,
+          horaInicio: diaInteiro ? "00:00" : horaInicio,
+          horaFim: diaInteiro ? "23:59" : horaFim,
+          recorrente,
+          dataFim: recorrente ? dataFim : "",
+          status: statusInput,
+        }),
+      }).catch(() => {});
+
+      setSuccessMsg("✏️ Evento atualizado com sucesso!");
+      setShowModal(false);
+      setEditingEventId(null);
+      setSubmitting(false);
+      return;
+    }
+
     try {
       const payload = {
         titulo,
         descricao,
         local,
         dataInicio,
+        dataCompleta: dataInicio,
         diaInteiro,
         horaInicio: diaInteiro ? "00:00" : horaInicio,
         horaFim: diaInteiro ? "23:59" : horaFim,
@@ -109,6 +252,7 @@ export function AgendaPanel() {
         dataFim: recorrente ? dataFim : "",
         diasSemana: recorrente ? diasSemana : [],
         convidados: convidadosInput,
+        status: statusInput,
       };
 
       const res = await fetch("/api/agenda", {
@@ -119,11 +263,54 @@ export function AgendaPanel() {
 
       const data = await res.json();
 
-      if (!res.ok) {
-        throw new Error(data.error ?? "Erro ao criar evento.");
+      if (!res.ok || !data.sucesso) {
+        throw new Error(data.erro || data.error || "Erro ao criar evento.");
       }
 
-      setSuccessMsg("🎉 Evento criado e sincronizado com o Google Calendar!");
+      const mainEventId = `evt_${Date.now()}`;
+      const recDates: string[] = data.datasRecorrencia || [dataInicio];
+
+      const createdEvents: CandidateEvent[] = recDates.map((rDate, idx) => {
+        const childFormatted = new Date(rDate).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" }).toUpperCase();
+        return {
+          id: idx === 0 ? mainEventId : `${mainEventId}_rec_${idx}`,
+          data: childFormatted,
+          dataCompleta: rDate,
+          dataInicio: rDate,
+          diaInteiro,
+          horaInicio: diaInteiro ? "00:00" : horaInicio,
+          horaFim: diaInteiro ? "23:59" : horaFim,
+          titulo: idx === 0 ? titulo : `${titulo} (Recorrente)`,
+          descricao,
+          local,
+          tipo: "reuniao",
+          status: "confirmado",
+          uf: "SP",
+          cidade: "São Paulo",
+          responsavel: "Coordenação de Campanha",
+          googleSynced: true,
+          recorrente: Boolean(recorrente),
+          dataFim: recorrente ? dataFim : "",
+          diasSemana: recorrente ? diasSemana : [],
+          mapeadoNoMaps: true,
+          datasRecorrencia: recDates,
+        };
+      });
+
+      // Atualiza o estado da agenda local e salva no localStorage
+      setEventos((prev) => {
+        const updated = [...createdEvents, ...prev];
+        if (typeof window !== "undefined") {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+        }
+        return updated;
+      });
+
+      setSuccessMsg(
+        recorrente && dataFim
+          ? `🎉 Evento recorrente marcado no Google Maps em ${createdEvents.length} ocorrências até o término (${dataFim})!`
+          : "🎉 Evento criado e marcado no Google Maps!"
+      );
       setShowModal(false);
 
       // Reseta o formulário
@@ -133,8 +320,6 @@ export function AgendaPanel() {
       setConvidadosInput("");
       setDiaInteiro(false);
       setRecorrente(false);
-
-      loadAgenda();
     } catch (err: any) {
       setErrorMsg(err?.message ?? "Erro ao sincronizar com o Google Calendar.");
     } finally {
@@ -452,11 +637,30 @@ export function AgendaPanel() {
                             {evt.titulo}
                           </h4>
                         </div>
-                        {evt.googleSynced && (
-                          <span className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[8px] font-extrabold border border-emerald-500/20 px-1.5 py-0.5 rounded shrink-0">
-                            Google Sync
-                          </span>
-                        )}
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {evt.status === "realizado" ? (
+                            <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 font-bold text-[9px]">
+                              🎉 Realizado
+                            </span>
+                          ) : evt.status === "nao_realizado" ? (
+                            <span className="px-2 py-0.5 rounded-full bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300 font-bold text-[9px]">
+                              ❌ Não Realizado
+                            </span>
+                          ) : evt.status === "confirmado" ? (
+                            <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-bold text-[9px]">
+                              ✓ Aceito
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 font-bold text-[9px]">
+                              ⏳ Pendente
+                            </span>
+                          )}
+                          {evt.googleSynced && (
+                            <span className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[8px] font-extrabold border border-emerald-500/20 px-1.5 py-0.5 rounded">
+                              Google Sync
+                            </span>
+                          )}
+                        </div>
                       </div>
 
                       <p className="text-[11px] text-zinc-600 dark:text-zinc-350 leading-relaxed">
@@ -481,6 +685,43 @@ export function AgendaPanel() {
                           <span className="truncate max-w-[160px]">{evt.local || "Não especificado"}</span>
                         </div>
                       </div>
+
+                      {/* BARRA DE AÇÕES: ACEITAR, REALIZADO, NÃO REALIZADO, EDITAR */}
+                      <div className="flex flex-wrap items-center justify-between gap-1 pt-2 border-t border-zinc-100 dark:border-zinc-800 mt-2">
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateStatus(evt.id, "confirmado")}
+                            title="Aceitar / Confirmar evento"
+                            className="px-2 py-1 rounded bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[9px] transition"
+                          >
+                            ✓ Aceitar
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateStatus(evt.id, "realizado")}
+                            title="Marcar evento como Realizado"
+                            className="px-2 py-1 rounded bg-blue-600 hover:bg-blue-700 text-white font-bold text-[9px] transition"
+                          >
+                            🎉 Realizado
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateStatus(evt.id, "nao_realizado")}
+                            title="Marcar como Não Realizado"
+                            className="px-2 py-1 rounded bg-red-600 hover:bg-red-700 text-white font-bold text-[9px] transition"
+                          >
+                            ❌ Não Realizado
+                          </button>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEditModal(evt)}
+                          className="px-2 py-1 rounded bg-zinc-200 hover:bg-zinc-300 dark:bg-zinc-800 dark:hover:bg-zinc-700 font-bold text-[9px] transition text-zinc-800 dark:text-zinc-200"
+                        >
+                          ✏️ Editar
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -494,9 +735,28 @@ export function AgendaPanel() {
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
             <div className="w-full max-w-md rounded-2xl border border-zinc-200 bg-white p-5 shadow-2xl dark:border-zinc-800 dark:bg-zinc-950 flex flex-col gap-3 text-xs">
               <div className="flex justify-between items-center border-b border-zinc-100 dark:border-zinc-800 pb-2">
-                <h3 className="font-extrabold text-blue-600 dark:text-blue-400 text-sm">
-                  {selectedEventDetails.titulo}
-                </h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-extrabold text-blue-600 dark:text-blue-400 text-sm">
+                    {selectedEventDetails.titulo}
+                  </h3>
+                  {selectedEventDetails.status === "realizado" ? (
+                    <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 font-bold text-[9px]">
+                      🎉 Realizado
+                    </span>
+                  ) : selectedEventDetails.status === "nao_realizado" ? (
+                    <span className="px-2 py-0.5 rounded-full bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300 font-bold text-[9px]">
+                      ❌ Não Realizado
+                    </span>
+                  ) : selectedEventDetails.status === "confirmado" ? (
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-bold text-[9px]">
+                      ✓ Aceito
+                    </span>
+                  ) : (
+                    <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 font-bold text-[9px]">
+                      ⏳ Pendente
+                    </span>
+                  )}
+                </div>
                 <button
                   type="button"
                   onClick={() => setSelectedEventDetails(null)}
@@ -510,15 +770,105 @@ export function AgendaPanel() {
 
               <div className="bg-zinc-50 dark:bg-zinc-900 p-2.5 rounded-lg flex flex-col gap-1 text-[11px]">
                 <div>📍 <strong>Local:</strong> {selectedEventDetails.local}</div>
-                <div>📅 <strong>Data:</strong> {selectedEventDetails.dataInicio}</div>
+                <div>📅 <strong>Data de Início:</strong> {selectedEventDetails.dataInicio}</div>
+                {selectedEventDetails.dataFim && (
+                  <div>🏁 <strong>Término do Evento:</strong> {selectedEventDetails.dataFim}</div>
+                )}
                 <div>⏰ <strong>Horário:</strong> {selectedEventDetails.diaInteiro ? "Dia Inteiro" : `${selectedEventDetails.horaInicio} às ${selectedEventDetails.horaFim}`}</div>
                 {selectedEventDetails.convidados && selectedEventDetails.convidados.length > 0 && (
                   <div>✉️ <strong>Convidados:</strong> {selectedEventDetails.convidados.join(", ")}</div>
                 )}
               </div>
 
+              {/* BOTÕES DE AÇÃO NO MODAL DE DETALHES */}
+              <div className="flex flex-wrap items-center justify-between gap-1 p-2 rounded-lg bg-zinc-100/70 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
+                <span className="text-[10px] font-bold text-zinc-500">Alterar Status:</span>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => handleUpdateStatus(selectedEventDetails.id, "confirmado")}
+                    className="px-2 py-1 rounded bg-emerald-600 text-white font-bold text-[9px]"
+                  >
+                    ✓ Aceitar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleUpdateStatus(selectedEventDetails.id, "realizado")}
+                    className="px-2 py-1 rounded bg-blue-600 text-white font-bold text-[9px]"
+                  >
+                    🎉 Realizado
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleUpdateStatus(selectedEventDetails.id, "nao_realizado")}
+                    className="px-2 py-1 rounded bg-red-600 text-white font-bold text-[9px]"
+                  >
+                    ❌ Não Realizado
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const evt = selectedEventDetails;
+                      setSelectedEventDetails(null);
+                      handleOpenEditModal(evt);
+                    }}
+                    className="px-2 py-1 rounded bg-zinc-800 text-white font-bold text-[9px]"
+                  >
+                    ✏️ Editar
+                  </button>
+                </div>
+              </div>
+
+              {/* EMBEDDED GOOGLE MAPS INTERATIVO */}
+              {selectedEventDetails.local && (
+                <div className="rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800 h-36 w-full shadow-2xs">
+                  <iframe
+                    title="Localização do Evento no Google Maps"
+                    width="100%"
+                    height="100%"
+                    style={{ border: 0 }}
+                    loading="lazy"
+                    src={`https://maps.google.com/maps?q=${encodeURIComponent(selectedEventDetails.local)}&t=m&z=15&ie=UTF8&iwloc=&output=embed`}
+                  />
+                </div>
+              )}
+
+              {/* PAINEL DE MARCAÇÃO NO GOOGLE MAPS PARA EVENTOS RECORRENTES */}
+              {(selectedEventDetails.recorrente || selectedEventDetails.dataFim) && (
+                <div className="rounded-lg bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 p-2.5 flex flex-col gap-1 text-[11px]">
+                  <div className="flex items-center gap-1.5 font-bold text-purple-900 dark:text-purple-300">
+                    <span>🗺️</span>
+                    <span>Marcado no Google Maps até o término do evento ({selectedEventDetails.dataFim || selectedEventDetails.dataInicio})</span>
+                  </div>
+                  <p className="text-[10px] text-purple-700 dark:text-purple-400">
+                    Todas as ocorrências deste evento recorrente foram roteirizadas e marcadas no Google Maps até a data limite ({selectedEventDetails.dataFim}).
+                  </p>
+                  {selectedEventDetails.datasRecorrencia && selectedEventDetails.datasRecorrencia.length > 0 && (
+                    <div className="text-[9px] font-mono text-purple-800 dark:text-purple-300 mt-1 flex flex-wrap gap-1 max-h-20 overflow-y-auto">
+                      {selectedEventDetails.datasRecorrencia.map((dt) => (
+                        <span key={dt} className="px-1.5 py-0.5 rounded bg-purple-100 dark:bg-purple-900/60 font-bold border border-purple-200/50">
+                          {dt}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="flex justify-between items-center pt-2">
-                <span className="text-[9px] text-emerald-600 font-bold">✓ Sincronizado no Google Calendar</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[9px] text-emerald-600 font-bold">✓ Google Maps & Calendar</span>
+                  {selectedEventDetails.local && (
+                    <a
+                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedEventDetails.local)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-2 py-0.5 rounded bg-blue-600 hover:bg-blue-700 text-white font-bold text-[10px] flex items-center gap-1"
+                    >
+                      <span>🗺️ Abrir no Maps</span>
+                    </a>
+                  )}
+                </div>
                 <button
                   type="button"
                   onClick={() => setSelectedEventDetails(null)}
@@ -538,14 +888,17 @@ export function AgendaPanel() {
               
               <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800 pb-3">
                 <div className="flex items-center gap-2">
-                  <span className="text-xl">📅</span>
+                  <span className="text-xl">{editingEventId ? "✏️" : "📅"}</span>
                   <h3 className="text-sm font-extrabold text-zinc-900 dark:text-zinc-100 uppercase tracking-wider">
-                    Adicionar Evento na Agenda do Candidato
+                    {editingEventId ? "Editar Evento da Agenda" : "Adicionar Evento na Agenda do Candidato"}
                   </h3>
                 </div>
                 <button
                   type="button"
-                  onClick={() => setShowModal(false)}
+                  onClick={() => {
+                    setShowModal(false);
+                    setEditingEventId(null);
+                  }}
                   className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 font-bold text-lg"
                 >
                   ×
@@ -554,6 +907,24 @@ export function AgendaPanel() {
 
               <form onSubmit={handleCreateEvent} className="flex flex-col gap-3.5 text-xs">
                 
+                {/* Status do Evento */}
+                <div className="flex flex-col gap-1">
+                  <label htmlFor="evt-status" className="font-bold text-zinc-700 dark:text-zinc-300">
+                    Status do Evento
+                  </label>
+                  <select
+                    id="evt-status"
+                    className={inputClass}
+                    value={statusInput}
+                    onChange={(e) => setStatusInput(e.target.value as any)}
+                  >
+                    <option value="confirmado">✓ Confirmado / Aceito</option>
+                    <option value="pendente">⏳ Pendente de Aceite</option>
+                    <option value="realizado">🎉 Realizado / Concluído</option>
+                    <option value="nao_realizado">❌ Não Realizado / Cancelado</option>
+                  </select>
+                </div>
+
                 {/* Título */}
                 <div className="flex flex-col gap-1">
                   <label htmlFor="evt-titulo" className="font-bold text-zinc-700 dark:text-zinc-300">

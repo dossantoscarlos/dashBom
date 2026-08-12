@@ -42,6 +42,7 @@ import {
   Building,
 } from "lucide-react";
 import { formatCurrencyBR } from "@/lib/data/financeiro-store";
+import { exportToCSV, exportToExcel, generatePrintablePDF } from "@/lib/export-utils";
 import type {
   FinancialContextType,
   BankAccount,
@@ -934,11 +935,20 @@ export function FinanceiroPanel() {
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => {
-                    if (!canManage) return;
-                    alert("Exportando registros da consulta atual para CSV...");
+                    const headers = ["Data", "Identificador", "Propósito/Descrição", "Doador/Origem", "Origem Recurso", "Centro de Custo", "Valor", "Status"];
+                    const rows = revenues.map((r) => [
+                      r.date,
+                      r.id,
+                      r.purpose || "-",
+                      r.donorName || r.entityName || "-",
+                      r.origin,
+                      r.costCenterName || "-",
+                      formatCurrencyBR(r.amount),
+                      r.status,
+                    ]);
+                    exportToCSV(`Receitas_Financeiras_${activeContext}`, headers, rows);
                   }}
-                  disabled={!canManage}
-                  className="flex items-center gap-2 rounded-xl border border-zinc-300 bg-white px-4 py-2 text-xs font-bold text-zinc-700 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 transition shadow-xs disabled:opacity-50"
+                  className="flex items-center gap-2 rounded-xl border border-zinc-300 bg-white px-4 py-2 text-xs font-bold text-zinc-700 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 transition shadow-xs cursor-pointer"
                 >
                   <Download className="h-4 w-4" />
                   Exportar
@@ -1415,11 +1425,19 @@ export function FinanceiroPanel() {
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => {
-                    if (!canManage) return;
-                    alert("Exportando registros da consulta atual de despesas para CSV...");
+                    const headers = ["Data Vencimento", "Código", "Descrição", "Fornecedor", "Tipo", "Valor Final", "Status"];
+                    const rows = expenses.map((e) => [
+                      e.dueDate,
+                      e.code || e.id,
+                      e.description,
+                      e.vendorName || "-",
+                      e.expenseType,
+                      formatCurrencyBR(e.finalAmount || e.amount),
+                      e.status,
+                    ]);
+                    exportToCSV(`Despesas_Financeiras_${activeContext}`, headers, rows);
                   }}
-                  disabled={!canManage}
-                  className="flex items-center gap-2 rounded-xl border border-zinc-300 bg-white px-4 py-2 text-xs font-bold text-zinc-700 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 transition shadow-xs disabled:opacity-50"
+                  className="flex items-center gap-2 rounded-xl border border-zinc-300 bg-white px-4 py-2 text-xs font-bold text-zinc-700 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 transition shadow-xs cursor-pointer"
                 >
                   <Download className="h-4 w-4" />
                   Exportar
