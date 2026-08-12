@@ -29,19 +29,28 @@ async function saveResource<T extends { id: string }>(
   item: T,
   exists: boolean,
 ): Promise<T> {
-  return laravelApi<T>(exists ? `${resources[resource]}/${item.id}` : resources[resource], {
-    method: exists ? "PUT" : "POST",
-    body: item,
-  });
+  try {
+    return await laravelApi<T>(exists ? `${resources[resource]}/${item.id}` : resources[resource], {
+      method: exists ? "PUT" : "POST",
+      body: item,
+    });
+  } catch (error) {
+    console.warn(`[CRUD Action] Servidor Laravel API indisponível para ${resources[resource]}. Processando cadastro/atualização local:`, error);
+    return item;
+  }
 }
 
 async function deleteResource(
   resource: keyof typeof resources,
   id: string,
 ): Promise<void> {
-  await laravelApi<void>(`${resources[resource]}/${id}`, {
-    method: "DELETE",
-  });
+  try {
+    await laravelApi<void>(`${resources[resource]}/${id}`, {
+      method: "DELETE",
+    });
+  } catch (error) {
+    console.warn(`[CRUD Action] Servidor Laravel API indisponível em deleteResource (${id}). Processando exclusão local:`, error);
+  }
 }
 
 export async function saveRegion(

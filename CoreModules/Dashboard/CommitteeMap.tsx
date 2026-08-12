@@ -40,8 +40,96 @@ interface CommitteeMapProps {
   voluntarios?: any[];
 }
 
-// Tabela de Coordenadas Geográficas Conhecidas (Alimentada Dinamicamente por Locais Reais do Banco de Dados)
-const KNOWN_COORDS_MAP: Record<string, { lat: number; lon: number; city: string; state: string }> = {};
+// Tabela de Coordenadas Geográficas Oficiais das Capitais dos Estados Brasileiros para Geocodificação Dinâmica
+const UF_COORDS_MAP: Record<string, { lat: number; lon: number; city: string; state: string }> = {
+  RJ: { lat: -22.9068, lon: -43.1729, city: "Rio de Janeiro", state: "RJ" },
+  SP: { lat: -23.5505, lon: -46.6333, city: "São Paulo", state: "SP" },
+  MG: { lat: -19.9167, lon: -43.9345, city: "Belo Horizonte", state: "MG" },
+  DF: { lat: -15.7975, lon: -47.8919, city: "Brasília", state: "DF" },
+  PR: { lat: -25.4284, lon: -49.2733, city: "Curitiba", state: "PR" },
+  RS: { lat: -30.0346, lon: -51.2177, city: "Porto Alegre", state: "RS" },
+  BA: { lat: -12.9777, lon: -38.5016, city: "Salvador", state: "BA" },
+  PE: { lat: -8.0476, lon: -34.8770, city: "Recife", state: "PE" },
+  CE: { lat: -3.7327, lon: -38.5270, city: "Fortaleza", state: "CE" },
+  SC: { lat: -27.5954, lon: -48.5480, city: "Florianópolis", state: "SC" },
+  GO: { lat: -16.6869, lon: -49.2648, city: "Goiânia", state: "GO" },
+  ES: { lat: -20.3155, lon: -40.3128, city: "Vitória", state: "ES" },
+  MA: { lat: -2.5307, lon: -44.3068, city: "São Luís", state: "MA" },
+  PA: { lat: -1.4558, lon: -48.4902, city: "Belém", state: "PA" },
+  AM: { lat: -3.1190, lon: -60.0217, city: "Manaus", state: "AM" },
+  RN: { lat: -5.7945, lon: -35.2110, city: "Natal", state: "RN" },
+  PB: { lat: -7.1153, lon: -34.8610, city: "João Pessoa", state: "PB" },
+  AL: { lat: -9.6658, lon: -35.7350, city: "Maceió", state: "AL" },
+  SE: { lat: -10.9472, lon: -37.0731, city: "Aracaju", state: "SE" },
+  PI: { lat: -5.0920, lon: -42.8038, city: "Teresina", state: "PI" },
+  MT: { lat: -15.6010, lon: -56.0979, city: "Cuiabá", state: "MT" },
+  MS: { lat: -20.4697, lon: -54.6201, city: "Campo Grande", state: "MS" },
+  RO: { lat: -8.7619, lon: -63.9039, city: "Porto Velho", state: "RO" },
+  AC: { lat: -9.9754, lon: -67.8249, city: "Rio Branco", state: "AC" },
+  AP: { lat: 0.0355, lon: -51.0705, city: "Macapá", state: "AP" },
+  RR: { lat: 2.8235, lon: -60.6758, city: "Boa Vista", state: "RR" },
+  TO: { lat: -10.2491, lon: -48.3243, city: "Palmas", state: "TO" },
+};
+
+// Tabela de Geocodificação de Bairros e Zonas Regionais (Zona Norte, Zona Sul, Zona Oeste, etc)
+const NEIGHBORHOOD_COORDS_MAP: Record<string, { lat: number; lon: number; city: string; state: string }> = {
+  // Rio de Janeiro — Zona Norte
+  cascadura: { lat: -22.8806, lon: -43.3278, city: "Cascadura (Zona Norte)", state: "RJ" },
+  madureira: { lat: -22.8717, lon: -43.3396, city: "Madureira (Zona Norte)", state: "RJ" },
+  meier: { lat: -22.9022, lon: -43.2806, city: "Méier (Zona Norte)", state: "RJ" },
+  tijuca: { lat: -22.9248, lon: -43.2325, city: "Tijuca (Zona Norte)", state: "RJ" },
+  maracana: { lat: -22.9122, lon: -43.2302, city: "Maracanã (Zona Norte)", state: "RJ" },
+  inhauma: { lat: -22.8800, lon: -43.2700, city: "Inhaúma (Zona Norte)", state: "RJ" },
+  "del castilho": { lat: -22.8800, lon: -43.2700, city: "Del Castilho (Zona Norte)", state: "RJ" },
+  penha: { lat: -22.8447, lon: -43.2781, city: "Penha (Zona Norte)", state: "RJ" },
+  pavuna: { lat: -22.8067, lon: -43.3653, city: "Pavuna (Zona Norte)", state: "RJ" },
+  "zona norte": { lat: -22.8806, lon: -43.3278, city: "Rio de Janeiro (Zona Norte)", state: "RJ" },
+
+  // Rio de Janeiro — Zona Oeste
+  bangu: { lat: -22.8753, lon: -43.4658, city: "Bangu (Zona Oeste)", state: "RJ" },
+  "campo grande": { lat: -22.9028, lon: -43.5592, city: "Campo Grande (Zona Oeste)", state: "RJ" },
+  jacarepagua: { lat: -22.9667, lon: -43.3667, city: "Jacarepaguá (Zona Oeste)", state: "RJ" },
+  barra: { lat: -23.0003, lon: -43.3658, city: "Barra da Tijuca (Zona Oeste)", state: "RJ" },
+  "zona oeste": { lat: -22.8753, lon: -43.4658, city: "Rio de Janeiro (Zona Oeste)", state: "RJ" },
+
+  // Rio de Janeiro — Zona Sul / Centro
+  centro: { lat: -22.9035, lon: -43.1823, city: "Rio de Janeiro (Centro)", state: "RJ" },
+  copacabana: { lat: -22.9711, lon: -43.1822, city: "Copacabana (Zona Sul)", state: "RJ" },
+  botafogo: { lat: -22.9511, lon: -43.1806, city: "Botafogo (Zona Sul)", state: "RJ" },
+  "zona sul": { lat: -22.9711, lon: -43.1822, city: "Rio de Janeiro (Zona Sul)", state: "RJ" },
+
+  // Baixada Fluminense & Niterói
+  niteroi: { lat: -22.8833, lon: -43.1036, city: "Niterói", state: "RJ" },
+  caxias: { lat: -22.7858, lon: -43.3117, city: "Duque de Caxias", state: "RJ" },
+  "nova iguacu": { lat: -22.7561, lon: -43.4608, city: "Nova Iguaçu", state: "RJ" },
+  "sao goncalo": { lat: -22.8269, lon: -43.0539, city: "São Gonçalo", state: "RJ" },
+};
+
+function resolveCoordsByAddressOrRegion(fullText: string, defaultUf: string = "RJ", index: number = 0) {
+  const norm = (fullText || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+  // Busca primeiro por bairro/zona específica
+  for (const [key, item] of Object.entries(NEIGHBORHOOD_COORDS_MAP)) {
+    if (norm.includes(key)) {
+      return {
+        lat: item.lat + (index * 0.002),
+        lon: item.lon + (index * 0.002),
+        city: item.city,
+        state: item.state,
+      };
+    }
+  }
+
+  // Fallback por estado
+  const ufUpper = (defaultUf || "RJ").toUpperCase();
+  const ufConfig = UF_COORDS_MAP[ufUpper] || UF_COORDS_MAP["RJ"];
+  return {
+    lat: ufConfig.lat + (index * 0.004),
+    lon: ufConfig.lon + (index * 0.004),
+    city: ufConfig.city,
+    state: ufConfig.state,
+  };
+}
 
 export function CommitteeMap({ locations = [], voluntarios = [] }: CommitteeMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -63,34 +151,18 @@ export function CommitteeMap({ locations = [], voluntarios = [] }: CommitteeMapP
   const points: CampaignMapPoint[] = useMemo(() => {
     const locPoints: CampaignMapPoint[] = locations.map((loc, idx) => {
       const pointType = normalizePointType(loc.type);
-      const known = KNOWN_COORDS_MAP[loc.id];
-      const defaultLat = known ? known.lat : -23.5505 + (idx * 0.012);
-      const defaultLon = known ? known.lon : -46.6333 + (idx * 0.012);
-
-      // Extrai Cidade / Estado do Endereço
-      let city = known?.city || "São Paulo";
-      let state = known?.state || "SP";
-      if (loc.address) {
-        const parts = loc.address.split("-");
-        if (parts.length > 1) {
-          const lastPart = parts[parts.length - 1].trim();
-          if (lastPart.includes("/")) {
-            const [c, s] = lastPart.split("/");
-            if (c) city = c.trim();
-            if (s) state = s.trim();
-          }
-        }
-      }
+      const searchStr = `${loc.name} ${loc.address || ""}`;
+      const resolved = resolveCoordsByAddressOrRegion(searchStr, "RJ", idx);
 
       return {
         id: loc.id,
         type: pointType,
         name: loc.name,
-        latitude: defaultLat,
-        longitude: defaultLon,
+        latitude: resolved.lat,
+        longitude: resolved.lon,
         address: loc.address,
-        city,
-        state,
+        city: resolved.city,
+        state: resolved.state,
         status: "ativo",
         detailUrl: "/locais",
         responsible: loc.responsible,
@@ -99,18 +171,20 @@ export function CommitteeMap({ locations = [], voluntarios = [] }: CommitteeMapP
     });
 
     const volPoints: CampaignMapPoint[] = (voluntarios || []).map((vol, idx) => {
-      const baseLat = -23.5505 + ((idx + 1) * 0.01);
-      const baseLon = -46.6333 - ((idx + 1) * 0.01);
+      const searchStr = `${vol.regiaoDesignada || ""} ${vol.comiteNome || ""} ${vol.bairro || ""} ${vol.cidade || ""} ${vol.logradouro || ""}`;
+      const resolved = resolveCoordsByAddressOrRegion(searchStr, vol.uf || "RJ", idx);
 
       return {
         id: `vol-${vol.id || idx}`,
         type: "VOLUNTEER" as MapPointType,
         name: vol.nome || "Voluntário da Campanha",
-        latitude: baseLat,
-        longitude: baseLon,
-        address: vol.comiteNome ? `Alocado em ${vol.comiteNome}` : "Atuação de Campo",
-        city: "São Paulo",
-        state: "SP",
+        latitude: resolved.lat,
+        longitude: resolved.lon,
+        address: vol.comiteNome && vol.comiteNome !== "Não vinculado"
+          ? `Alocado em ${vol.comiteNome}`
+          : `Atuação em ${vol.regiaoDesignada || vol.bairro || "Campo"}`,
+        city: vol.cidade || vol.bairro || resolved.city,
+        state: vol.uf || resolved.state,
         status: "ativo",
         detailUrl: "/voluntarios",
         responsible: vol.regiaoDesignada,
@@ -244,7 +318,9 @@ export function CommitteeMap({ locations = [], voluntarios = [] }: CommitteeMapP
     }
 
     function initMap() {
-      map = L.map('map', { zoomControl: false }).setView([-23.5505, -46.6333], 11);
+      const initialCenter = POINTS.length > 0 ? [POINTS[0].latitude, POINTS[0].longitude] : [-15.7801, -47.9292];
+      const initialZoom = POINTS.length > 0 ? 12 : 4;
+      map = L.map('map', { zoomControl: false }).setView(initialCenter, initialZoom);
 
       L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
         attribution: '© OpenStreetMap © CARTO',

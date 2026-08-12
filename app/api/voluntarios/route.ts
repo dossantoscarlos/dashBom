@@ -167,9 +167,9 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
 
-    if (!body.nome || !body.tituloEleitor || !body.whatsapp) {
+    if (!body.nome || !body.tituloEleitor) {
       return NextResponse.json(
-        { sucesso: false, erro: "Nome, Título de Eleitor e WhatsApp são obrigatórios." },
+        { sucesso: false, erro: "Nome e Título de Eleitor são obrigatórios para cadastro do voluntário." },
         { status: 400 }
       );
     }

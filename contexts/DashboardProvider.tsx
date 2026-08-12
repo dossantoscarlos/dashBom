@@ -92,35 +92,51 @@ export function DashboardProvider({
   );
   const [isMounted, setIsMounted] = useState(false);
 
-  // Carregar do localStorage após a hidratação (limpando qualquer resíduo mockado antigo)
+  // Carregar do localStorage após a hidratação
   useEffect(() => {
     setIsMounted(true);
     try {
-      const saved = localStorage.getItem("dashbom_locations");
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
-          // Filtra estritamente itens que eram das bases mockadas antigas (loc-1, loc-2, etc)
-          const realLocations = parsed.filter((loc: any) => loc.id && !loc.id.startsWith("loc-"));
-          if (realLocations.length > 0) {
-            setLocations(realLocations);
-          } else {
-            setLocations([]);
-            localStorage.removeItem("dashbom_locations");
-          }
+      // Regiões
+      const savedReg = localStorage.getItem("dashbom_regions");
+      if (savedReg) {
+        const parsedReg = JSON.parse(savedReg);
+        if (Array.isArray(parsedReg)) setRegions(parsedReg);
+      }
+      // Locais / Comitês
+      const savedLoc = localStorage.getItem("dashbom_locations");
+      if (savedLoc) {
+        const parsedLoc = JSON.parse(savedLoc);
+        if (Array.isArray(parsedLoc)) {
+          const realLocations = parsedLoc.filter((loc: any) => loc.id && !loc.id.startsWith("loc-"));
+          setLocations(realLocations);
         }
+      }
+      // Campanhas
+      const savedCam = localStorage.getItem("dashbom_campaigns");
+      if (savedCam) {
+        const parsedCam = JSON.parse(savedCam);
+        if (Array.isArray(parsedCam)) setCampaigns(parsedCam);
+      }
+      // Parceiros
+      const savedPar = localStorage.getItem("dashbom_partners");
+      if (savedPar) {
+        const parsedPar = JSON.parse(savedPar);
+        if (Array.isArray(parsedPar)) setPartners(parsedPar);
       }
     } catch {}
   }, []);
 
-  // Persistir alterações de locais no localStorage após a montagem
+  // Persistir alterações no localStorage após a montagem
   useEffect(() => {
     if (isMounted && typeof window !== "undefined") {
       try {
+        localStorage.setItem("dashbom_regions", JSON.stringify(regions));
         localStorage.setItem("dashbom_locations", JSON.stringify(locations));
+        localStorage.setItem("dashbom_campaigns", JSON.stringify(campaigns));
+        localStorage.setItem("dashbom_partners", JSON.stringify(partners));
       } catch {}
     }
-  }, [locations, isMounted]);
+  }, [regions, locations, campaigns, partners, isMounted]);
   const [users, setUsers] = useState<DashboardUser[]>(() => {
     const users = initialUsers ?? [];
     if (!initialUser) return users;

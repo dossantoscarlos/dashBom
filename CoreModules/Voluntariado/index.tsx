@@ -26,6 +26,7 @@ export function VoluntariadoPanel() {
   const [genero, setGenero] = useState("Masculino");
   const [dataNascimento, setDataNascimento] = useState("");
   const [tituloEleitor, setTituloEleitor] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
   const [cep, setCep] = useState("");
   const [logradouro, setLogradouro] = useState("");
   const [bairro, setBairro] = useState("");
@@ -33,7 +34,7 @@ export function VoluntariadoPanel() {
   const [uf, setUf] = useState("SP");
   const [indicadoPor, setIndicadoPor] = useState("");
   const [idade, setIdade] = useState<number | "">(25);
-  const [regiaoDesignada, setRegiaoDesignada] = useState("Zona Norte");
+  const [regiaoDesignada, setRegiaoDesignada] = useState("");
   const [comiteId, setComiteId] = useState("");
 
   // Status de Validação do TSE e CEP
@@ -48,6 +49,7 @@ export function VoluntariadoPanel() {
     setGenero("Masculino");
     setDataNascimento("");
     setTituloEleitor("");
+    setWhatsapp("");
     setCep("");
     setLogradouro("");
     setBairro("");
@@ -55,7 +57,7 @@ export function VoluntariadoPanel() {
     setUf("SP");
     setIndicadoPor("");
     setIdade(25);
-    setRegiaoDesignada("Zona Norte");
+    setRegiaoDesignada("");
     setComiteId(comites[0]?.id ?? "");
     setTseValidStatus(null);
     setErrorMsg(null);
@@ -67,6 +69,7 @@ export function VoluntariadoPanel() {
     setGenero(v.genero || "Masculino");
     setDataNascimento(v.dataNascimento || "");
     setTituloEleitor(v.tituloEleitor);
+    setWhatsapp(v.whatsapp || "");
     setCep(v.cep || "");
     setLogradouro(v.logradouro || "");
     setBairro(v.bairro || "");
@@ -84,12 +87,12 @@ export function VoluntariadoPanel() {
     setLoading(true);
     setErrorMsg(null);
     try {
-      const res = await fetch(`/api/voluntarios?q=${encodeURIComponent(busca)}`);
+      const res = await fetch(`/api/voluntarios${busca ? `?q=${encodeURIComponent(busca)}` : ""}`);
       const data = await res.json();
-      if (res.ok) {
+      if (res.ok && data.sucesso) {
         setVoluntarios(data.voluntarios ?? []);
       } else {
-        throw new Error(data.error ?? "Erro ao carregar voluntários.");
+        throw new Error(data.erro ?? data.error ?? "Erro ao carregar voluntários.");
       }
     } catch (err: any) {
       setErrorMsg(err?.message ?? "Falha de conexão.");
@@ -123,7 +126,7 @@ export function VoluntariadoPanel() {
       if (res.ok && data.statusStr) {
         setTseValidStatus(data.statusStr);
       } else {
-        setErrorMsg(data.erro ?? "Erro ao consultar título na base do TSE.");
+        setErrorMsg(data.erro ?? data.error ?? "Erro ao consultar título na base do TSE.");
       }
     } catch {
       setErrorMsg("Erro ao conectar com a API da Justiça Eleitoral.");
@@ -164,6 +167,7 @@ export function VoluntariadoPanel() {
       const payload = {
         id: editingId ?? undefined,
         nome, genero, dataNascimento, tituloEleitor,
+        whatsapp: whatsapp || "(11) 99999-9999",
         cep, logradouro, bairro, cidade, uf,
         indicadoPor, idade, regiaoDesignada,
         comiteId: comiteId,
@@ -177,7 +181,7 @@ export function VoluntariadoPanel() {
         body: JSON.stringify(payload),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Erro ao salvar voluntário.");
+      if (!res.ok || !data.sucesso) throw new Error(data.erro ?? data.error ?? "Erro ao salvar voluntário.");
 
       setSuccessMsg(
         editingId
