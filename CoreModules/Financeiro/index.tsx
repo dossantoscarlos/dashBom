@@ -45,10 +45,7 @@ export function FinanceiroPanel() {
     | "visao_geral"
     | "receitas"
     | "despesas"
-    | "contas_pagar_receber"
-    | "aprovacoes"
     | "orcamentos"
-    | "fornecedores"
     | "contratos"
     | "contas_bancarias"
     | "conciliacao"
@@ -469,10 +466,7 @@ export function FinanceiroPanel() {
             { id: "visao_geral", label: "📊 Visão Geral" },
             { id: "receitas", label: "📈 Receitas" },
             { id: "despesas", label: "📉 Despesas & Solicitações" },
-            { id: "contas_pagar_receber", label: "🗓️ Contas Pagar/Receber" },
-            { id: "aprovacoes", label: "✅ Aprovações" },
             { id: "orcamentos", label: "🎯 Orçamentos & Centros" },
-            { id: "fornecedores", label: "🏢 Fornecedores" },
             { id: "contratos", label: "📄 Contratos" },
             { id: "contas_bancarias", label: "🏦 Contas Bancárias" },
             { id: "conciliacao", label: "⚖️ Conciliação OFX/CSV" },
@@ -950,61 +944,7 @@ export function FinanceiroPanel() {
           </div>
         )}
 
-        {/* ---------------- 6. SUB-VISÃO 5: APROVAÇÕES ---------------- */}
-        {activeSubTab === "aprovacoes" && (
-          <div className="flex flex-col gap-4">
-            <h3 className="text-xs font-bold text-zinc-800 dark:text-zinc-200">Central de Alçadas & Aprovações de Despesas</h3>
-            <DataTable
-              data={expenses.filter((e) => e.status === "solicitada" || e.status === "em_validacao")}
-              keyExtractor={(e) => e.id}
-              emptyMessage="Nenhuma despesa pendente de aprovação no momento."
-              columns={[
-                { key: "code", header: "Código", render: (e) => <span className="font-mono font-bold text-blue-600">{e.code}</span> },
-                { key: "desc", header: "Descrição / Solicitação", render: (e) => <div><p className="font-bold">{e.description}</p><p className="text-[10px] text-zinc-400">Solicitado por: {e.requestedBy}</p></div> },
-                { key: "vendor", header: "Fornecedor", render: (e) => <span>{e.vendorName} ({e.vendorCpfCnpj})</span> },
-                { key: "amount", header: "Valor Total", render: (e) => <span className="font-mono font-bold text-xs">{formatCurrencyBR(e.finalAmount)}</span> },
-                {
-                  key: "actions",
-                  header: "Decisão do Aprovador",
-                  render: (e) => (
-                    <div className="flex gap-1">
-                      <button onClick={() => setApprovalTarget({ expense: e, decision: "aprovar" })} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-2 py-1 rounded text-[10px]">Aprovar</button>
-                      <button onClick={() => setApprovalTarget({ expense: e, decision: "ressalva" })} className="bg-amber-600 hover:bg-amber-700 text-white font-bold px-2 py-1 rounded text-[10px]">Ressalva</button>
-                      <button onClick={() => setApprovalTarget({ expense: e, decision: "rejeitar" })} className="bg-rose-600 hover:bg-rose-700 text-white font-bold px-2 py-1 rounded text-[10px]">Rejeitar</button>
-                    </div>
-                  ),
-                },
-              ]}
-            />
-          </div>
-        )}
 
-        {/* ---------------- 7. SUB-VISÃO 7: FORNECEDORES ---------------- */}
-        {activeSubTab === "fornecedores" && (
-          <div className="flex flex-col gap-4">
-            <div className="flex justify-between items-center">
-              <h3 className="text-xs font-bold text-zinc-800 dark:text-zinc-200">Dossiê e Cadastro Integrado de Fornecedores ({vendors.length})</h3>
-              {canManage && (
-                <button onClick={() => setShowVendorModal(true)} className={buttonPrimaryClass}>
-                  + Cadastrar Fornecedor
-                </button>
-              )}
-            </div>
-
-            <DataTable
-              data={vendors}
-              keyExtractor={(v) => v.id}
-              emptyMessage="Nenhum fornecedor cadastrado."
-              columns={[
-                { key: "name", header: "Razão Social / Nome", render: (v) => <div><p className="font-bold">{v.name}</p><p className="text-[10px] text-zinc-400">{v.email} | {v.phone}</p></div> },
-                { key: "cnpj", header: "CPF / CNPJ", render: (v) => <span className="font-mono text-xs">{v.cpfCnpj}</span> },
-                { key: "category", header: "Categoria", render: (v) => <span className="bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded text-[10px] font-bold">{v.serviceCategory}</span> },
-                { key: "bank", header: "Dados Bancários", render: (v) => <span className="text-xs">{v.bankName} - Ag {v.bankAgency} Cc {v.bankAccount}</span> },
-                { key: "doc", header: "Situação Doc.", render: (v) => <span className={`font-bold px-2 py-0.5 rounded text-[10px] ${v.documentationStatus === "regular" ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"}`}>{v.documentationStatus}</span> },
-              ]}
-            />
-          </div>
-        )}
 
         {/* ---------------- 8. SUB-VISÃO 10: CONCILIAÇÃO BANCÁRIA ---------------- */}
         {activeSubTab === "conciliacao" && (
@@ -1064,7 +1004,7 @@ export function FinanceiroPanel() {
         )}
 
         {/* ---------------- 11. DEMAIS SUB-VISÕES SIMPLIFICADAS DA ESTRUTURA ---------------- */}
-        {["contas_pagar_receber", "orcamentos", "contratos", "contas_bancarias", "prestacao_contas"].includes(activeSubTab) && (
+        {["orcamentos", "contratos", "contas_bancarias", "prestacao_contas"].includes(activeSubTab as any) && (
           <div className="p-6 border rounded-2xl bg-white dark:bg-zinc-950 text-center flex flex-col items-center gap-2">
             <span className="text-3xl">⚙️</span>
             <h3 className="font-bold text-xs uppercase text-zinc-800 dark:text-zinc-200">
