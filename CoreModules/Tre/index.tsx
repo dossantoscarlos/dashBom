@@ -873,16 +873,29 @@ export function TrePanel() {
                                 <span className="font-extrabold text-[#10213D]">{c.nomeUrna}</span>
                                 {isPrimeiraVez && (
                                   <span className="bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 font-extrabold text-[9px] px-2 py-0.5 rounded-full flex items-center gap-1">
-                                    🌱 1ª Vez Concorrendo
+                                    <Sparkles className="w-3 h-3 text-emerald-700" />
+                                    <span>1ª Vez Concorrendo</span>
                                   </span>
                                 )}
                               </div>
                               <div className="text-[10px] text-[#64748B]">{c.nome}</div>
                               <div className="text-[10px] text-zinc-500 font-medium flex items-center gap-1.5 mt-0.5">
-                                <span className="bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded">👤 {c.genero || "N/I"}</span>
-                                <span className="bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded">🎂 {c.faixaEtaria || "N/I"}</span>
-                                <span className="bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded">🎓 {c.grauInstrucao || "N/I"}</span>
-                                <span className="bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded">🎨 Cor: {c.corRaca || "N/I"}</span>
+                                <span className="bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded flex items-center gap-1">
+                                  <User className="w-2.5 h-2.5 text-zinc-600" />
+                                  <span>{c.genero || "N/I"}</span>
+                                </span>
+                                <span className="bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded flex items-center gap-1">
+                                  <Calendar className="w-2.5 h-2.5 text-zinc-600" />
+                                  <span>{c.faixaEtaria || "N/I"}</span>
+                                </span>
+                                <span className="bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded flex items-center gap-1">
+                                  <GraduationCap className="w-2.5 h-2.5 text-zinc-600" />
+                                  <span>{c.grauInstrucao || "N/I"}</span>
+                                </span>
+                                <span className="bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded flex items-center gap-1">
+                                  <Users className="w-2.5 h-2.5 text-zinc-600" />
+                                  <span>Cor: {c.corRaca || "N/I"}</span>
+                                </span>
                               </div>
                             </div>
                           </div>
@@ -978,8 +991,9 @@ export function TrePanel() {
                     <div className="flex items-center gap-2 mt-0.5">
                       <h2 className="text-xl font-extrabold text-[#10213D] leading-tight">{cand.nomeUrna}</h2>
                       {isCandPrimeiraVez && (
-                        <span className="bg-emerald-100 text-emerald-800 border border-emerald-300 font-extrabold text-xs px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                          🌱 1ª VEZ CONCORRENDO
+                        <span className="bg-emerald-100 text-emerald-800 border border-emerald-300 font-extrabold text-xs px-2.5 py-0.5 rounded-full flex items-center gap-1.5">
+                          <Sparkles className="w-3.5 h-3.5 text-emerald-700" />
+                          <span>1ª VEZ CONCORRENDO</span>
                         </span>
                       )}
                     </div>
@@ -1003,7 +1017,8 @@ export function TrePanel() {
                   <div className="p-4 rounded-xl border border-emerald-200 bg-emerald-50/50 flex flex-col gap-3">
                     <div className="flex items-center justify-between border-b border-emerald-200 pb-2">
                       <span className="text-xs font-black text-emerald-900 flex items-center gap-1.5">
-                        🌱 PERFIL REGISTRADO NO TSE — PRIMEIRA CANDIDATURA OFICIAL
+                        <Sparkles className="w-4 h-4 text-emerald-700" />
+                        <span>PERFIL REGISTRADO NO TSE — PRIMEIRA CANDIDATURA OFICIAL</span>
                       </span>
                       <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded">
                         Sem histórico eleitoral anterior
