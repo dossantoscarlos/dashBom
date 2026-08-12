@@ -1,6 +1,28 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { formatCurrencyBR } from "@/lib/data/financeiro-store";
+import {
+  Activity,
+  Scale,
+  FolderOpen,
+  RefreshCw,
+  FileSpreadsheet,
+  FileText,
+  FileCheck,
+  Calendar,
+  Newspaper,
+  User,
+  GraduationCap,
+  Sparkles,
+  Filter,
+  Search,
+  Download,
+  CheckCircle2,
+  Building2,
+  Users,
+  BadgeCheck,
+} from "lucide-react";
 
 export type RegionalVoteDist = {
   regiao: string;
@@ -25,6 +47,14 @@ export type HistoricoAnoItem = {
   cor: string;
 };
 
+export type PerfilRegistradoItem = {
+  resumo: string;
+  primeiraEleicao: boolean;
+  dataRegistro: string;
+  certidaoCriminal: string;
+  bensDeclaradosTotal: number;
+};
+
 export type ApiTseCandidate = {
   id: string;
   nome: string;
@@ -36,6 +66,9 @@ export type ApiTseCandidate = {
   uf: string;
   cargoDisputado: string;
   situacao: string;
+  dreStatus?: string;
+  ePrimeiraVezConcorrendo?: boolean;
+  perfilRegistrado?: PerfilRegistradoItem;
   anoEleicao: number;
   temHistoricoAnterior: boolean;
   votosUltimaEleicao: number | null;
@@ -290,25 +323,27 @@ export function TrePanel() {
           <button
             type="button"
             onClick={() => setActiveSubTab("monitor")}
-            className={`px-4 py-2 rounded-t-lg font-bold text-xs transition ${
+            className={`px-4 py-2 rounded-t-lg font-bold text-xs transition flex items-center gap-2 ${
               activeSubTab === "monitor"
                 ? "bg-white text-[#06284F] border border-[#E2E8F0] border-b-white border-t-2 border-t-[#00A978] shadow-2xs"
                 : "bg-[#F6F8FB] text-[#64748B] hover:text-[#10213D]"
             }`}
           >
-            📊 Monitor TSE em Tempo Real
+            <Activity className="w-3.5 h-3.5" />
+            <span>Monitor TSE em Tempo Real</span>
           </button>
 
           <button
             type="button"
             onClick={() => setActiveSubTab("consulta")}
-            className={`px-4 py-2 rounded-t-lg font-bold text-xs transition ${
+            className={`px-4 py-2 rounded-t-lg font-bold text-xs transition flex items-center gap-2 ${
               activeSubTab === "consulta"
                 ? "bg-white text-[#06284F] border border-[#E2E8F0] border-b-white border-t-2 border-t-[#00A978] shadow-2xs"
                 : "bg-[#F6F8FB] text-[#64748B] hover:text-[#10213D]"
             }`}
           >
-            ⚖️ Consulta Oficial TRE & Demografia
+            <Scale className="w-3.5 h-3.5" />
+            <span>Consulta Oficial TRE & Demografia</span>
           </button>
 
           <button
@@ -317,13 +352,14 @@ export function TrePanel() {
               setActiveSubTab("dados_abertos");
               loadDadosAbertos();
             }}
-            className={`px-4 py-2 rounded-t-lg font-bold text-xs transition ${
+            className={`px-4 py-2 rounded-t-lg font-bold text-xs transition flex items-center gap-2 ${
               activeSubTab === "dados_abertos"
                 ? "bg-white text-[#06284F] border border-[#E2E8F0] border-b-white border-t-2 border-t-[#00A978] shadow-2xs"
                 : "bg-[#F6F8FB] text-[#64748B] hover:text-[#10213D]"
             }`}
           >
-            📂 Dados Abertos & Estatísticas Eleitorais TSE
+            <FolderOpen className="w-3.5 h-3.5" />
+            <span>Dados Abertos & Estatísticas Eleitorais TSE</span>
           </button>
         </div>
 
@@ -353,17 +389,8 @@ export function TrePanel() {
                 disabled={loadingSync}
                 className="h-[38px] px-4 rounded-[8px] bg-[#008B63] hover:bg-[#007855] text-white text-xs font-bold transition shadow-xs flex items-center gap-2 cursor-pointer disabled:opacity-60"
               >
-                {loadingSync ? (
-                  <>
-                    <span className="animate-spin text-sm">🔄</span>
-                    <span>Atualizando...</span>
-                  </>
-                ) : (
-                  <>
-                    <span>🔄</span>
-                    <span>Atualizar dados</span>
-                  </>
-                )}
+                <RefreshCw className={`w-3.5 h-3.5 ${loadingSync ? "animate-spin" : ""}`} />
+                <span>{loadingSync ? "Atualizando..." : "Atualizar dados"}</span>
               </button>
 
               <div className="text-right text-[11px] text-[#64748B] hidden lg:block font-mono">
@@ -660,7 +687,8 @@ export function TrePanel() {
           {/* TÍTULO E AVISO DE ACESSO */}
           <div className="flex flex-col gap-2">
             <h1 className="text-xl font-extrabold text-[#10213D] flex items-center gap-2">
-              <span className="text-lg">⚖️</span> Consulta de Candidatos no TSE / TRE
+              <Scale className="w-5 h-5 text-[#1264F3]" />
+              <span>Consulta de Candidatos no TSE / TRE</span>
             </h1>
 
             <div className="p-3 rounded-lg bg-[#EAF2FF] border border-[#1264F3]/20 text-[#1264F3] text-xs font-semibold">
@@ -760,7 +788,8 @@ export function TrePanel() {
               disabled={loadingConsulta}
               className="h-10 px-5 rounded-lg bg-[#0F172A] hover:bg-black text-white font-bold text-xs transition shadow-2xs flex items-center justify-center gap-2 cursor-pointer w-full sm:w-auto shrink-0"
             >
-              {loadingConsulta ? "Pesquisando..." : "Pesquisar Candidatos"}
+              <Search className="w-3.5 h-3.5" />
+              <span>{loadingConsulta ? "Pesquisando..." : "Pesquisar Candidatos"}</span>
             </button>
           </form>
 
@@ -775,23 +804,26 @@ export function TrePanel() {
               <button
                 type="button"
                 onClick={() => alert("Exportando CSV da base oficial...")}
-                className="px-3 py-1.5 rounded-md bg-[#008B63] hover:bg-[#007855] text-white text-[11px] font-bold transition shadow-2xs flex items-center gap-1 cursor-pointer"
+                className="px-3 py-1.5 rounded-md bg-[#008B63] hover:bg-[#007855] text-white text-[11px] font-bold transition shadow-2xs flex items-center gap-1.5 cursor-pointer"
               >
-                <span>📊</span> Exportar CSV
+                <Download className="w-3.5 h-3.5" />
+                <span>Exportar CSV</span>
               </button>
               <button
                 type="button"
                 onClick={() => alert("Exportando planilha Excel...")}
-                className="px-3 py-1.5 rounded-md bg-[#008B63] hover:bg-[#007855] text-white text-[11px] font-bold transition shadow-2xs flex items-center gap-1 cursor-pointer"
+                className="px-3 py-1.5 rounded-md bg-[#008B63] hover:bg-[#007855] text-white text-[11px] font-bold transition shadow-2xs flex items-center gap-1.5 cursor-pointer"
               >
-                <span>📈</span> Exportar Excel
+                <FileSpreadsheet className="w-3.5 h-3.5" />
+                <span>Exportar Excel</span>
               </button>
               <button
                 type="button"
                 onClick={() => window.print()}
-                className="px-3 py-1.5 rounded-md bg-[#EF4444] hover:bg-[#DC2626] text-white text-[11px] font-bold transition shadow-2xs flex items-center gap-1 cursor-pointer"
+                className="px-3 py-1.5 rounded-md bg-[#EF4444] hover:bg-[#DC2626] text-white text-[11px] font-bold transition shadow-2xs flex items-center gap-1.5 cursor-pointer"
               >
-                <span>📄</span> Extrair PDF
+                <FileText className="w-3.5 h-3.5" />
+                <span>Extrair PDF</span>
               </button>
             </div>
           </div>
@@ -802,11 +834,12 @@ export function TrePanel() {
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="bg-[#F8FAFC] border-b border-[#E2E8F0] text-[10px] font-extrabold text-[#64748B] uppercase tracking-wider">
-                    <th className="p-3.5 pl-4">CANDIDATO (CLIQUE PARA VER DADOS)</th>
+                    <th className="p-3.5 pl-4">CANDIDATO & DEMOGRAFIA</th>
                     <th className="p-3.5">CARGO DISPUTADO</th>
                     <th className="p-3.5 text-center">Nº</th>
                     <th className="p-3.5">PARTIDO</th>
                     <th className="p-3.5">UF</th>
+                    <th className="p-3.5 text-center">DRE / JULGAMENTO</th>
                     <th className="p-3.5 text-right">VOTOS ÚLTIMA ELEIÇÃO</th>
                     <th className="p-3.5 text-center pr-4">SITUAÇÃO TSE</th>
                   </tr>
@@ -814,6 +847,8 @@ export function TrePanel() {
                 <tbody className="divide-y divide-[#F1F5F9]">
                   {results.map((c) => {
                     const isExpanded = expandedCandidateId === c.id;
+                    const isPrimeiraVez = c.ePrimeiraVezConcorrendo || !c.temHistoricoAnterior;
+                    const dre = c.dreStatus || "DEFERIDO";
                     return (
                       <tr
                         key={c.id}
@@ -829,13 +864,26 @@ export function TrePanel() {
                         }`}
                       >
                         <td className="p-3.5 pl-4">
-                          <div className="flex items-center gap-2">
-                            <span className="text-[#1264F3] font-bold text-[10px]">
+                          <div className="flex items-start gap-2">
+                            <span className="text-[#1264F3] font-bold text-[10px] mt-0.5">
                               {isExpanded ? "▼" : "▶"}
                             </span>
-                            <div>
-                              <div className="font-extrabold text-[#10213D]">{c.nomeUrna}</div>
+                            <div className="flex flex-col gap-0.5">
+                              <div className="flex items-center gap-2">
+                                <span className="font-extrabold text-[#10213D]">{c.nomeUrna}</span>
+                                {isPrimeiraVez && (
+                                  <span className="bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 font-extrabold text-[9px] px-2 py-0.5 rounded-full flex items-center gap-1">
+                                    🌱 1ª Vez Concorrendo
+                                  </span>
+                                )}
+                              </div>
                               <div className="text-[10px] text-[#64748B]">{c.nome}</div>
+                              <div className="text-[10px] text-zinc-500 font-medium flex items-center gap-1.5 mt-0.5">
+                                <span className="bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded">👤 {c.genero || "N/I"}</span>
+                                <span className="bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded">🎂 {c.faixaEtaria || "N/I"}</span>
+                                <span className="bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded">🎓 {c.grauInstrucao || "N/I"}</span>
+                                <span className="bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded">🎨 Cor: {c.corRaca || "N/I"}</span>
+                              </div>
                             </div>
                           </div>
                         </td>
@@ -843,8 +891,17 @@ export function TrePanel() {
                         <td className="p-3.5 text-center font-mono font-bold text-[#1264F3]">{c.numero}</td>
                         <td className="p-3.5 font-bold text-[#10213D]">{c.siglaPartido}</td>
                         <td className="p-3.5 font-bold text-[#64748B]">{c.uf}</td>
+                        <td className="p-3.5 text-center">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold ${
+                            dre === "DEFERIDO" ? "bg-emerald-100 text-emerald-800 border border-emerald-300" :
+                            dre === "AGUARDANDO JULGAMENTO" ? "bg-amber-100 text-amber-800 border border-amber-300" :
+                            "bg-blue-100 text-blue-800 border border-blue-300"
+                          }`}>
+                            DRE: {dre}
+                          </span>
+                        </td>
                         <td className="p-3.5 text-right font-mono font-extrabold text-[#008B63]">
-                          {c.votosUltimaEleicao?.toLocaleString("pt-BR") || "-"}
+                          {c.votosUltimaEleicao ? c.votosUltimaEleicao.toLocaleString("pt-BR") : (isPrimeiraVez ? "0 (Estreante)" : "-")}
                         </td>
                         <td className="p-3.5 text-center pr-4">
                           <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-[#E8F7F1] text-[#008B63] border border-[#00A978]/30 uppercase">
@@ -906,50 +963,104 @@ export function TrePanel() {
           </div>
 
           {/* FICHA DETALHADA DO CANDIDATO SELECIONADO */}
-          {results.filter((c) => c.id === expandedCandidateId).map((cand) => (
-            <div key={cand.id} className="bg-white rounded-xl border border-[#E2E8F0] p-5 shadow-sm flex flex-col gap-6">
+          {results.filter((c) => c.id === expandedCandidateId).map((cand) => {
+            const isCandPrimeiraVez = cand.ePrimeiraVezConcorrendo || !cand.temHistoricoAnterior;
+            const candDre = cand.dreStatus || "DEFERIDO";
+            return (
+              <div key={cand.id} className="bg-white rounded-xl border border-[#E2E8F0] p-5 shadow-sm flex flex-col gap-6">
 
-              {/* CABEÇALHO DO CARD FICHA DETALHADA */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[#E2E8F0] pb-4 gap-2">
-                <div>
-                  <span className="text-[10px] font-extrabold tracking-wider text-[#1264F3] uppercase block">
-                    FICHA DE VOTAÇÃO OFICIAL TSE (DADOS INEP/TSE)
-                  </span>
-                  <h2 className="text-xl font-extrabold text-[#10213D] leading-tight">{cand.nomeUrna}</h2>
-                  <p className="text-xs text-[#64748B]">
-                    {cand.nome} - Nº {cand.numero} - Cargo Disputado: {cand.cargoDisputado}
-                  </p>
+                {/* CABEÇALHO DO CARD FICHA DETALHADA */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[#E2E8F0] pb-4 gap-2">
+                  <div>
+                    <span className="text-[10px] font-extrabold tracking-wider text-[#1264F3] uppercase block">
+                      FICHA DE VOTAÇÃO OFICIAL TSE (DADOS INEP/TSE/CAND)
+                    </span>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <h2 className="text-xl font-extrabold text-[#10213D] leading-tight">{cand.nomeUrna}</h2>
+                      {isCandPrimeiraVez && (
+                        <span className="bg-emerald-100 text-emerald-800 border border-emerald-300 font-extrabold text-xs px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                          🌱 1ª VEZ CONCORRENDO
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-[#64748B]">
+                      {cand.nome} - Nº {cand.numero} - Cargo Disputado: {cand.cargoDisputado}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <span className="px-3 py-1 rounded-md text-xs font-extrabold bg-blue-50 text-blue-800 border border-blue-300 uppercase">
+                      DRE: {candDre}
+                    </span>
+                    <span className="px-3 py-1 rounded-md text-xs font-extrabold bg-[#E8F7F1] text-[#008B63] border border-[#00A978]/40 uppercase">
+                      {cand.situacao}
+                    </span>
+                  </div>
                 </div>
 
-                <span className="px-3 py-1 rounded-md text-xs font-extrabold bg-[#E8F7F1] text-[#008B63] border border-[#00A978]/40 self-start sm:self-center uppercase">
-                  {cand.situacao}
-                </span>
-              </div>
+                {/* PAINEL DE PERFIL REGISTRADO QUANDO FOR PRIMEIRA VEZ CONCORRENDO */}
+                {isCandPrimeiraVez && (
+                  <div className="p-4 rounded-xl border border-emerald-200 bg-emerald-50/50 flex flex-col gap-3">
+                    <div className="flex items-center justify-between border-b border-emerald-200 pb-2">
+                      <span className="text-xs font-black text-emerald-900 flex items-center gap-1.5">
+                        🌱 PERFIL REGISTRADO NO TSE — PRIMEIRA CANDIDATURA OFICIAL
+                      </span>
+                      <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded">
+                        Sem histórico eleitoral anterior
+                      </span>
+                    </div>
 
-              {/* 4 CARDS DE INFORMAÇÃO SUPERIORES */}
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 text-xs">
-                <div className="p-3 rounded-lg bg-[#F8FAFC] border border-[#E2E8F0]">
-                  <span className="text-[10px] font-bold text-[#64748B] uppercase block">CARGO DISPUTADO</span>
-                  <span className="font-extrabold text-[#1264F3] text-sm mt-0.5 block">{cand.cargoDisputado}</span>
-                </div>
+                    <p className="text-xs text-emerald-900 font-medium leading-relaxed">
+                      {cand.perfilRegistrado?.resumo || "Primeira candidatura oficial registrada perante a Justiça Eleitoral. O candidato não possui histórico prévio de disputa em urnas."}
+                    </p>
 
-                <div className="p-3 rounded-lg bg-[#F8FAFC] border border-[#E2E8F0]">
-                  <span className="text-[10px] font-bold text-[#64748B] uppercase block">PARTIDO / SIGLA</span>
-                  <span className="font-extrabold text-[#10213D] text-sm mt-0.5 block">{cand.partido}</span>
-                </div>
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 text-xs pt-1">
+                      <div className="p-2.5 rounded-lg bg-white border border-emerald-200 flex flex-col">
+                        <span className="text-[10px] font-bold text-zinc-500 uppercase">Ocupação Declarada</span>
+                        <span className="font-extrabold text-zinc-900 mt-0.5">{cand.ocupacao}</span>
+                      </div>
+                      <div className="p-2.5 rounded-lg bg-white border border-emerald-200 flex flex-col">
+                        <span className="text-[10px] font-bold text-zinc-500 uppercase">Grau de Instrução</span>
+                        <span className="font-extrabold text-zinc-900 mt-0.5">{cand.grauInstrucao}</span>
+                      </div>
+                      <div className="p-2.5 rounded-lg bg-white border border-emerald-200 flex flex-col">
+                        <span className="text-[10px] font-bold text-zinc-500 uppercase">Estado Civil / Cor</span>
+                        <span className="font-extrabold text-zinc-900 mt-0.5">{cand.estadoCivil} • Cor {cand.corRaca}</span>
+                      </div>
+                      <div className="p-2.5 rounded-lg bg-white border border-emerald-200 flex flex-col">
+                        <span className="text-[10px] font-bold text-zinc-500 uppercase">Bens Declarados</span>
+                        <span className="font-mono font-extrabold text-emerald-700 mt-0.5">
+                          {cand.perfilRegistrado?.bensDeclaradosTotal ? formatCurrencyBR(cand.perfilRegistrado.bensDeclaradosTotal) : "R$ 0,00"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
-                <div className="p-3 rounded-lg bg-[#F8FAFC] border border-[#E2E8F0]">
-                  <span className="text-[10px] font-bold text-[#64748B] uppercase block">FILIAÇÃO PARTIDÁRIA / COLIGAÇÃO</span>
-                  <span className="font-semibold text-[#10213D] mt-0.5 block">{cand.filiacao}</span>
-                </div>
+                {/* 4 CARDS DE INFORMAÇÃO SUPERIORES */}
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 text-xs">
+                  <div className="p-3 rounded-lg bg-[#F8FAFC] border border-[#E2E8F0]">
+                    <span className="text-[10px] font-bold text-[#64748B] uppercase block">CARGO DISPUTADO</span>
+                    <span className="font-extrabold text-[#1264F3] text-sm mt-0.5 block">{cand.cargoDisputado}</span>
+                  </div>
 
-                <div className="p-3 rounded-lg bg-[#E8F7F1] border border-[#00A978]/40">
-                  <span className="text-[10px] font-bold text-[#008B63] uppercase block">TOTAL DE VOTOS NA ÚLTIMA ELEIÇÃO</span>
-                  <span className="font-extrabold text-[#008B63] text-base mt-0.5 block">
-                    {cand.votosUltimaEleicao?.toLocaleString("pt-BR")} votos
-                  </span>
+                  <div className="p-3 rounded-lg bg-[#F8FAFC] border border-[#E2E8F0]">
+                    <span className="text-[10px] font-bold text-[#64748B] uppercase block">PARTIDO / SIGLA</span>
+                    <span className="font-extrabold text-[#10213D] text-sm mt-0.5 block">{cand.partido}</span>
+                  </div>
+
+                  <div className="p-3 rounded-lg bg-[#F8FAFC] border border-[#E2E8F0]">
+                    <span className="text-[10px] font-bold text-[#64748B] uppercase block">FILIAÇÃO PARTIDÁRIA / COLIGAÇÃO</span>
+                    <span className="font-semibold text-[#10213D] mt-0.5 block">{cand.filiacao}</span>
+                  </div>
+
+                  <div className="p-3 rounded-lg bg-[#E8F7F1] border border-[#00A978]/40">
+                    <span className="text-[10px] font-bold text-[#008B63] uppercase block">TOTAL DE VOTOS NA ÚLTIMA ELEIÇÃO</span>
+                    <span className="font-extrabold text-[#008B63] text-base mt-0.5 block">
+                      {cand.votosUltimaEleicao ? `${cand.votosUltimaEleicao.toLocaleString("pt-BR")} votos` : (isCandPrimeiraVez ? "0 (1ª Eleição)" : "-")}
+                    </span>
+                  </div>
                 </div>
-              </div>
 
               {/* GRÁFICO COMPARATIVO ENTRE ANOS */}
               {ano === "todos" && cand.historicoComparativoAnos && (
@@ -1419,7 +1530,8 @@ export function TrePanel() {
               )}
 
             </div>
-          ))}
+          );
+        })}
 
         </div>
       )}

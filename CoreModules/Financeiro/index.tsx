@@ -18,6 +18,28 @@ import {
   Receipt,
   ExternalLink,
   ChevronRight,
+  Clock3,
+  TrendingUp,
+  TrendingDown,
+  Search,
+  CalendarDays,
+  FilterX,
+  Download,
+  MoreVertical,
+  Building2,
+  CheckCircle2,
+  ReceiptText,
+  CalendarClock,
+  BadgeCheck,
+  FileWarning,
+  LayoutDashboard,
+  Target,
+  FileText,
+  Landmark,
+  ClipboardList,
+  BarChart3,
+  Megaphone,
+  Building,
 } from "lucide-react";
 import { formatCurrencyBR } from "@/lib/data/financeiro-store";
 import type {
@@ -58,6 +80,28 @@ export function FinanceiroPanel() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [revCategoryFilter, setRevCategoryFilter] = useState("Todas");
+  const [revOriginFilter, setRevOriginFilter] = useState("Todas");
+  const [revStatusFilter, setRevStatusFilter] = useState("Todas");
+  const [revBankAccountIdFilter, setRevBankAccountIdFilter] = useState("Todas");
+  const [revStartDate, setRevStartDate] = useState("");
+  const [revEndDate, setRevEndDate] = useState("");
+  const [revPage, setRevPage] = useState(1);
+  const [revPageSize, setRevPageSize] = useState(25);
+  const [selectedRevenueIds, setSelectedRevenueIds] = useState<string[]>([]);
+
+  // Estados adicionais da aba Despesas & Solicitações
+  const [expSearchQuery, setExpSearchQuery] = useState("");
+  const [expTypeFilter, setExpTypeFilter] = useState("Todas");
+  const [expCategoryFilter, setExpCategoryFilter] = useState("Todas");
+  const [expCostCenterFilter, setExpCostCenterFilter] = useState("Todos");
+  const [expStatusFilter, setExpStatusFilter] = useState("Todas");
+  const [expApproverFilter, setExpApproverFilter] = useState("Todos");
+  const [expStartDate, setExpStartDate] = useState("");
+  const [expEndDate, setExpEndDate] = useState("");
+  const [expPage, setExpPage] = useState(1);
+  const [expPageSize, setExpPageSize] = useState(25);
+  const [selectedExpenseIds, setSelectedExpenseIds] = useState<string[]>([]);
 
   const [summary, setSummary] = useState({
     totalReceitas: 0,
@@ -463,28 +507,32 @@ export function FinanceiroPanel() {
         {/* ---------------- 2. NAVEGAÇÃO POR SUB-ABAS ---------------- */}
         <div className="flex overflow-x-auto border-b border-zinc-200 dark:border-zinc-800 pb-1 gap-1 text-[11px] font-bold scrollbar-thin">
           {[
-            { id: "visao_geral", label: "📊 Visão Geral" },
-            { id: "receitas", label: "📈 Receitas" },
-            { id: "despesas", label: "📉 Despesas & Solicitações" },
-            { id: "orcamentos", label: "🎯 Orçamentos & Centros" },
-            { id: "contratos", label: "📄 Contratos" },
-            { id: "contas_bancarias", label: "🏦 Contas Bancárias" },
-            { id: "conciliacao", label: "⚖️ Conciliação OFX/CSV" },
-            { id: "prestacao_contas", label: "📋 Prestação de Contas" },
-            { id: "relatorios", label: "📊 Relatórios & Transparência" },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveSubTab(tab.id as any)}
-              className={`px-3 py-1.5 rounded-lg whitespace-nowrap transition-colors ${
-                activeSubTab === tab.id
-                  ? "bg-blue-600 text-white shadow-xs"
-                  : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+            { id: "visao_geral", label: "Visão Geral", icon: LayoutDashboard },
+            { id: "receitas", label: "Receitas", icon: TrendingUp },
+            { id: "despesas", label: "Despesas & Solicitações", icon: TrendingDown },
+            { id: "orcamentos", label: "Orçamentos & Centros", icon: Target },
+            { id: "contratos", label: "Contratos", icon: FileText },
+            { id: "contas_bancarias", label: "Contas Bancárias", icon: Landmark },
+            { id: "conciliacao", label: "Conciliação OFX/CSV", icon: Scale },
+            { id: "prestacao_contas", label: "Prestação de Contas", icon: ClipboardList },
+            { id: "relatorios", label: "Relatórios & Transparência", icon: BarChart3 },
+          ].map((tab) => {
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveSubTab(tab.id as any)}
+                className={`px-3 py-1.5 rounded-lg whitespace-nowrap transition-colors flex items-center gap-1.5 ${
+                  activeSubTab === tab.id
+                    ? "bg-blue-600 text-white shadow-xs"
+                    : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900"
+                }`}
+              >
+                <Icon className="w-3.5 h-3.5" />
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
         </div>
 
         {/* ---------------- 3. SUB-VISÃO 1: VISÃO GERAL (DASHBOARD PAINEL) ---------------- */}
@@ -868,79 +916,1029 @@ export function FinanceiroPanel() {
 
         {/* ---------------- 4. SUB-VISÃO 2: RECEITAS ---------------- */}
         {activeSubTab === "receitas" && (
-          <div className="flex flex-col gap-4">
-            <div className="flex justify-between items-center">
-              <h3 className="text-xs font-bold text-zinc-800 dark:text-zinc-200">Receitas Registradas ({revenues.length})</h3>
-              {canManage && (
-                <button onClick={() => setShowRevenueModal(true)} className={buttonPrimaryClass}>
-                  + Nova Receita / Doação
+          <div className="flex flex-col gap-6">
+            {/* BREADCRUMB & CABEÇALHO DA PÁGINA */}
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <div className="text-[11px] font-semibold text-zinc-400 dark:text-zinc-500 mb-1">
+                  Área Financeira / <span className="text-zinc-700 dark:text-zinc-300 font-bold">Receitas</span>
+                </div>
+                <h2 className="text-2xl font-black text-zinc-900 dark:text-zinc-100 tracking-tight">
+                  Receitas
+                </h2>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">
+                  Acompanhe arrecadações, doações, conciliações e recibos.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => {
+                    if (!canManage) return;
+                    alert("Exportando registros da consulta atual para CSV...");
+                  }}
+                  disabled={!canManage}
+                  className="flex items-center gap-2 rounded-xl border border-zinc-300 bg-white px-4 py-2 text-xs font-bold text-zinc-700 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 transition shadow-xs disabled:opacity-50"
+                >
+                  <Download className="h-4 w-4" />
+                  Exportar
                 </button>
-              )}
+                <button
+                  onClick={() => setShowRevenueModal(true)}
+                  disabled={!canManage}
+                  className="flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-700 transition shadow-sm disabled:opacity-50"
+                >
+                  <CirclePlus className="h-4 w-4" />
+                  Registrar receita
+                </button>
+              </div>
             </div>
 
-            <DataTable
-              data={revenues}
-              keyExtractor={(r) => r.id}
-              emptyMessage="Nenhuma receita registrada para este contexto."
-              columns={[
-                { key: "date", header: "Data", render: (r) => <span className="font-mono text-xs">{r.date}</span> },
-                { key: "donor", header: "Origem / Doador", render: (r) => <span className="font-bold">{r.donorName} ({r.donorCpfCnpj || "FEFC/Partidário"})</span> },
-                { key: "origin", header: "Categoria", render: (r) => <span className="bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-bold px-2 py-0.5 rounded text-[10px] uppercase">{r.origin}</span> },
-                { key: "amount", header: "Valor", render: (r) => <span className="font-mono font-bold text-emerald-600">{formatCurrencyBR(r.amount)}</span> },
-                { key: "bank", header: "Conta Bancária", render: (r) => <span className="text-xs text-zinc-600 dark:text-zinc-400">{r.bankAccountName}</span> },
-                { key: "status", header: "Status", render: (r) => <span className="bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 font-bold px-2 py-0.5 rounded text-[10px]">{r.status}</span> },
-              ]}
-            />
+            {/* 4 CARDS DE INDICADORES DA ABA RECEITAS */}
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {/* CARTÃO 1: TOTAL RECEBIDO */}
+              <div className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950 shadow-xs flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 shrink-0">
+                  <Banknote className="h-6 w-6" strokeWidth={1.75} />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[11px] font-bold text-zinc-500 dark:text-zinc-400">Total recebido</span>
+                  <span className="text-xl font-black text-zinc-900 dark:text-zinc-100 mt-0.5">
+                    {formatCurrencyBR(summary.totalReceitas)}
+                  </span>
+                </div>
+              </div>
+
+              {/* CARTÃO 2: AGUARDANDO CONCILIAÇÃO */}
+              <div className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950 shadow-xs flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-950/60 shrink-0">
+                  <Clock3 className="h-6 w-6" strokeWidth={1.75} />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[11px] font-bold text-zinc-500 dark:text-zinc-400">Aguardando conciliação</span>
+                  <span className="text-xl font-black text-zinc-900 dark:text-zinc-100 mt-0.5">
+                    {formatCurrencyBR(
+                      revenues.filter((r) => r.status === "registrada").reduce((acc, curr) => acc + curr.amount, 0)
+                    )}
+                  </span>
+                  <span className="text-[10px] text-zinc-400 font-medium">
+                    {revenues.filter((r) => r.status === "registrada").length} lançamentos
+                  </span>
+                </div>
+              </div>
+
+              {/* CARTÃO 3: RECEITAS NO PERÍODO */}
+              <div className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950 shadow-xs flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-purple-50 text-purple-600 dark:bg-purple-950/60 shrink-0">
+                  <TrendingUp className="h-6 w-6" strokeWidth={1.75} />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[11px] font-bold text-zinc-500 dark:text-zinc-400">Receitas no período</span>
+                  <span className="text-xl font-black text-zinc-900 dark:text-zinc-100 mt-0.5">
+                    {formatCurrencyBR(summary.totalReceitas)}
+                  </span>
+                  <span className="text-[10px] text-zinc-400 font-medium">
+                    {revenues.length} lançamentos
+                  </span>
+                </div>
+              </div>
+
+              {/* CARTÃO 4: RECIBOS PENDENTES */}
+              <div className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950 shadow-xs flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 text-red-600 dark:bg-red-950/60 shrink-0">
+                  <Receipt className="h-6 w-6" strokeWidth={1.75} />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[11px] font-bold text-zinc-500 dark:text-zinc-400">Recibos pendentes</span>
+                  <span className="text-xl font-black text-zinc-900 dark:text-zinc-100 mt-0.5">
+                    {complianceData.recibosPendentesCount} recibos
+                  </span>
+                  <span className="text-[10px] text-red-500 font-medium">
+                    {complianceData.recibosPendentesCount > 0 ? "Pendente de anexação" : "100% regular"}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* CARTÃO HORIZONTAL DE FILTROS */}
+            <div className="rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950 shadow-xs flex flex-wrap items-end gap-3 text-xs">
+              {/* BUSCA */}
+              <div className="flex flex-col gap-1 min-w-[200px] flex-1">
+                <label className="text-[10px] font-bold text-zinc-600 dark:text-zinc-400">Buscar</label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Doador, documento ou descrição"
+                    className={`${inputClass} pr-8`}
+                  />
+                  <Search className="absolute right-2.5 top-2.5 h-4 w-4 text-zinc-400" />
+                </div>
+              </div>
+
+              {/* PERÍODO */}
+              <div className="flex flex-col gap-1 min-w-[150px]">
+                <label className="text-[10px] font-bold text-zinc-600 dark:text-zinc-400">Período</label>
+                <div className="relative">
+                  <input
+                    type="date"
+                    value={revStartDate}
+                    onChange={(e) => setRevStartDate(e.target.value)}
+                    className={inputClass}
+                  />
+                </div>
+              </div>
+
+              {/* CATEGORIA */}
+              <div className="flex flex-col gap-1 min-w-[130px]">
+                <label className="text-[10px] font-bold text-zinc-600 dark:text-zinc-400">Categoria</label>
+                <select
+                  value={revCategoryFilter}
+                  onChange={(e) => setRevCategoryFilter(e.target.value)}
+                  className={inputClass}
+                >
+                  <option value="Todas">Todas</option>
+                  <option value="Doações PF">Doações PF</option>
+                  <option value="Recurso Próprio">Recurso Próprio</option>
+                  <option value="Fundo Eleitoral">Fundo Eleitoral (FEFC)</option>
+                  <option value="Fundo Partidário">Fundo Partidário</option>
+                </select>
+              </div>
+
+              {/* ORIGEM */}
+              <div className="flex flex-col gap-1 min-w-[130px]">
+                <label className="text-[10px] font-bold text-zinc-600 dark:text-zinc-400">Origem</label>
+                <select
+                  value={revOriginFilter}
+                  onChange={(e) => setRevOriginFilter(e.target.value)}
+                  className={inputClass}
+                >
+                  <option value="Todas">Todas</option>
+                  <option value="doacao_pf">Pessoa Física</option>
+                  <option value="recurso_proprio">Recurso Próprio</option>
+                  <option value="fundo_eleitoral">Fundo Eleitoral</option>
+                  <option value="fundo_partidario">Fundo Partidário</option>
+                </select>
+              </div>
+
+              {/* SITUAÇÃO */}
+              <div className="flex flex-col gap-1 min-w-[120px]">
+                <label className="text-[10px] font-bold text-zinc-600 dark:text-zinc-400">Situação</label>
+                <select
+                  value={revStatusFilter}
+                  onChange={(e) => setRevStatusFilter(e.target.value)}
+                  className={inputClass}
+                >
+                  <option value="Todas">Todas</option>
+                  <option value="confirmada">Confirmada</option>
+                  <option value="registrada">Registrada</option>
+                  <option value="conciliada">Conciliada</option>
+                  <option value="estornada">Estornada</option>
+                </select>
+              </div>
+
+              {/* CONTA BANCÁRIA */}
+              <div className="flex flex-col gap-1 min-w-[150px]">
+                <label className="text-[10px] font-bold text-zinc-600 dark:text-zinc-400">Conta bancária</label>
+                <select
+                  value={revBankAccountIdFilter}
+                  onChange={(e) => setRevBankAccountIdFilter(e.target.value)}
+                  className={inputClass}
+                >
+                  <option value="Todas">Todas</option>
+                  {accounts.map((acc) => (
+                    <option key={acc.id} value={acc.id}>{acc.bankName} - Ag {acc.agency}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* LIMPAR FILTROS */}
+              <button
+                onClick={() => {
+                  setSearchQuery("");
+                  setRevCategoryFilter("Todas");
+                  setRevOriginFilter("Todas");
+                  setRevStatusFilter("Todas");
+                  setRevBankAccountIdFilter("Todas");
+                  setRevStartDate("");
+                  setRevEndDate("");
+                }}
+                className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 transition"
+              >
+                <FilterX className="h-4 w-4" />
+                Limpar filtros
+              </button>
+            </div>
+
+            {/* CONTEÚDO PRINCIPAL (72% TABELA / 28% PAINEL LATERAL) */}
+            <div className="grid gap-6 lg:grid-cols-12 items-start">
+              
+              {/* COLUNA ESQUERDA (~72%): TABELA DE LANÇAMENTOS DE RECEITAS */}
+              <div className="lg:col-span-8 flex flex-col gap-4">
+                <div className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950 shadow-xs flex flex-col gap-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-extrabold text-zinc-900 dark:text-zinc-100">
+                      Lançamentos de receitas ({revenues.length})
+                    </h3>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs">
+                      <thead>
+                        <tr className="border-b border-zinc-100 text-[10px] uppercase font-bold text-zinc-400 dark:border-zinc-850">
+                          <th className="py-2.5 px-2 w-8">
+                            <input
+                              type="checkbox"
+                              onChange={(e) => {
+                                if (e.target.checked) setSelectedRevenueIds(revenues.map((r) => r.id));
+                                else setSelectedRevenueIds([]);
+                              }}
+                              checked={selectedRevenueIds.length > 0 && selectedRevenueIds.length === revenues.length}
+                            />
+                          </th>
+                          <th className="py-2.5 px-2">Data</th>
+                          <th className="py-2.5 px-2">Documento</th>
+                          <th className="py-2.5 px-2">Doador/Origem</th>
+                          <th className="py-2.5 px-2">Categoria</th>
+                          <th className="py-2.5 px-2">Conta bancária</th>
+                          <th className="py-2.5 px-2 text-right">Valor</th>
+                          <th className="py-2.5 px-2 text-center">Conciliação</th>
+                          <th className="py-2.5 px-2 text-center">Recibo</th>
+                          <th className="py-2.5 px-2 text-center">Situação</th>
+                          <th className="py-2.5 px-2 text-center">Ações</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-zinc-100 dark:divide-zinc-850 font-medium">
+                        {revenues.length === 0 ? (
+                          <tr>
+                            <td colSpan={11} className="py-8 text-center text-zinc-400">
+                              Nenhuma receita encontrada para os filtros selecionados.
+                            </td>
+                          </tr>
+                        ) : (
+                          revenues.map((r) => {
+                            const isSelected = selectedRevenueIds.includes(r.id);
+                            return (
+                              <tr key={r.id} className={`hover:bg-zinc-50 dark:hover:bg-zinc-900/50 ${isSelected ? "bg-blue-50/40 dark:bg-blue-950/20" : ""}`}>
+                                <td className="py-3 px-2">
+                                  <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    onChange={(e) => {
+                                      if (e.target.checked) setSelectedRevenueIds([...selectedRevenueIds, r.id]);
+                                      else setSelectedRevenueIds(selectedRevenueIds.filter((id) => id !== r.id));
+                                    }}
+                                  />
+                                </td>
+                                <td className="py-3 px-2 font-mono text-[11px] text-zinc-500">{r.date}</td>
+                                <td className="py-3 px-2 font-mono font-bold text-blue-600">{r.documentNumber || `REC-${r.id.slice(-4)}`}</td>
+                                <td className="py-3 px-2 font-bold text-zinc-800 dark:text-zinc-200">
+                                  {r.donorName}
+                                  <span className="block text-[10px] text-zinc-400 font-normal">{r.donorCpfCnpj || "Recurso Direto"}</span>
+                                </td>
+                                <td className="py-3 px-2">
+                                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300">
+                                    {r.origin === "doacao_pf" ? "Doação PF" : r.origin === "fundo_eleitoral" ? "Fundo Eleitoral" : "Outros"}
+                                  </span>
+                                </td>
+                                <td className="py-3 px-2 text-[11px] text-zinc-500">{r.bankAccountName || "Conta Principal"}</td>
+                                <td className="py-3 px-2 text-right font-mono font-bold text-emerald-600">
+                                  {formatCurrencyBR(r.amount)}
+                                </td>
+                                <td className="py-3 px-2 text-center">
+                                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${r.status === "conciliada" ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"}`}>
+                                    {r.status === "conciliada" ? "Conciliada" : "Pendente"}
+                                  </span>
+                                </td>
+                                <td className="py-3 px-2 text-center">
+                                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${r.documentNumber ? "bg-emerald-100 text-emerald-800" : "bg-red-100 text-red-700"}`}>
+                                    {r.documentNumber ? "Emitido" : "Pendente"}
+                                  </span>
+                                </td>
+                                <td className="py-3 px-2 text-center">
+                                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300">
+                                    {r.status === "confirmada" || r.status === "conciliada" ? "Confirmada" : "Em análise"}
+                                  </span>
+                                </td>
+                                <td className="py-3 px-2 text-center">
+                                  <button
+                                    onClick={() => alert(`Detalhes da receita ${r.id}`)}
+                                    className="p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded text-zinc-400 hover:text-zinc-700"
+                                  >
+                                    <MoreVertical className="h-4 w-4" />
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          })
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* PAGINAÇÃO */}
+                  <div className="flex flex-wrap items-center justify-between gap-4 border-t border-zinc-100 dark:border-zinc-850 pt-3 text-xs text-zinc-500">
+                    <span>{revenues.length} resultados</span>
+
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={revPageSize}
+                        onChange={(e) => setRevPageSize(Number(e.target.value))}
+                        className="rounded-lg border border-zinc-200 bg-white px-2 py-1 text-xs font-bold dark:border-zinc-800 dark:bg-zinc-900"
+                      >
+                        <option value={10}>10 itens por página</option>
+                        <option value={25}>25 itens por página</option>
+                        <option value={50}>50 itens por página</option>
+                      </select>
+
+                      <div className="flex items-center gap-1 font-bold">
+                        <button disabled className="px-2 py-1 rounded border border-zinc-200 dark:border-zinc-800 disabled:opacity-40">«</button>
+                        <button disabled className="px-2 py-1 rounded border border-zinc-200 dark:border-zinc-800 disabled:opacity-40">&lt;</button>
+                        <button className="px-3 py-1 rounded bg-blue-600 text-white shadow-xs">1</button>
+                        <button disabled className="px-2 py-1 rounded border border-zinc-200 dark:border-zinc-800 disabled:opacity-40">&gt;</button>
+                        <button disabled className="px-2 py-1 rounded border border-zinc-200 dark:border-zinc-800 disabled:opacity-40">»</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* COLUNA DIREITA (~28%): PAINEL LATERAL */}
+              <div className="lg:col-span-4 flex flex-col gap-6">
+                
+                {/* CARD 1: RECEITAS POR CATEGORIA */}
+                <div className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950 shadow-xs flex flex-col gap-4">
+                  <h3 className="text-sm font-extrabold text-zinc-900 dark:text-zinc-100">Receitas por categoria</h3>
+
+                  <div className="flex items-center justify-center py-2">
+                    {/* SVG DONUT CHART */}
+                    <div className="relative flex items-center justify-center h-36 w-36">
+                      <svg className="h-full w-full transform -rotate-90" viewBox="0 0 36 36">
+                        <path
+                          d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                          fill="none"
+                          stroke="#E2E8F0"
+                          strokeWidth="3.8"
+                        />
+                        <path
+                          d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                          fill="none"
+                          stroke="#059669"
+                          strokeWidth="3.8"
+                          strokeDasharray="70, 100"
+                        />
+                        <path
+                          d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                          fill="none"
+                          stroke="#2563EB"
+                          strokeWidth="3.8"
+                          strokeDasharray="30, 100"
+                          strokeDashoffset="-70"
+                        />
+                      </svg>
+                      <div className="absolute text-center flex flex-col">
+                        <span className="text-[10px] font-bold text-zinc-400 uppercase">Total</span>
+                        <span className="text-xs font-black text-zinc-800 dark:text-zinc-200">
+                          {formatCurrencyBR(summary.totalReceitas)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-2.5 text-xs border-t border-zinc-100 dark:border-zinc-850 pt-3">
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-2 font-medium text-zinc-700 dark:text-zinc-300">
+                        <span className="h-2.5 w-2.5 rounded-full bg-emerald-600" /> Doações Pessoa Física
+                      </span>
+                      <span className="font-mono font-bold text-zinc-800 dark:text-zinc-200">70%</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-2 font-medium text-zinc-700 dark:text-zinc-300">
+                        <span className="h-2.5 w-2.5 rounded-full bg-blue-600" /> Fundo Eleitoral (FEFC)
+                      </span>
+                      <span className="font-mono font-bold text-zinc-800 dark:text-zinc-200">30%</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* CARD 2: PENDÊNCIAS */}
+                <div className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950 shadow-xs flex flex-col gap-4">
+                  <h3 className="text-sm font-extrabold text-zinc-900 dark:text-zinc-100">Pendências</h3>
+
+                  <div className="flex flex-col gap-3 text-xs">
+                    <div className="rounded-xl border border-red-100 bg-red-50/60 p-3.5 dark:border-red-900/30 dark:bg-red-950/20 flex flex-col gap-1.5">
+                      <div className="flex items-center justify-between font-extrabold text-red-800 dark:text-red-300">
+                        <span className="flex items-center gap-1.5">
+                          <Receipt className="h-4 w-4 text-red-600" /> Recibos pendentes
+                        </span>
+                        <span className="h-5 w-5 rounded-full bg-red-600 text-white text-[11px] flex items-center justify-center">
+                          {complianceData.recibosPendentesCount}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-red-700 dark:text-red-300 font-medium">
+                        {complianceData.recibosPendentesCount > 0 ? "Existem recibos de doações pendentes de envio." : "Nenhum recibo pendente."}
+                      </p>
+                      <button
+                        onClick={() => setRevStatusFilter("registrada")}
+                        className="text-xs font-bold text-red-700 dark:text-red-300 hover:underline flex items-center justify-between pt-1"
+                      >
+                        <span>Ver recibos pendentes</span>
+                        <ChevronRight className="h-4 w-4" />
+                      </button>
+                    </div>
+
+                    <div className="rounded-xl border border-amber-100 bg-amber-50/60 p-3.5 dark:border-amber-900/30 dark:bg-amber-950/20 flex flex-col gap-1.5">
+                      <div className="flex items-center justify-between font-extrabold text-amber-800 dark:text-amber-300">
+                        <span className="flex items-center gap-1.5">
+                          <Clock3 className="h-4 w-4 text-amber-600" /> Conciliações pendentes
+                        </span>
+                        <span className="h-5 w-5 rounded-full bg-amber-600 text-white text-[11px] flex items-center justify-center">
+                          {complianceData.conciliacoesPendentesCount}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-amber-700 dark:text-amber-300 font-medium">
+                        {complianceData.conciliacoesPendentesCount > 0 ? "Há lançamentos pendentes de conciliação bancária." : "Todas conciliações em dia."}
+                      </p>
+                      <button
+                        onClick={() => setActiveSubTab("conciliacao")}
+                        className="text-xs font-bold text-amber-700 dark:text-amber-300 hover:underline flex items-center justify-between pt-1"
+                      >
+                        <span>Ver conciliações</span>
+                        <ChevronRight className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* CARD 3: INTEGRAÇÃO BANCÁRIA */}
+                <div className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950 shadow-xs flex flex-col gap-3">
+                  <h3 className="text-sm font-extrabold text-zinc-900 dark:text-zinc-100">Integração bancária</h3>
+
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="flex items-center gap-2 font-bold text-emerald-600">
+                      <Building2 className="h-4 w-4 text-emerald-600" /> Sincronizado
+                    </span>
+                    <span className="text-[10px] text-zinc-400">Última sincronização: hoje às 10:30</span>
+                  </div>
+
+                  <button
+                    onClick={() => setActiveSubTab("contas_bancarias")}
+                    className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center justify-between pt-1"
+                  >
+                    <span>Ver integrações</span>
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
         {/* ---------------- 5. SUB-VISÃO 3: DESPESAS & SOLICITAÇÕES ---------------- */}
         {activeSubTab === "despesas" && (
-          <div className="flex flex-col gap-4">
-            <div className="flex justify-between items-center">
-              <h3 className="text-xs font-bold text-zinc-800 dark:text-zinc-200">Despesas & Solicitações ({expenses.length})</h3>
-              {canManage && (
-                <button onClick={() => setShowExpenseModal(true)} className={buttonPrimaryClass}>
-                  + Nova Solicitação de Despesa
+          <div className="flex flex-col gap-6">
+            {/* BREADCRUMB & CABEÇALHO DA PÁGINA */}
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <div className="text-[11px] font-semibold text-zinc-400 dark:text-zinc-500 mb-1">
+                  Área Financeira / <span className="text-zinc-700 dark:text-zinc-300 font-bold">Despesas & Solicitações</span>
+                </div>
+                <h2 className="text-2xl font-black text-zinc-900 dark:text-zinc-100 tracking-tight">
+                  Despesas & Solicitações
+                </h2>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">
+                  Acompanhe solicitações, aprovações, pagamentos e documentos.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => {
+                    if (!canManage) return;
+                    alert("Exportando registros da consulta atual de despesas para CSV...");
+                  }}
+                  disabled={!canManage}
+                  className="flex items-center gap-2 rounded-xl border border-zinc-300 bg-white px-4 py-2 text-xs font-bold text-zinc-700 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 transition shadow-xs disabled:opacity-50"
+                >
+                  <Download className="h-4 w-4" />
+                  Exportar
                 </button>
-              )}
+                <button
+                  onClick={() => setShowExpenseModal(true)}
+                  disabled={!canManage}
+                  className="flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-700 transition shadow-sm disabled:opacity-50"
+                >
+                  <CirclePlus className="h-4 w-4" />
+                  Nova despesa
+                </button>
+              </div>
             </div>
 
-            <DataTable
-              data={expenses}
-              keyExtractor={(e) => e.id}
-              emptyMessage="Nenhuma despesa registrada para este contexto."
-              columns={[
-                { key: "code", header: "Código", render: (e) => <span className="font-mono font-bold text-blue-600">{e.code}</span> },
-                { key: "desc", header: "Descrição", render: (e) => <span className="font-bold">{e.description}</span> },
-                { key: "vendor", header: "Fornecedor", render: (e) => <span>{e.vendorName}</span> },
-                { key: "dueDate", header: "Vencimento", render: (e) => <span className="font-mono text-xs">{e.dueDate}</span> },
-                { key: "amount", header: "Valor Final", render: (e) => <span className="font-mono font-bold text-rose-600">{formatCurrencyBR(e.finalAmount)}</span> },
-                {
-                  key: "status",
-                  header: "Status Workflow",
-                  render: (e) => (
-                    <span className={`font-bold px-2 py-0.5 rounded text-[10px] uppercase ${e.status === "paga" ? "bg-emerald-100 text-emerald-800" : e.status === "aprovada" ? "bg-blue-100 text-blue-800" : e.status === "rejeitada" || e.status === "cancelada" ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-800"}`}>
-                      {e.status}
-                    </span>
-                  ),
-                },
-                {
-                  key: "actions",
-                  header: "Ações",
-                  render: (e) => (
-                    <div className="flex gap-2 text-xs">
-                      {e.status === "aprovada" && (
-                        <button onClick={() => handlePayExpense(e.id)} className="font-bold text-emerald-600 hover:underline">Pagar</button>
-                      )}
-                      {canManage && e.status !== "cancelada" && (
-                        <button onClick={() => setDeleteExpenseId(e.id)} className="font-medium text-red-600 hover:underline">Cancelar</button>
-                      )}
+            {/* 4 CARDS DE INDICADORES DA ABA DESPESAS */}
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {/* CARTÃO 1: DESPESAS TOTAIS */}
+              <div className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950 shadow-xs flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-950/60 shrink-0">
+                  <ReceiptText className="h-6 w-6" strokeWidth={1.75} />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[11px] font-bold text-zinc-500 dark:text-zinc-400">Despesas totais</span>
+                  <span className="text-xl font-black text-zinc-900 dark:text-zinc-100 mt-0.5">
+                    {formatCurrencyBR(expenses.reduce((acc, curr) => acc + curr.finalAmount, 0))}
+                  </span>
+                  <span className="text-[10px] text-zinc-400 font-medium">
+                    {expenses.length} lançamentos
+                  </span>
+                </div>
+              </div>
+
+              {/* CARTÃO 2: AGUARDANDO APROVAÇÃO */}
+              <div className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950 shadow-xs flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 dark:bg-amber-950/60 shrink-0">
+                  <Clock3 className="h-6 w-6" strokeWidth={1.75} />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[11px] font-bold text-zinc-500 dark:text-zinc-400">Aguardando aprovação</span>
+                  <span className="text-xl font-black text-zinc-900 dark:text-zinc-100 mt-0.5">
+                    {formatCurrencyBR(
+                      expenses.filter((e) => e.status === "solicitada" || e.status === "em_validacao").reduce((acc, curr) => acc + curr.finalAmount, 0)
+                    )}
+                  </span>
+                  <span className="text-[10px] text-amber-600 font-medium">
+                    {expenses.filter((e) => e.status === "solicitada" || e.status === "em_validacao").length} solicitações
+                  </span>
+                </div>
+              </div>
+
+              {/* CARTÃO 3: PROGRAMADAS PARA PAGAMENTO */}
+              <div className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950 shadow-xs flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-purple-50 text-purple-600 dark:bg-purple-950/60 shrink-0">
+                  <CalendarClock className="h-6 w-6" strokeWidth={1.75} />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[11px] font-bold text-zinc-500 dark:text-zinc-400">Programadas para pagamento</span>
+                  <span className="text-xl font-black text-zinc-900 dark:text-zinc-100 mt-0.5">
+                    {formatCurrencyBR(
+                      expenses.filter((e) => e.status === "aprovada" || e.status === "contratada").reduce((acc, curr) => acc + curr.finalAmount, 0)
+                    )}
+                  </span>
+                  <span className="text-[10px] text-purple-600 font-medium">
+                    {expenses.filter((e) => e.status === "aprovada" || e.status === "contratada").length} despesas
+                  </span>
+                </div>
+              </div>
+
+              {/* CARTÃO 4: PAGAS NO PERÍODO */}
+              <div className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950 shadow-xs flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 shrink-0">
+                  <BadgeCheck className="h-6 w-6" strokeWidth={1.75} />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[11px] font-bold text-zinc-500 dark:text-zinc-400">Pagas no período</span>
+                  <span className="text-xl font-black text-zinc-900 dark:text-zinc-100 mt-0.5">
+                    {formatCurrencyBR(summary.totalDespesas)}
+                  </span>
+                  <span className="text-[10px] text-emerald-600 font-medium">
+                    {expenses.filter((e) => e.status === "paga" || e.status === "conciliada").length} pagamentos
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* CARTÃO HORIZONTAL DE FILTROS */}
+            <div className="rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950 shadow-xs flex flex-wrap items-end gap-3 text-xs">
+              {/* BUSCA */}
+              <div className="flex flex-col gap-1 min-w-[200px] flex-1">
+                <label className="text-[10px] font-bold text-zinc-600 dark:text-zinc-400">Buscar</label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={expSearchQuery}
+                    onChange={(e) => setExpSearchQuery(e.target.value)}
+                    placeholder="Documento, fornecedor ou descrição"
+                    className={`${inputClass} pr-8`}
+                  />
+                  <Search className="absolute right-2.5 top-2.5 h-4 w-4 text-zinc-400" />
+                </div>
+              </div>
+
+              {/* PERÍODO */}
+              <div className="flex flex-col gap-1 min-w-[140px]">
+                <label className="text-[10px] font-bold text-zinc-600 dark:text-zinc-400">Período</label>
+                <div className="relative">
+                  <input
+                    type="date"
+                    value={expStartDate}
+                    onChange={(e) => setExpStartDate(e.target.value)}
+                    className={inputClass}
+                  />
+                </div>
+              </div>
+
+              {/* TIPO */}
+              <div className="flex flex-col gap-1 min-w-[120px]">
+                <label className="text-[10px] font-bold text-zinc-600 dark:text-zinc-400">Tipo</label>
+                <select
+                  value={expTypeFilter}
+                  onChange={(e) => setExpTypeFilter(e.target.value)}
+                  className={inputClass}
+                >
+                  <option value="Todas">Todas</option>
+                  <option value="Solicitação">Solicitação</option>
+                  <option value="Despesa">Despesa</option>
+                </select>
+              </div>
+
+              {/* CATEGORIA */}
+              <div className="flex flex-col gap-1 min-w-[130px]">
+                <label className="text-[10px] font-bold text-zinc-600 dark:text-zinc-400">Categoria</label>
+                <select
+                  value={expCategoryFilter}
+                  onChange={(e) => setExpCategoryFilter(e.target.value)}
+                  className={inputClass}
+                >
+                  <option value="Todas">Todas</option>
+                  <option value="Marketing">Marketing e Publicidade</option>
+                  <option value="Pessoal">Pessoal / Militância</option>
+                  <option value="Operacional">Operacional & Logística</option>
+                  <option value="Juridico">Jurídico / Contábil</option>
+                </select>
+              </div>
+
+              {/* CENTRO DE CUSTO */}
+              <div className="flex flex-col gap-1 min-w-[140px]">
+                <label className="text-[10px] font-bold text-zinc-600 dark:text-zinc-400">Centro de custo</label>
+                <select
+                  value={expCostCenterFilter}
+                  onChange={(e) => setExpCostCenterFilter(e.target.value)}
+                  className={inputClass}
+                >
+                  <option value="Todos">Todos</option>
+                  {costCenters.map((cc) => (
+                    <option key={cc.id} value={cc.id}>{cc.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* SITUAÇÃO */}
+              <div className="flex flex-col gap-1 min-w-[130px]">
+                <label className="text-[10px] font-bold text-zinc-600 dark:text-zinc-400">Situação</label>
+                <select
+                  value={expStatusFilter}
+                  onChange={(e) => setExpStatusFilter(e.target.value)}
+                  className={inputClass}
+                >
+                  <option value="Todas">Todas</option>
+                  <option value="solicitada">Solicitada</option>
+                  <option value="em_validacao">Em Validação</option>
+                  <option value="aprovada">Aprovada</option>
+                  <option value="paga">Paga</option>
+                  <option value="conciliada">Conciliada</option>
+                  <option value="rejeitada">Rejeitada</option>
+                  <option value="cancelada">Cancelada</option>
+                </select>
+              </div>
+
+              {/* APROVADOR */}
+              <div className="flex flex-col gap-1 min-w-[130px]">
+                <label className="text-[10px] font-bold text-zinc-600 dark:text-zinc-400">Aprovador</label>
+                <select
+                  value={expApproverFilter}
+                  onChange={(e) => setExpApproverFilter(e.target.value)}
+                  className={inputClass}
+                >
+                  <option value="Todos">Todos</option>
+                  <option value="Financeiro">Gestor Financeiro</option>
+                  <option value="Juridico">Responsável Jurídico</option>
+                </select>
+              </div>
+
+              {/* LIMPAR FILTROS */}
+              <button
+                onClick={() => {
+                  setExpSearchQuery("");
+                  setExpTypeFilter("Todas");
+                  setExpCategoryFilter("Todas");
+                  setExpCostCenterFilter("Todos");
+                  setExpStatusFilter("Todas");
+                  setExpApproverFilter("Todos");
+                  setExpStartDate("");
+                  setExpEndDate("");
+                }}
+                className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 transition"
+              >
+                <FilterX className="h-4 w-4" />
+                Limpar filtros
+              </button>
+            </div>
+
+            {/* CONTEÚDO PRINCIPAL (72% TABELA / 28% PAINEL LATERAL) */}
+            <div className="grid gap-6 lg:grid-cols-12 items-start">
+              
+              {/* COLUNA ESQUERDA (~72%): TABELA DE LANÇAMENTOS DE DESPESAS E SOLICITAÇÕES */}
+              <div className="lg:col-span-8 flex flex-col gap-4">
+                <div className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950 shadow-xs flex flex-col gap-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-extrabold text-zinc-900 dark:text-zinc-100">
+                      Lançamentos de despesas e solicitações ({expenses.length})
+                    </h3>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs">
+                      <thead>
+                        <tr className="border-b border-zinc-100 text-[10px] uppercase font-bold text-zinc-400 dark:border-zinc-850">
+                          <th className="py-2.5 px-2 w-8">
+                            <input
+                              type="checkbox"
+                              onChange={(e) => {
+                                if (e.target.checked) setSelectedExpenseIds(expenses.map((ex) => ex.id));
+                                else setSelectedExpenseIds([]);
+                              }}
+                              checked={selectedExpenseIds.length > 0 && selectedExpenseIds.length === expenses.length}
+                            />
+                          </th>
+                          <th className="py-2.5 px-2">Data</th>
+                          <th className="py-2.5 px-2">Código</th>
+                          <th className="py-2.5 px-2">Descrição/Fornecedor</th>
+                          <th className="py-2.5 px-2">Tipo</th>
+                          <th className="py-2.5 px-2">Categoria/Centro</th>
+                          <th className="py-2.5 px-2 text-right">Valor</th>
+                          <th className="py-2.5 px-2 text-center">Aprovação</th>
+                          <th className="py-2.5 px-2 text-center">Pagamento</th>
+                          <th className="py-2.5 px-2 text-center">Vencimento</th>
+                          <th className="py-2.5 px-2 text-center">Ações</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-zinc-100 dark:divide-zinc-850 font-medium">
+                        {expenses.length === 0 ? (
+                          <tr>
+                            <td colSpan={11} className="py-8 text-center text-zinc-400">
+                              Nenhuma despesa ou solicitação encontrada.
+                            </td>
+                          </tr>
+                        ) : (
+                          expenses.map((e) => {
+                            const isSelected = selectedExpenseIds.includes(e.id);
+                            const isOverdue = new Date(e.dueDate) < new Date() && e.status !== "paga" && e.status !== "conciliada";
+                            return (
+                              <tr key={e.id} className={`hover:bg-zinc-50 dark:hover:bg-zinc-900/50 ${isSelected ? "bg-blue-50/40 dark:bg-blue-950/20" : ""}`}>
+                                <td className="py-3 px-2">
+                                  <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    onChange={(ev) => {
+                                      if (ev.target.checked) setSelectedExpenseIds([...selectedExpenseIds, e.id]);
+                                      else setSelectedExpenseIds(selectedExpenseIds.filter((id) => id !== e.id));
+                                    }}
+                                  />
+                                </td>
+                                <td className="py-3 px-2 font-mono text-[11px] text-zinc-500">{e.competencyDate || e.dueDate}</td>
+                                <td className="py-3 px-2 font-mono font-bold text-blue-600">{e.code}</td>
+                                <td className="py-3 px-2 font-bold text-zinc-800 dark:text-zinc-200">
+                                  {e.description}
+                                  <span className="block text-[10px] text-zinc-400 font-normal">{e.vendorName} ({e.vendorCpfCnpj || "Fornecedor"})</span>
+                                </td>
+                                <td className="py-3 px-2">
+                                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${e.expenseType === "recorrente" ? "bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300" : "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300"}`}>
+                                    {e.expenseType === "recorrente" ? "Recorrente" : "Despesa"}
+                                  </span>
+                                </td>
+                                <td className="py-3 px-2 text-[11px]">
+                                  <span className="font-semibold text-zinc-700 dark:text-zinc-300 block">Operacional</span>
+                                  <span className="text-[10px] text-zinc-400">Marketing & Pub.</span>
+                                </td>
+                                <td className="py-3 px-2 text-right font-mono font-bold text-rose-600">
+                                  {formatCurrencyBR(e.finalAmount)}
+                                </td>
+                                <td className="py-3 px-2 text-center">
+                                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${e.status === "aprovada" || e.status === "paga" ? "bg-emerald-100 text-emerald-800" : e.status === "rejeitada" ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-800"}`}>
+                                    {e.status === "aprovada" || e.status === "paga" ? "Aprovada" : e.status === "rejeitada" ? "Rejeitada" : "Em aprovação"}
+                                  </span>
+                                </td>
+                                <td className="py-3 px-2 text-center">
+                                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${e.status === "paga" || e.status === "conciliada" ? "bg-emerald-100 text-emerald-800" : e.status === "aprovada" ? "bg-blue-100 text-blue-800" : "bg-zinc-100 text-zinc-700"}`}>
+                                    {e.status === "paga" || e.status === "conciliada" ? "Pago" : e.status === "aprovada" ? "Programado" : "Não programado"}
+                                  </span>
+                                </td>
+                                <td className={`py-3 px-2 text-center font-mono text-[11px] ${isOverdue ? "text-red-600 font-bold" : "text-zinc-500"}`}>
+                                  {e.dueDate}
+                                </td>
+                                <td className="py-3 px-2 text-center">
+                                  <button
+                                    onClick={() => alert(`Ações para despesa ${e.code}`)}
+                                    className="p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded text-zinc-400 hover:text-zinc-700"
+                                  >
+                                    <MoreVertical className="h-4 w-4" />
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          })
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* PAGINAÇÃO */}
+                  <div className="flex flex-wrap items-center justify-between gap-4 border-t border-zinc-100 dark:border-zinc-850 pt-3 text-xs text-zinc-500">
+                    <span>{expenses.length} resultados</span>
+
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={expPageSize}
+                        onChange={(ev) => setExpPageSize(Number(ev.target.value))}
+                        className="rounded-lg border border-zinc-200 bg-white px-2 py-1 text-xs font-bold dark:border-zinc-800 dark:bg-zinc-900"
+                      >
+                        <option value={10}>10 itens por página</option>
+                        <option value={25}>25 itens por página</option>
+                        <option value={50}>50 itens por página</option>
+                      </select>
+
+                      <div className="flex items-center gap-1 font-bold">
+                        <button disabled className="px-2 py-1 rounded border border-zinc-200 dark:border-zinc-800 disabled:opacity-40">«</button>
+                        <button disabled className="px-2 py-1 rounded border border-zinc-200 dark:border-zinc-800 disabled:opacity-40">&lt;</button>
+                        <button className="px-3 py-1 rounded bg-blue-600 text-white shadow-xs">1</button>
+                        <button disabled className="px-2 py-1 rounded border border-zinc-200 dark:border-zinc-800 disabled:opacity-40">&gt;</button>
+                        <button disabled className="px-2 py-1 rounded border border-zinc-200 dark:border-zinc-800 disabled:opacity-40">»</button>
+                      </div>
                     </div>
-                  ),
-                },
-              ]}
-            />
+                  </div>
+                </div>
+              </div>
+
+              {/* COLUNA DIREITA (~28%): PAINEL LATERAL */}
+              <div className="lg:col-span-4 flex flex-col gap-6">
+                
+                {/* CARD 1: DESPESAS POR CATEGORIA */}
+                <div className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950 shadow-xs flex flex-col gap-4">
+                  <h3 className="text-sm font-extrabold text-zinc-900 dark:text-zinc-100">Despesas por categoria</h3>
+
+                  <div className="flex items-center justify-center py-2">
+                    {/* SVG DONUT CHART */}
+                    <div className="relative flex items-center justify-center h-36 w-36">
+                      <svg className="h-full w-full transform -rotate-90" viewBox="0 0 36 36">
+                        <path
+                          d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                          fill="none"
+                          stroke="#E2E8F0"
+                          strokeWidth="3.8"
+                        />
+                        <path
+                          d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                          fill="none"
+                          stroke="#2563EB"
+                          strokeWidth="3.8"
+                          strokeDasharray="60, 100"
+                        />
+                        <path
+                          d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                          fill="none"
+                          stroke="#EA7A00"
+                          strokeWidth="3.8"
+                          strokeDasharray="40, 100"
+                          strokeDashoffset="-60"
+                        />
+                      </svg>
+                      <div className="absolute text-center flex flex-col">
+                        <span className="text-[10px] font-bold text-zinc-400 uppercase">Total</span>
+                        <span className="text-xs font-black text-zinc-800 dark:text-zinc-200">
+                          {formatCurrencyBR(summary.totalDespesas)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-2.5 text-xs border-t border-zinc-100 dark:border-zinc-850 pt-3">
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-2 font-medium text-zinc-700 dark:text-zinc-300">
+                        <span className="h-2.5 w-2.5 rounded-full bg-blue-600" /> Marketing e Publicidade
+                      </span>
+                      <span className="font-mono font-bold text-zinc-800 dark:text-zinc-200">60%</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-2 font-medium text-zinc-700 dark:text-zinc-300">
+                        <span className="h-2.5 w-2.5 rounded-full bg-amber-500" /> Pessoal / Militância
+                      </span>
+                      <span className="font-mono font-bold text-zinc-800 dark:text-zinc-200">40%</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* CARD 2: PENDÊNCIAS OPERACIONAIS */}
+                <div className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950 shadow-xs flex flex-col gap-4">
+                  <h3 className="text-sm font-extrabold text-zinc-900 dark:text-zinc-100">Pendências operacionais</h3>
+
+                  <div className="flex flex-col gap-3 text-xs">
+                    {/* APROVAÇÕES AGUARDANDO */}
+                    <div className="rounded-xl border border-amber-100 bg-amber-50/60 p-3.5 dark:border-amber-900/30 dark:bg-amber-950/20 flex flex-col gap-1.5">
+                      <div className="flex items-center justify-between font-extrabold text-amber-800 dark:text-amber-300">
+                        <span className="flex items-center gap-1.5">
+                          <Clock3 className="h-4 w-4 text-amber-600" /> Aprovações aguardando
+                        </span>
+                        <span className="h-5 w-5 rounded-full bg-amber-600 text-white text-[11px] flex items-center justify-center">
+                          {expenses.filter((e) => e.status === "solicitada" || e.status === "em_validacao").length}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-amber-700 dark:text-amber-300 font-medium">
+                        Despesas pendentes de análise por alçada.
+                      </p>
+                      <button
+                        onClick={() => setExpStatusFilter("solicitada")}
+                        className="text-xs font-bold text-amber-700 dark:text-amber-300 hover:underline flex items-center justify-between pt-1"
+                      >
+                        <span>Ver solicitações</span>
+                        <ChevronRight className="h-4 w-4" />
+                      </button>
+                    </div>
+
+                    {/* DOCUMENTOS OBRIGATÓRIOS */}
+                    <div className="rounded-xl border border-red-100 bg-red-50/60 p-3.5 dark:border-red-900/30 dark:bg-red-950/20 flex flex-col gap-1.5">
+                      <div className="flex items-center justify-between font-extrabold text-red-800 dark:text-red-300">
+                        <span className="flex items-center gap-1.5">
+                          <FileWarning className="h-4 w-4 text-red-600" /> Documentos obrigatórios
+                        </span>
+                        <span className="h-5 w-5 rounded-full bg-red-600 text-white text-[11px] flex items-center justify-center">
+                          {complianceData.recibosPendentesCount}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-red-700 dark:text-red-300 font-medium">
+                        Notas fiscais ou comprovantes pendentes de anexação.
+                      </p>
+                      <button
+                        onClick={() => setExpStatusFilter("em_validacao")}
+                        className="text-xs font-bold text-red-700 dark:text-red-300 hover:underline flex items-center justify-between pt-1"
+                      >
+                        <span>Ver pendências</span>
+                        <ChevronRight className="h-4 w-4" />
+                      </button>
+                    </div>
+
+                    {/* PAGAMENTOS VENCENDO */}
+                    <div className="rounded-xl border border-purple-100 bg-purple-50/60 p-3.5 dark:border-purple-900/30 dark:bg-purple-950/20 flex flex-col gap-1.5">
+                      <div className="flex items-center justify-between font-extrabold text-purple-800 dark:text-purple-300">
+                        <span className="flex items-center gap-1.5">
+                          <CalendarClock className="h-4 w-4 text-purple-600" /> Pagamentos vencendo
+                        </span>
+                        <span className="h-5 w-5 rounded-full bg-purple-600 text-white text-[11px] flex items-center justify-center">
+                          {expenses.filter((e) => e.status === "aprovada").length}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-purple-700 dark:text-purple-300 font-medium">
+                        Despesas aprovadas prontas para agendamento.
+                      </p>
+                      <button
+                        onClick={() => setExpStatusFilter("aprovada")}
+                        className="text-xs font-bold text-purple-700 dark:text-purple-300 hover:underline flex items-center justify-between pt-1"
+                      >
+                        <span>Ver vencimentos</span>
+                        <ChevronRight className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* CARD 3: EXECUÇÃO ORÇAMENTÁRIA */}
+                <div className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950 shadow-xs flex flex-col gap-3">
+                  <h3 className="text-sm font-extrabold text-zinc-900 dark:text-zinc-100">Execução orçamentária</h3>
+
+                  <div className="flex flex-col gap-2 text-xs">
+                    <div className="flex justify-between font-bold">
+                      <span className="text-zinc-500">Orçado:</span>
+                      <span className="text-zinc-900 dark:text-zinc-100 font-mono">{formatCurrencyBR(summary.totalOrcado)}</span>
+                    </div>
+                    <div className="flex justify-between font-bold">
+                      <span className="text-amber-600">Comprometido:</span>
+                      <span className="text-amber-600 font-mono">{formatCurrencyBR(summary.totalComprometido)}</span>
+                    </div>
+                    <div className="flex justify-between font-bold">
+                      <span className="text-blue-600">Pago:</span>
+                      <span className="text-blue-600 font-mono">{formatCurrencyBR(summary.totalDespesas)}</span>
+                    </div>
+                    <div className="flex justify-between font-bold border-t border-zinc-100 dark:border-zinc-800 pt-1.5">
+                      <span className="text-emerald-600">Disponível:</span>
+                      <span className="text-emerald-600 font-mono">{formatCurrencyBR(summary.totalDisponivel)}</span>
+                    </div>
+                  </div>
+
+                  <div className="w-full bg-zinc-100 dark:bg-zinc-800 h-2 rounded-full overflow-hidden mt-1">
+                    <div
+                      className="bg-blue-600 h-full rounded-full transition-all"
+                      style={{ width: `${summary.pctDespesasPagas}%` }}
+                    />
+                  </div>
+
+                  <button
+                    onClick={() => setActiveSubTab("orcamentos")}
+                    className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center justify-between pt-1"
+                  >
+                    <span>Ver orçamento completo</span>
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
