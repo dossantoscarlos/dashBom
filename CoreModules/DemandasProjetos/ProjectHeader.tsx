@@ -31,7 +31,7 @@ export function ProjectHeader({
   const tabs: Array<{ id: ProjectSubTab; label: string }> = [
     { id: "visao_geral", label: "Visão geral" },
     { id: "kanban", label: "Kanban" },
-    { id: "cronograma", label: "Cronograma" },
+    { id: "cronograma", label: "Cronograma (Gantt)" },
     { id: "orcamento", label: "Orçamento" },
     { id: "equipe", label: "Equipe" },
     { id: "arquivos", label: "Arquivos" },

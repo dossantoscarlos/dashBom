@@ -152,7 +152,7 @@ export function ProjectKanban({
             className="px-3.5 py-2 rounded-xl bg-white border border-[#E2E8F0] hover:bg-[#F8FAFC] text-[#10213D] font-bold text-xs transition shadow-2xs flex items-center gap-1.5 cursor-pointer"
           >
             <Calendar className="h-4 w-4 text-[#1264F3]" strokeWidth={2} />
-            <span>Visão cronograma</span>
+            <span>Visão Gantt & Cronograma</span>
           </button>
         </div>
 
