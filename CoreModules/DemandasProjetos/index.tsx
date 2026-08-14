@@ -633,7 +633,23 @@ export function DemandasProjetosPanel() {
     setRegisteredDemands((prev) => prev.map((d) => (d.id === updated.id ? updated : d)));
   };
 
-  // Validação estrita dos 5 critérios
+  // Validações estritas solicitadas pelo usuário:
+  // 1. Deve ter pelo menos 1 documento anexado
+  const hasValidFiles = Boolean(currentDemanda?.files && currentDemanda.files.length > 0);
+  // 2. Deve ter obrigatoriamente orçamento previsto (R$ > 0)
+  const hasValidBudget = Boolean(
+    (currentDemanda?.hasBudget || (currentDemanda?.estimatedBudget && currentDemanda.estimatedBudget > 0)) &&
+    (currentDemanda?.estimatedBudget || 0) > 0
+  );
+  // 3. Deve ter aprovação formal e homologada
+  const hasValidApproval = Boolean(
+    currentDemanda?.approvedBy &&
+    currentDemanda.approvedBy.trim().length > 0 &&
+    currentDemanda.decision === "Aprovada para Projeto" &&
+    currentDemanda.criteria?.approvedByResponsible
+  );
+
+  // Validação estrita dos critérios para conversão em projeto
   const canConvert =
     currentDemanda !== null &&
     currentDemanda.status === "Em análise" &&
@@ -641,16 +657,28 @@ export function DemandasProjetosPanel() {
     currentDemanda.criteria.needsTeam &&
     currentDemanda.criteria.hasTimeline &&
     currentDemanda.criteria.needsBudget &&
-    currentDemanda.criteria.approvedByResponsible &&
-    currentDemanda.decision === "Aprovada para Projeto";
+    hasValidFiles &&
+    hasValidBudget &&
+    hasValidApproval;
 
   // ── ETAPA 3: CONVERSÃO TRANSACIONAL EM PROJETO REAL (COM OS DADOS REAIS CADASTRADOS) ──
   const handleExecuteConversion = () => {
-    if (!currentDemanda || !canConvert) {
-      toast(
-        "A conversão exige que a demanda esteja 'Em análise', com os 5 critérios checados e decisão de aprovação.",
-        "error"
-      );
+    if (!currentDemanda) return;
+
+    if (!hasValidFiles) {
+      toast("A conversão em projeto exige obrigatoriamente ter pelo menos um documento anexado à demanda.", "error");
+      return;
+    }
+    if (!hasValidBudget) {
+      toast("A demanda NÃO pode virar projeto sem orçamento. Informe a dotação orçamentária (R$ > 0).", "error");
+      return;
+    }
+    if (!hasValidApproval) {
+      toast("A conversão em projeto exige a homologação e aprovação formal da autoridade responsável.", "error");
+      return;
+    }
+    if (!canConvert) {
+      toast("Preencha todos os critérios de viabilidade para poder converter em projeto.", "error");
       return;
     }
 
@@ -1741,8 +1769,55 @@ export function DemandasProjetosPanel() {
               )}
             </div>
 
-            {/* ETAPA 3: BOTÃO CONVERTER AGORA EM PROJETO */}
-            <div className="pt-2 flex flex-col gap-2">
+            {/* ETAPA 3: STATUS DOS REQUISITOS OBRIGATÓRIOS E BOTÃO CONVERTER EM PROJETO */}
+            <div className="pt-2 flex flex-col gap-3">
+              {/* Resumo dos 3 Requisitos Obrigatórios */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
+                <div
+                  className={`p-3 rounded-xl border flex items-center gap-2.5 ${
+                    hasValidFiles ? "bg-[#ECFDF5] border-[#A7F3D0] text-[#065F46]" : "bg-[#FEF2F2] border-[#FECACA] text-[#991B1B]"
+                  }`}
+                >
+                  {hasValidFiles ? <CheckCircle2 className="h-4 w-4 shrink-0 text-[#059669]" /> : <X className="h-4 w-4 shrink-0 text-[#DC2626]" />}
+                  <div>
+                    <span className="font-extrabold block text-xs">1. Documento Anexado</span>
+                    <span className="text-[10px] font-medium">
+                      {hasValidFiles ? `${currentDemanda.files.length} anexo(s) verificado(s)` : "Obrigatório ter documento"}
+                    </span>
+                  </div>
+                </div>
+
+                <div
+                  className={`p-3 rounded-xl border flex items-center gap-2.5 ${
+                    hasValidBudget ? "bg-[#ECFDF5] border-[#A7F3D0] text-[#065F46]" : "bg-[#FEF2F2] border-[#FECACA] text-[#991B1B]"
+                  }`}
+                >
+                  {hasValidBudget ? <CheckCircle2 className="h-4 w-4 shrink-0 text-[#059669]" /> : <X className="h-4 w-4 shrink-0 text-[#DC2626]" />}
+                  <div>
+                    <span className="font-extrabold block text-xs">2. Previsão Orçamentária</span>
+                    <span className="text-[10px] font-medium">
+                      {hasValidBudget
+                        ? `R$ ${(currentDemanda.estimatedBudget || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`
+                        : "Não pode virar projeto sem orçamento"}
+                    </span>
+                  </div>
+                </div>
+
+                <div
+                  className={`p-3 rounded-xl border flex items-center gap-2.5 ${
+                    hasValidApproval ? "bg-[#ECFDF5] border-[#A7F3D0] text-[#065F46]" : "bg-[#FEF2F2] border-[#FECACA] text-[#991B1B]"
+                  }`}
+                >
+                  {hasValidApproval ? <CheckCircle2 className="h-4 w-4 shrink-0 text-[#059669]" /> : <X className="h-4 w-4 shrink-0 text-[#DC2626]" />}
+                  <div>
+                    <span className="font-extrabold block text-xs">3. Homologação & Aprovação</span>
+                    <span className="text-[10px] font-medium">
+                      {hasValidApproval ? `Aprovado por: ${currentDemanda.approvedBy}` : "Pendente de homologação"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
               <button
                 type="button"
                 onClick={handleExecuteConversion}
@@ -1756,12 +1831,14 @@ export function DemandasProjetosPanel() {
                 {canConvert ? (
                   <>
                     <Sparkles className="h-5 w-5 text-white" />
-                    <span>3. CONVERTER AGORA EM PROJETO (DADOS REAIS CONSOLIDADOS)</span>
+                    <span>3. CONVERTER AGORA EM PROJETO (REQUISITOS ATENDIDOS)</span>
                   </>
                 ) : (
                   <>
                     <Lock className="h-4 w-4" strokeWidth={2} />
-                    <span>3. Converter em projeto (Bloqueado até homologar a aprovação da autoridade)</span>
+                    <span>
+                      3. Converter em projeto ({!hasValidFiles ? "Bloqueado: Falta Anexo" : !hasValidBudget ? "Bloqueado: Falta Orçamento" : !hasValidApproval ? "Bloqueado: Falta Aprovação" : "Bloqueado até atender critérios"})
+                    </span>
                   </>
                 )}
               </button>

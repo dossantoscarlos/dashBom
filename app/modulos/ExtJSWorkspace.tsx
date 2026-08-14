@@ -27,6 +27,7 @@ import {
   X,
   FolderKanban,
   Plus,
+  FileText,
 } from "lucide-react";
 
 // Import modules from CoreModules
@@ -83,7 +84,7 @@ type MenuItem = {
 const TAB_ICONS_MAP: Record<string, React.ReactNode> = {
   dashboard: <LayoutGrid className="h-3.5 w-3.5 text-[#008B63]" strokeWidth={2} />,
   demandas: <FolderKanban className="h-3.5 w-3.5 text-[#008B63]" strokeWidth={2} />,
-  novademanda: <Plus className="h-3.5 w-3.5 text-[#008B63]" strokeWidth={2} />,
+  novademanda: <FileText className="h-3.5 w-3.5 text-[#008B63]" strokeWidth={2} />,
   campanhas: <Megaphone className="h-3.5 w-3.5 text-[#1264F3]" strokeWidth={2} />,
   agenda: <CalendarDays className="h-3.5 w-3.5 text-[#1264F3]" strokeWidth={2} />,
   financeiro: <Wallet className="h-3.5 w-3.5 text-[#F59E0B]" strokeWidth={2} />,

@@ -456,7 +456,7 @@ export function AcompanhamentoDemandasProjetos({
               onClick={() => (onOpenNovaDemanda ? onOpenNovaDemanda() : setIsCreateModalOpen(true))}
               className="h-[44px] px-5 rounded-[7px] bg-[#0B5FEA] text-white text-xs font-semibold hover:bg-[#0952CD] transition-colors flex items-center gap-2 shadow-2xs cursor-pointer"
             >
-              <Plus className="h-4 w-4 text-white" strokeWidth={2.2} />
+              <FileText className="h-4 w-4 text-white" strokeWidth={2.2} />
               <span>Nova demanda</span>
             </button>
           </div>
