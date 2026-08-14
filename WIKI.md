@@ -9,14 +9,15 @@
 ## 📋 Sumário da Wiki
 
 1. **[Visão Geral do campanhaPRO](#1-visão-geral-do-campanhapro)**
-2. **[Arquitetura de CoreModules (/CoreModules)](#2-arquitetura-de-coremodules-coremodules)**
-3. **[Ciclo de Demandas, Pareceres Técnicos & Conversão em Projetos](#3-ciclo-de-demandas-pareceres-técnicos--conversão-em-projetos)**
-4. **[Integração Financeira: Orçamentos, Centros de Custo, Contratos e Contas Bancárias](#4-integração-financeira-orçamentos-centros-de-custo-contratos-e-contas-bancárias)**
-5. **[Agenda de Campanha & Integração com o Calendário Eleitoral TSE](#5-agenda-de-campanha--integração-com-o-calendário-eleitoral-tse)**
-6. **[Inteligência Eleitoral & Monitoramento TSE/TRE](#6-inteligência-eleitoral--monitoramento-tsetre)**
-7. **[Central de Notificações Push & Trilha de Auditoria](#7-central-de-notificações-push--trilha-de-auditoria)**
-8. **[Cronograma Executivo e Issues no GitHub](#8-cronograma-executivo-e-issues-no-github)**
-9. **[Guia de Instalação, Compilação e Deploy](#9-guia-de-instalação-compilação-e-deploy)**
+2. **[Documento de Arquitetura do Sistema (ARCHITECTURE.md)](#2-documento-de-arquitetura-do-sistema-architecturemd)**
+3. **[Arquitetura de CoreModules (/CoreModules)](#3-arquitetura-de-coremodules-coremodules)**
+4. **[Ciclo de Demandas, Pareceres Técnicos & Conversão em Projetos](#4-ciclo-de-demandas-pareceres-técnicos--conversão-em-projetos)**
+5. **[Integração Financeira: Orçamentos, Centros de Custo, Contratos e Contas Bancárias](#5-integração-financeira-orçamentos-centros-de-custo-contratos-e-contas-bancárias)**
+6. **[Agenda de Campanha & Integração com o Calendário Eleitoral TSE](#6-agenda-de-campanha--integração-com-o-calendário-eleitoral-tse)**
+7. **[Inteligência Eleitoral & Monitoramento TSE/TRE](#7-inteligência-eleitoral--monitoramento-tsetre)**
+8. **[Central de Notificações Push & Trilha de Auditoria](#8-central-de-notificações-push--trilha-de-auditoria)**
+9. **[Cronograma Executivo e Issues no GitHub](#9-cronograma-executivo-e-issues-no-github)**
+10. **[Guia de Instalação, Compilação e Deploy](#10-guia-de-instalação-compilação-e-deploy)**
 
 ---
 
@@ -31,7 +32,40 @@ O **campanhaPRO** é uma solução corporativa completa desenvolvida para gestã
 
 ---
 
-## 2. Arquitetura de CoreModules (`/CoreModules`)
+## 2. Documento de Arquitetura do Sistema (`ARCHITECTURE.md`)
+
+> 📖 **Consulte o documento completo em:** [`ARCHITECTURE.md`](file:///c:/Users/rodol/dashBom/ARCHITECTURE.md)
+
+### Diagrama Geral de Camadas:
+
+```text
+┌────────────────────────────────────────────────────────────────────────┐
+│               CAMADA DE APRESENTAÇÃO / WORKSPACE UI                    │
+│     ExtJSWorkspace • App Router Layout • Central de Notificações       │
+└───────────────────────────────────┬────────────────────────────────────┘
+                                    │
+┌───────────────────────────────────▼────────────────────────────────────┐
+│                    CAMADA DE NEGÓCIO: /CoreModules                     │
+│  DemandasProjetos • Financeiro • Agenda • Tre • Campaigns • Dashboard  │
+│  Autoridades • Locations • Parecer • Partners • Permissions • Profile  │
+│  RedeSocial • Regions • Reports • Surveys • Users • Voluntariado       │
+└───────────────────────────────────┬────────────────────────────────────┘
+                                    │
+┌───────────────────────────────────▼────────────────────────────────────┐
+│                  CAMADA DE DOMÍNIO & ESTADO: /lib                      │
+│     /lib/domain (Types) • /lib/data (Stores) • /lib/hooks (Hooks)      │
+└───────────────────────────────────┬────────────────────────────────────┘
+                                    │
+┌───────────────────────────────────▼────────────────────────────────────┐
+│               CAMADA DE API REST & BACKEND: /app/api                   │
+│   /api/financeiro • /api/demandas • /api/agenda • /api/tre/*           │
+│   /api/management-contexts/* • /api/notificacoes • /api/voluntarios    │
+└────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 3. Arquitetura de CoreModules (`/CoreModules`)
 
 O sistema segue o padrão arquitetural de módulos desacoplados e independentes:
 
@@ -59,7 +93,7 @@ CoreModules/
 
 ---
 
-## 3. Ciclo de Demandas, Pareceres Técnicos & Conversão em Projetos
+## 4. Ciclo de Demandas, Pareceres Técnicos & Conversão em Projetos
 
 > **Regra de Negócio Inviolável:** Nenhuma solicitação pode ser criada diretamente como projeto. O fluxo obrigatório é:
 > **Nova Demanda** ➔ **Análise Técnica (Parecer)** ➔ **Aprovação Formal** ➔ **Conversão em Projeto (`PRJ-XXXX`)**.
@@ -98,7 +132,7 @@ Em todas as tabelas, quadros Kanban, cronogramas, gavetas de detalhes e cabeçal
 
 ---
 
-## 4. Integração Financeira: Orçamentos, Centros de Custo, Contratos e Contas Bancárias
+## 5. Integração Financeira: Orçamentos, Centros de Custo, Contratos e Contas Bancárias
 
 O módulo **Financeiro** (`CoreModules/Financeiro/index.tsx`) integra de ponta a ponta a governança de recursos:
 
@@ -133,7 +167,7 @@ O módulo **Financeiro** (`CoreModules/Financeiro/index.tsx`) integra de ponta a
 
 ---
 
-## 5. Agenda de Campanha & Integração com o Calendário Eleitoral TSE
+## 6. Agenda de Campanha & Integração com o Calendário Eleitoral TSE
 
 O módulo **Agenda** (`CoreModules/Agenda/index.tsx`) une a rotina do candidato ao calendário oficial:
 
@@ -147,7 +181,7 @@ O módulo **Agenda** (`CoreModules/Agenda/index.tsx`) une a rotina do candidato 
 
 ---
 
-## 6. Inteligência Eleitoral & Monitoramento TSE/TRE
+## 7. Inteligência Eleitoral & Monitoramento TSE/TRE
 
 - **Monitor TSE ao Vivo:** Sincronização e monitoramento estatístico a cada 30 segundos.
 - **Consulta Paginada de Candidatos:**
@@ -157,14 +191,14 @@ O módulo **Agenda** (`CoreModules/Agenda/index.tsx`) une a rotina do candidato 
 
 ---
 
-## 7. Central de Notificações Push & Trilha de Auditoria
+## 8. Central de Notificações Push & Trilha de Auditoria
 
 - **Alertas em Tempo Real:** Consulta contínua com Web Push de desktop para prazos, novas demandas e atualizações do TSE.
 - **Trilha de Auditoria Imutável (*append-only*):** Registro de todas as operações (Criação, Edição, Aprovação, Pagamento, Conversão) com ator, data/hora e justificativa.
 
 ---
 
-## 8. Cronograma Executivo e Issues no GitHub
+## 9. Cronograma Executivo e Issues no GitHub
 
 O planejamento de entrega e etapas do projeto está publicado em:
 [https://github.com/dossantoscarlos/dashBom/issues](https://github.com/dossantoscarlos/dashBom/issues)
@@ -179,7 +213,7 @@ O planejamento de entrega e etapas do projeto está publicado em:
 
 ---
 
-## 9. Guia de Instalação, Compilação e Deploy
+## 10. Guia de Instalação, Compilação e Deploy
 
 ```bash
 # 1. Clonar o repositório
