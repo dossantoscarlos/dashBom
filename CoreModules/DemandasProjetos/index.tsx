@@ -77,6 +77,7 @@ import {
   Eye,
   Download,
   Wallet,
+  Printer,
 } from "lucide-react";
 
 
@@ -483,20 +484,93 @@ export function DemandasProjetosPanel() {
     toast("Dados demonstrativos do Projeto PRJ-0104 carregados!");
   };
 
-  // ── ETAPA 2: ENCAMINHAR DEMANDA PARA "EM ANÁLISE" ──
+  // Emissão automatizada do Parecer Técnico Circunstanciado com Escopo, Documentos e Orçamento
+  const generateConsolidatedTechnicalReport = (demanda: DemandaItem) => {
+    const docsList =
+      demanda.files && demanda.files.length > 0
+        ? demanda.files.map((f, i) => `   ${i + 1}. [DOCUMENTO ANEXO] ${f}`).join("\n")
+        : "   1. [MEMORIAL PRELIMINAR] Levantamento e diagnóstico inicial registrado digitalmente.";
+
+    const budgetFormatted =
+      demanda.hasBudget || (demanda.estimatedBudget && demanda.estimatedBudget > 0)
+        ? `R$ ${(demanda.estimatedBudget || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })} (Fonte: ${demanda.budgetSource || "Dotação Orçamentária Geral / Fundo Municipal"})`
+        : "Sem dotação orçamentária prévia vinculada (Recursos a serem alocados na conversão do projeto)";
+
+    return `PARECER TÉCNICO CIRCUNSTANCIADO DE VIABILIDADE
+Nº REGISTRO: ${demanda.code} | DATA DE EMISSÃO: ${new Date().toLocaleDateString("pt-BR")}
+
+1. DESCRIÇÃO E ESCOPO DA DEMANDA:
+- Título da Solicitação: ${demanda.title}
+- Solicitante: ${demanda.applicantName || "Cidadão / Entidade Solicitante"} (Contato: ${demanda.applicantPhone || "Não informado"} | ${demanda.applicantEmail || "Não informado"})
+- Localização: ${demanda.address || "Endereço registrado"}, ${demanda.bairro || "Bairro"} — ${demanda.municipio || "São Paulo / SP"} (CEP: ${demanda.cep || "Não informado"})
+- Eixo Temático: ${demanda.category} | Prioridade: ${demanda.priority}
+- Objeto Detalhado: ${demanda.description}
+
+2. DOCUMENTAÇÃO TÉCNICA E ANEXOS ANALISADOS:
+${docsList}
+- Diagnóstico Documental: Peças técnicas conferidas e em conformidade com as diretrizes regulatórias.
+
+3. PREVISÃO E DOTAÇÃO ORÇAMENTÁRIA:
+- Dotação Estimada: ${budgetFormatted}
+- Viabilidade Econômica: Demanda compatível com a capacidade executiva e planejamento de investimentos.
+
+4. CONCLUSÃO TÉCNICA E RECOMENDAÇÃO:
+A solicitação atende aos critérios de interesse público, consistência técnica e viabilidade operacional. Recomendamos a HOMOLOGAÇÃO e CONVERSÃO DA DEMANDA EM PROJETO PÚBLICO para início imediato das entregas e cronograma de trabalho.`;
+  };
+
+  // ── ETAPA 2: INICIAR ANÁLISE TÉCNICA E EMITIR PARECER AUTOMÁTICO ──
   const handleAdvanceToAnalysis = () => {
     if (!currentDemanda) return;
-    const updated = { ...currentDemanda, status: "Em análise" as const };
+    const reportText = generateConsolidatedTechnicalReport(currentDemanda);
+    setTechnicalReport(reportText);
+
+    const updated: DemandaItem = {
+      ...currentDemanda,
+      status: "Em análise",
+      technicalReport: reportText,
+      criteria: {
+        multDeliveries: true,
+        needsTeam: true,
+        hasTimeline: true,
+        needsBudget: true,
+        approvedByResponsible: false, // Aguarda a etapa seguinte: aprovação formal da autoridade
+      },
+    };
     setCurrentDemanda(updated);
     setRegisteredDemands((prev) => prev.map((d) => (d.id === updated.id ? updated : d)));
-    toast(`Demanda ${updated.code} encaminhada para 'Em análise'. Checklist de avaliação liberado!`);
+    toast(`Análise Técnica iniciada! Parecer Técnico com documentações e orçamento gerado com sucesso.`);
+  };
+
+  // ── ETAPA 3: SOLICITAR E HOMOLOGAR APROVAÇÃO FORMAL ──
+  const handleApproveDemand = () => {
+    if (!currentDemanda) return;
+    const finalApprover = approverName.trim() || currentDemanda.responsible || "Ana Martins";
+    const finalRole = approverRole.trim() || "Coordenadora de Projetos / Gestora Técnica";
+    const approvalDate = new Date().toLocaleString("pt-BR");
+
+    const updated: DemandaItem = {
+      ...currentDemanda,
+      decision: "Aprovada para Projeto",
+      technicalReport: technicalReport || generateConsolidatedTechnicalReport(currentDemanda),
+      approvedBy: finalApprover,
+      approvalRole: finalRole,
+      approvalDate,
+      criteria: {
+        ...currentDemanda.criteria,
+        approvedByResponsible: true,
+      },
+    };
+
+    setCurrentDemanda(updated);
+    setRegisteredDemands((prev) => prev.map((d) => (d.id === updated.id ? updated : d)));
+    toast(`Demanda ${updated.code} homologada e aprovada por ${finalApprover}! Liberação para conversão em projeto concluída.`);
   };
 
   // Alterna Critérios de Conversão na Demanda Real
   const handleToggleCriterion = (key: keyof DemandaItem["criteria"]) => {
     if (!currentDemanda) return;
     if (currentDemanda.status !== "Em análise") {
-      toast("Encaminhe a demanda para a etapa 'Em análise' antes de avaliar os critérios.", "error");
+      toast("Inicie a Análise Técnica antes de avaliar os critérios.", "error");
       return;
     }
 
@@ -522,6 +596,10 @@ export function DemandasProjetosPanel() {
       approvedBy: isApproved ? (approverName || currentDemanda.responsible || "Ana Martins") : currentDemanda.approvedBy,
       approvalDate: isApproved ? new Date().toLocaleString("pt-BR") : currentDemanda.approvalDate,
       approvalRole: isApproved ? (approverRole || "Coordenadora de Projetos / Gestora Técnica") : currentDemanda.approvalRole,
+      criteria: {
+        ...currentDemanda.criteria,
+        approvedByResponsible: isApproved ? true : currentDemanda.criteria.approvedByResponsible,
+      },
     };
     setCurrentDemanda(updated);
     setRegisteredDemands((prev) => prev.map((d) => (d.id === updated.id ? updated : d)));
@@ -1256,50 +1334,143 @@ export function DemandasProjetosPanel() {
                 </h1>
               </div>
               <p className="text-xs text-[#64748B] mt-1">
-                Análise técnica e decisão de conversão transacional para o projeto.
+                Fluxo de emissão do parecer técnico consolidado, aprovação institucional e conversão em projeto.
               </p>
             </div>
 
-            {currentDemanda.status === "Recebida" && (
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* BOTÃO IMPRIMIR/EXPORTAR PARECER */}
               <button
                 type="button"
-                onClick={handleAdvanceToAnalysis}
-                className="h-10 px-5 rounded-xl bg-[#F59E0B] hover:bg-[#D97706] text-white font-black text-xs transition shadow-xs flex items-center gap-2 cursor-pointer shrink-0"
+                onClick={() => window.print()}
+                className="h-10 px-4 rounded-xl bg-white border border-[#DCE2EA] hover:bg-[#F8FAFC] text-[#0F172A] font-bold text-xs transition flex items-center gap-1.5 cursor-pointer shadow-2xs"
               >
-                <span>Encaminhar para "Em análise"</span>
-                <ArrowRight className="h-4 w-4" strokeWidth={2.5} />
+                <Printer className="h-4 w-4 text-[#1264F3]" />
+                <span>Imprimir Parecer</span>
               </button>
-            )}
+
+              {currentDemanda.status === "Recebida" ? (
+                <button
+                  type="button"
+                  onClick={handleAdvanceToAnalysis}
+                  className="h-10 px-5 rounded-xl bg-[#008B63] hover:bg-[#007553] text-white font-black text-xs transition shadow-md flex items-center gap-2 cursor-pointer animate-pulse shrink-0"
+                >
+                  <Sparkles className="h-4 w-4" />
+                  <span>INICIAR ANÁLISE TÉCNICA E EMITIR PARECER</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const r = generateConsolidatedTechnicalReport(currentDemanda);
+                    setTechnicalReport(r);
+                    toast("Parecer Técnico reemitido e atualizado com a descrição, documentações e orçamento!");
+                  }}
+                  className="h-10 px-4 rounded-xl bg-[#EFF6FF] text-[#1264F3] hover:bg-[#DBEAFE] font-bold text-xs transition flex items-center gap-1.5 cursor-pointer"
+                >
+                  <RefreshCw className="h-3.5 w-3.5" />
+                  <span>Reemitir Parecer Consolidado</span>
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* BARRA DE ETAPAS VISUAL DO FLUXO */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="p-3.5 bg-white border border-[#E2E8F0] rounded-xl flex items-center gap-3">
+              <div className="h-8 w-8 rounded-full bg-[#EAF2FF] text-[#1264F3] font-black text-xs flex items-center justify-center shrink-0">
+                1
+              </div>
+              <div>
+                <span className="font-extrabold text-[#10213D] text-xs block">1. Parecer Técnico Emitido</span>
+                <span className="text-[10px] text-[#64748B]">Escopo, Documentos e Orçamento</span>
+              </div>
+            </div>
+
+            <div
+              className={`p-3.5 border rounded-xl flex items-center gap-3 ${
+                currentDemanda.approvedBy
+                  ? "bg-[#ECFDF5] border-[#A7F3D0]"
+                  : "bg-white border-[#E2E8F0]"
+              }`}
+            >
+              <div
+                className={`h-8 w-8 rounded-full font-black text-xs flex items-center justify-center shrink-0 ${
+                  currentDemanda.approvedBy
+                    ? "bg-[#059669] text-white"
+                    : "bg-[#F3EAFF] text-[#7C3AED]"
+                }`}
+              >
+                {currentDemanda.approvedBy ? "✓" : "2"}
+              </div>
+              <div>
+                <span className="font-extrabold text-[#10213D] text-xs block">2. Homologação & Aprovação</span>
+                <span className="text-[10px] text-[#64748B]">
+                  {currentDemanda.approvedBy ? `Aprovado por ${currentDemanda.approvedBy}` : "Aguardando homologação"}
+                </span>
+              </div>
+            </div>
+
+            <div
+              className={`p-3.5 border rounded-xl flex items-center gap-3 ${
+                canConvert ? "bg-[#F0FDF4] border-[#86EFAC]" : "bg-[#F8FAFC] border-[#E2E8F0]"
+              }`}
+            >
+              <div
+                className={`h-8 w-8 rounded-full font-black text-xs flex items-center justify-center shrink-0 ${
+                  canConvert ? "bg-[#008B63] text-white" : "bg-[#E2E8F0] text-[#94A3B8]"
+                }`}
+              >
+                3
+              </div>
+              <div>
+                <span className="font-extrabold text-[#10213D] text-xs block">3. Conversão em Projeto</span>
+                <span className="text-[10px] text-[#64748B]">
+                  {canConvert ? "Pronto para conversão" : "Bloqueado até aprovação"}
+                </span>
+              </div>
+            </div>
           </div>
 
           <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6 shadow-2xs flex flex-col gap-6">
             <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-3">
-              <h3 className="text-sm font-extrabold text-[#10213D] uppercase tracking-wider">
-                Parecer Técnico da Solicitação Real
-              </h3>
+              <div className="flex items-center gap-2">
+                <FileText className="h-5 w-5 text-[#1264F3]" />
+                <h3 className="text-sm font-extrabold text-[#10213D] uppercase tracking-wider">
+                  Parecer Técnico Circunstanciado de Viabilidade
+                </h3>
+              </div>
               <span className="text-xs font-extrabold px-3 py-1 rounded-lg border bg-[#EAF2FF] text-[#1264F3] border-[#1264F3]/30">
                 Status: {currentDemanda.status}
               </span>
             </div>
 
+            {/* DOCUMENTO OFICIAL DE PARECER TÉCNICO */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-bold text-[#10213D]">Parecer técnico da análise *</label>
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-[#10213D]">
+                  Conteúdo do Parecer Oficial Consolidado (Editável)
+                </label>
+                <span className="text-[10px] font-bold text-[#64748B]">
+                  Emitido automaticamente a partir da descrição, anexos e orçamento
+                </span>
+              </div>
               <textarea
-                rows={3}
+                rows={9}
                 value={technicalReport}
                 onChange={(e) => setTechnicalReport(e.target.value)}
-                placeholder="Insira o parecer técnico com a justificativa de viabilidade da demanda..."
-                className="p-3.5 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] text-xs font-medium text-[#10213D] focus:bg-white focus:border-[#1264F3] focus:outline-none transition resize-none"
+                placeholder="Clique em 'Iniciar Análise Técnica' acima para emitir o parecer consolidado..."
+                className="p-4 rounded-xl border border-[#DCE2EA] bg-[#F8FAFC] text-xs font-mono font-medium text-[#10213D] focus:bg-white focus:border-[#1264F3] focus:outline-hidden transition resize-y leading-relaxed"
               />
             </div>
 
-            {/* SEÇÃO DE DOCUMENTOS ANEXADOS DA DEMANDA (SE HOUVER) */}
+            {/* SEÇÃO DE DOCUMENTOS ANEXADOS DA DEMANDA */}
             <div className="border border-[#E2E8F0] rounded-2xl p-5 flex flex-col gap-4 bg-[#F8FAFC]">
               <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-2.5">
                 <div className="flex items-center gap-2">
                   <FileText className="h-4 w-4 text-[#1264F3]" />
                   <h4 className="text-xs font-extrabold text-[#10213D] uppercase tracking-wider">
-                    Documentos e Anexos da Demanda
+                    Documentações e Peças Técnicas Anexadas
                   </h4>
                 </div>
                 <span className="text-[11px] font-bold text-[#64748B]">
@@ -1320,7 +1491,7 @@ export function DemandasProjetosPanel() {
                         <FileText className="h-4 w-4 text-[#1264F3] shrink-0" />
                         <div className="truncate">
                           <span className="font-extrabold text-[#10213D] block truncate">{file}</span>
-                          <span className="text-[10px] text-[#64748B] block">Documento Técnico da Demanda</span>
+                          <span className="text-[10px] text-[#64748B] block">Peça Técnica Validada</span>
                         </div>
                       </div>
 
@@ -1358,7 +1529,7 @@ export function DemandasProjetosPanel() {
                 <div className="flex items-center gap-2">
                   <Wallet className="h-4 w-4 text-[#008B63]" />
                   <h4 className="text-xs font-extrabold text-[#10213D] uppercase tracking-wider">
-                    Previsão e Dotação Orçamentária
+                    Diagnóstico Orçamentário e Financeiro
                   </h4>
                 </div>
                 <span
@@ -1393,13 +1564,28 @@ export function DemandasProjetosPanel() {
               </div>
             </div>
 
-            {/* Checklist dos 5 Critérios */}
-            <div className="border border-[#E2E8F0] rounded-2xl p-5 flex flex-col gap-4 bg-[#FAF5FF]/30">
-              <h4 className="text-xs font-extrabold text-[#10213D] uppercase tracking-wider border-b border-[#E2E8F0] pb-2">
-                Checklist dos 5 Critérios de Conversão
-              </h4>
+            {/* SEÇÃO 2: SOLICITAÇÃO E HOMOLOGAÇÃO DE APROVAÇÃO */}
+            <div className="border border-[#E2E8F0] rounded-2xl p-5 flex flex-col gap-4 bg-[#FAF5FF]/40">
+              <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-2.5">
+                <div className="flex items-center gap-2">
+                  <UserCheck className="h-5 w-5 text-[#7C3AED]" />
+                  <h4 className="text-xs font-extrabold text-[#10213D] uppercase tracking-wider">
+                    Aprovação e Homologação da Autoridade
+                  </h4>
+                </div>
+                <span
+                  className={`px-2.5 py-0.5 rounded text-[10px] font-extrabold uppercase border ${
+                    currentDemanda.approvedBy
+                      ? "bg-[#ECFDF5] text-[#059669] border-[#A7F3D0]"
+                      : "bg-[#FFFBEB] text-[#D97706] border-[#FDE68A]"
+                  }`}
+                >
+                  {currentDemanda.approvedBy ? "Homologada & Aprovada" : "Aguardando Aprovação Formal"}
+                </span>
+              </div>
 
-              <div className="grid gap-3 sm:grid-cols-2 text-xs">
+              {/* Checklist dos Critérios Avaliados */}
+              <div className="grid gap-2.5 sm:grid-cols-2 text-xs">
                 <label className="flex items-start gap-2.5 p-3 rounded-xl border border-[#E2E8F0] bg-white cursor-pointer hover:bg-[#F3EAFF]/40 transition">
                   <input
                     type="checkbox"
@@ -1443,22 +1629,9 @@ export function DemandasProjetosPanel() {
                   />
                   <span className="font-extrabold text-[#10213D]">4. Exige orçamento ou recursos específicos</span>
                 </label>
-
-                <label className="flex items-start gap-2.5 p-3 rounded-xl border border-[#E2E8F0] bg-white cursor-pointer hover:bg-[#F3EAFF]/40 transition sm:col-span-2">
-                  <input
-                    type="checkbox"
-                    disabled={currentDemanda.status !== "Em análise"}
-                    checked={currentDemanda.criteria.approvedByResponsible}
-                    onChange={() => handleToggleCriterion("approvedByResponsible")}
-                    className="h-4 w-4 rounded border-[#E2E8F0] text-[#008B63] focus:ring-[#00A978] cursor-pointer mt-0.5"
-                  />
-                  <span className="font-extrabold text-[#10213D]">
-                    5. Conversão formalmente validada pelo responsável ({currentDemanda.responsible})
-                  </span>
-                </label>
               </div>
 
-              {/* SEÇÃO DE APROVAÇÃO & IDENTIFICAÇÃO DO APROVADOR */}
+              {/* IDENTIFICAÇÃO DO APROVADOR E BOTÃO DE APROVAÇÃO FORMAL */}
               <div className="grid gap-4 sm:grid-cols-2 pt-3 border-t border-[#E2E8F0]">
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs font-bold text-[#10213D]">
@@ -1482,51 +1655,48 @@ export function DemandasProjetosPanel() {
                     type="text"
                     value={approverRole}
                     onChange={(e) => setApproverRole(e.target.value)}
-                    placeholder="Ex.: Coordenadora de Projetos"
+                    placeholder="Ex.: Coordenadora de Projetos / Gestora Técnica"
                     disabled={currentDemanda.status !== "Em análise"}
                     className="h-10 px-3.5 rounded-xl border border-[#E2E8F0] bg-white text-xs font-medium text-[#10213D] focus:border-[#1264F3] focus:outline-hidden disabled:bg-[#F8FAFC]"
                   />
                 </div>
               </div>
 
-              {/* Seletor de Decisão Formal */}
-              <div className="flex flex-col gap-1.5 pt-2 border-t border-[#E2E8F0]">
-                <label className="text-xs font-bold text-[#10213D]">Decisão formal da análise *</label>
-                <select
+              {/* BOTÃO SOLICITAR E CONCEDER APROVAÇÃO FORMAL */}
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={handleApproveDemand}
                   disabled={currentDemanda.status !== "Em análise"}
-                  value={currentDemanda.decision || ""}
-                  onChange={(e) => handleSetDecision(e.target.value)}
-                  className="h-10 px-3.5 rounded-xl border border-[#E2E8F0] bg-white text-xs font-extrabold text-[#10213D] focus:border-[#1264F3] focus:outline-hidden cursor-pointer disabled:bg-[#F8FAFC]"
+                  className="w-full h-11 rounded-xl bg-[#7C3AED] hover:bg-[#6D28D9] text-white font-extrabold text-xs transition shadow-xs flex items-center justify-center gap-2 cursor-pointer disabled:bg-[#E2E8F0] disabled:text-[#94A3B8] disabled:cursor-not-allowed"
                 >
-                  <option value="">Aguardando decisão formal...</option>
-                  <option value="Aprovada para Projeto">✓ Aprovada para Conversão em Projeto</option>
-                  <option value="Em andamento sem projeto">● Manter como Demanda Em Andamento</option>
-                  <option value="Recusada">✕ Recusada</option>
-                </select>
+                  <CheckCircle2 className="h-4 w-4" />
+                  <span>HOMOLOGAR E APROVAR DEMANDA PARA CONVERSÃO EM PROJETO</span>
+                </button>
               </div>
 
-              {/* CARIMBO DE APROVAÇÃO SE APROVADA */}
+              {/* CARIMBO DE APROVAÇÃO OFICIAL */}
               {currentDemanda.approvedBy && (
-                <div className="p-3 bg-[#ECFDF5] border border-[#A7F3D0] rounded-xl flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-[#059669] shrink-0" />
+                <div className="p-3.5 bg-[#ECFDF5] border border-[#A7F3D0] rounded-xl flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-2.5">
+                    <CheckCircle2 className="h-5 w-5 text-[#059669] shrink-0" />
                     <div>
-                      <span className="font-extrabold text-[#065F46] block">
-                        Aprovada por: {currentDemanda.approvedBy} ({currentDemanda.approvalRole || "Gestor Responsável"})
+                      <span className="font-extrabold text-[#065F46] block text-xs">
+                        DEMANDA FORMALMENTE APROVADA POR: {currentDemanda.approvedBy} ({currentDemanda.approvalRole || "Gestor Responsável"})
                       </span>
                       <span className="text-[10px] text-[#047857]">
-                        Homologada em: {currentDemanda.approvalDate || "Hoje"}
+                        Homologada em: {currentDemanda.approvalDate || "Hoje"} • Termo de Viabilidade Técnica e Orçamentária Válido
                       </span>
                     </div>
                   </div>
-                  <span className="px-2 py-0.5 bg-[#059669] text-white rounded text-[10px] font-black uppercase">
+                  <span className="px-2.5 py-1 bg-[#059669] text-white rounded-lg text-[10px] font-black uppercase">
                     Aprovado
                   </span>
                 </div>
               )}
             </div>
 
-            {/* BOTÃO CONVERTER AGORA EM PROJETO */}
+            {/* ETAPA 3: BOTÃO CONVERTER AGORA EM PROJETO */}
             <div className="pt-2 flex flex-col gap-2">
               <button
                 type="button"
@@ -1541,12 +1711,12 @@ export function DemandasProjetosPanel() {
                 {canConvert ? (
                   <>
                     <Sparkles className="h-5 w-5 text-white" />
-                    <span>CONVERTER AGORA EM PROJETO (DADOS REAIS)</span>
+                    <span>3. CONVERTER AGORA EM PROJETO (DADOS REAIS CONSOLIDADOS)</span>
                   </>
                 ) : (
                   <>
                     <Lock className="h-4 w-4" strokeWidth={2} />
-                    <span>Converter em projeto (Bloqueado até preencher critérios)</span>
+                    <span>3. Converter em projeto (Bloqueado até homologar a aprovação da autoridade)</span>
                   </>
                 )}
               </button>
