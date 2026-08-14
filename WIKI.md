@@ -83,11 +83,18 @@ CoreModules/
 3. **Conversão Transacional:** Confirmação da conversão gerando código `PRJ-XXXX` e sincronizando a despesa inicial no módulo Financeiro.
 4. **Visão Geral:** Indicadores do projeto, prazos e percentuais de conclusão.
 5. **Quadro Kanban:** 5 colunas de status (*A Fazer*, *Em Análise*, *Em Execução*, *Validação*, *Concluído*).
-6. **Cronograma (Gantt):** Visualização de marcos e dependências.
+6. **Cronograma (Gantt):** Visualização em Diagrama de Gantt com timeline interativa, barras de progresso, marcos e indicador temporal "Hoje".
 7. **Orçamento & Finanças:** Lançamento de despesas e conciliação bancária do projeto.
 8. **Equipe & RACI:** Alocação de recursos e matriz de responsabilidade.
 9. **Arquivos & Versões:** Árvore de documentos e versionamento.
 10. **Histórico & Auditoria:** Rastreabilidade completa de todas as alterações.
+
+### 🔗 Navegação Cruzada e Rastreabilidade por Código (`DEM-xxxx` e `PRJ-xxxx`):
+Em todas as tabelas, quadros Kanban, cronogramas, gavetas de detalhes e cabeçalhos do sistema:
+- **Clique no Código `DEM-xxxx`:** Navega diretamente para a tela de **Análise Técnica / Parecer Circunstanciado** daquela demanda específica.
+- **Clique no Código `PRJ-xxxx`:** Navega diretamente para a **Visão Geral do Projeto** ativo correspondente (`mainMode = "projeto_ativo"`).
+- **Banner de Vínculo no Cabeçalho do Projeto:** Exibe o código da demanda de origem (`DEM-xxxx`) com link direto para retornar à análise da demanda.
+- **Gaveta / Modal de Detalhes:** Inclui atalhos com botão primário para transição imediata para a tela completa da demanda ou projeto.
 
 ---
 

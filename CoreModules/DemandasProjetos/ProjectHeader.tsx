@@ -60,15 +60,19 @@ export function ProjectHeader({
             {project.title}
           </h1>
 
-          <span className="font-mono text-xs font-black text-[#10213D] bg-[#F1F5F9] px-2.5 py-0.5 rounded-md border border-[#E2E8F0]">
+          <span
+            onClick={() => onTabChange("visao_geral")}
+            className="font-mono text-xs font-black text-[#10213D] dark:text-zinc-100 bg-[#F1F5F9] dark:bg-zinc-800 px-2.5 py-0.5 rounded-md border border-[#E2E8F0] dark:border-zinc-700 cursor-pointer hover:border-[#1264F3] hover:text-[#1264F3] transition"
+            title="Ir para Visão Geral do Projeto"
+          >
             {project.code}
           </span>
 
-          <span className="bg-[#EAF2FF] text-[#1264F3] border border-[#1264F3]/30 px-3 py-0.5 rounded-md text-xs font-black uppercase tracking-wider">
+          <span className="bg-[#EAF2FF] dark:bg-blue-950/50 text-[#1264F3] dark:text-blue-300 border border-[#1264F3]/30 px-3 py-0.5 rounded-md text-xs font-black uppercase tracking-wider">
             {project.status}
           </span>
 
-          <span className="bg-[#FEECEC] text-[#EF4444] border border-[#EF4444]/30 px-3 py-0.5 rounded-md text-xs font-black uppercase tracking-wider">
+          <span className="bg-[#FEECEC] dark:bg-red-950/50 text-[#EF4444] dark:text-red-300 border border-[#EF4444]/30 px-3 py-0.5 rounded-md text-xs font-black uppercase tracking-wider">
             Prioridade {project.priority.toLowerCase()}
           </span>
         </div>
@@ -79,12 +83,20 @@ export function ProjectHeader({
       </div>
 
       {/* BANNER DE ORIGEM DA DEMANDA */}
-      <div className="bg-[#EAF2FF] border border-[#1264F3]/30 p-3.5 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xs">
-        <div className="flex items-center gap-2.5 text-xs text-[#1264F3] font-bold">
+      <div className="bg-[#EAF2FF] dark:bg-blue-950/40 border border-[#1264F3]/30 p-3.5 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xs">
+        <div className="flex items-center gap-2.5 text-xs text-[#1264F3] dark:text-blue-300 font-bold">
           <Link2 className="h-4 w-4 shrink-0" strokeWidth={2.2} />
           <span>
             Projeto originado da demanda{" "}
-            <strong className="font-mono font-black">{project.demandaCode}</strong> — análise concluída e conversão aprovada.
+            <button
+              type="button"
+              onClick={onOpenOriginalDemand}
+              className="font-mono font-black underline hover:text-[#008B63] transition cursor-pointer"
+              title="Clique para ir para a Análise Técnica da Demanda"
+            >
+              {project.demandaCode}
+            </button>{" "}
+            — análise concluída e conversão aprovada.
           </span>
         </div>
 

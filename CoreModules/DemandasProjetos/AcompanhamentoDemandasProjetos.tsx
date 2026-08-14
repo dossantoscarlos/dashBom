@@ -35,6 +35,7 @@ import {
   Download,
   Printer,
   Wallet,
+  ExternalLink,
 } from "lucide-react";
 
 
@@ -140,6 +141,27 @@ export function AcompanhamentoDemandasProjetos({
   const [exportMessage, setExportMessage] = useState<string | null>(null);
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [showPdfModal, setShowPdfModal] = useState(false);
+
+  // NAVEGAÇÃO DIRETA PARA A TELA CORRESPONDENTE AO CLICAR NO CÓDIGO (DEM-XXXX OU PRJ-XXXX)
+  const handleOpenItem = (item: any) => {
+    if (!item) return;
+    const code = typeof item === "string" ? item : (item.code || item.workItemCode || item.targetCode || "");
+    const isProject = item.type === "projeto" || (code && String(code).toUpperCase().startsWith("PRJ-"));
+    const normalizedItem = typeof item === "string" ? { code: item, id: item, title: item } : item;
+    if (isProject) {
+      if (onOpenProjetoAtivo) {
+        onOpenProjetoAtivo(normalizedItem);
+      } else {
+        setSelectedDetailItem(normalizedItem);
+      }
+    } else {
+      if (onOpenAnaliseDemanda) {
+        onOpenAnaliseDemanda(normalizedItem);
+      } else {
+        setSelectedDetailItem(normalizedItem);
+      }
+    }
+  };
 
   // DOCUMENTOS TÉCNICOS ANEXADOS REAIS
   const [attachedDocsMap, setAttachedDocsMap] = useState<
@@ -813,9 +835,9 @@ export function AcompanhamentoDemandasProjetos({
                       ) : workItemsQuery.data?.items.map((item) => (
                         <tr key={item.id} className="h-[46px] hover:bg-[#F8FAFC] transition-colors border-b border-[#F1F5F9]">
                           <td className="py-2 px-1 text-center w-6"><input type="checkbox" checked={selectedItems.includes(item.id)} onChange={() => handleSelectItem(item.id)} className="rounded-xs border-[#DCE2EA] text-[#0B5FEA] focus:ring-[#0B5FEA]" /></td>
-                          <td className="py-2 px-1.5 font-mono font-bold text-[#0B5FEA] text-[11px] cursor-pointer hover:underline whitespace-nowrap" onClick={() => { if (item.type === "projeto" && onOpenProjetoAtivo) { onOpenProjetoAtivo(item); } else if (onOpenAnaliseDemanda) { onOpenAnaliseDemanda(item); } else { setSelectedDetailItem(item); } }}>{item.code}</td>
+                          <td className="py-2 px-1.5 font-mono font-bold text-[#0B5FEA] text-[11px] cursor-pointer hover:underline whitespace-nowrap" onClick={() => handleOpenItem(item)} title={item.type === "projeto" ? "Abrir Tela do Projeto" : "Abrir Análise Técnica da Demanda"}>{item.code}</td>
                           <td className="py-2 px-1.5">
-                            <div className="font-semibold text-[#0F172A] text-[11px] truncate max-w-[170px] cursor-pointer hover:text-[#0B5FEA]" onClick={() => setSelectedDetailItem(item)} title={item.title}>{item.title}</div>
+                            <div className="font-semibold text-[#0F172A] text-[11px] truncate max-w-[170px] cursor-pointer hover:text-[#0B5FEA]" onClick={() => handleOpenItem(item)} title={item.title}>{item.title}</div>
                             <div className="flex items-center gap-1 mt-0.5 flex-wrap">
                               {item.project && <span className="text-[9px] text-[#475569] flex items-center gap-0.5 truncate max-w-[130px]"><Folder className="h-2.5 w-2.5 text-[#0B5FEA] shrink-0" /> {item.project.name}</span>}
                               {item.files && item.files.length > 0 && <span className="text-[9px] font-bold text-[#0B5FEA] bg-[#EFF6FF] px-1 py-0.2 rounded border border-[#BFDBFE]">📎 {item.files.length} doc(s)</span>}
@@ -830,7 +852,7 @@ export function AcompanhamentoDemandasProjetos({
                           <td className="py-2 px-1 text-center"><span className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold text-white shadow-2xs whitespace-nowrap" style={{ backgroundColor: STATUS_COLORS[item.status.code] || "#64748B" }}>{item.status.label}</span></td>
                           <td className="py-2 px-1 text-center"><div className="w-12 bg-[#E2E8F0] rounded-full h-1.5 overflow-hidden mx-auto"><div className="bg-[#059669] h-1.5 rounded-full" style={{ width: `${item.progress.percentage}%` }} /></div><span className="text-[9px] text-[#475569] font-bold block mt-0.5">{item.progress.percentage}%</span></td>
                           <td className="py-2 px-1 text-center whitespace-nowrap"><span className={`text-[10px] font-semibold block ${item.overdue ? "text-[#DC2626] font-bold" : "text-[#475569]"}`}>{item.deadline ? new Date(item.deadline).toLocaleDateString("pt-BR") : "A definir"}</span></td>
-                          <td className="py-2 px-1 text-center"><button type="button" onClick={() => setSelectedDetailItem(item)} className="p-1 text-[#475569] hover:text-[#0B5FEA] hover:bg-[#EFF6FF] rounded-md transition-colors" title="Ver detalhes"><Eye className="h-4 w-4" /></button></td>
+                          <td className="py-2 px-1 text-center"><button type="button" onClick={() => handleOpenItem(item)} className="p-1 text-[#475569] hover:text-[#0B5FEA] hover:bg-[#EFF6FF] rounded-md transition-colors" title="Abrir tela correspondente"><Eye className="h-4 w-4" /></button></td>
                         </tr>
                       ))}
                     </tbody>
@@ -858,7 +880,8 @@ export function AcompanhamentoDemandasProjetos({
                   <div className="flex items-center gap-4">
                     <div className="h-[130px] w-[130px] relative shrink-0">
                       <ResponsiveContainer width="100%" height="100%">
-                        <PieChart><Pie data={distributionQuery.data?.items} cx="50%" cy="50%" innerRadius={35} outerRadius={55} paddingAngle={3} dataKey="count">{distributionQuery.data?.items.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.colorToken} />)}</Pie><RechartsTooltip /></PieChart>
+                        <PieChart>
+                          <Pie data={distributionQuery.data?.items} cx="50%" cy="50%" innerRadius={35} outerRadius={55} paddingAngle={3} dataKey="count">{distributionQuery.data?.items.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.colorToken} />)}</Pie><RechartsTooltip /></PieChart>
                       </ResponsiveContainer>
                     </div>
                     <div className="space-y-1.5 flex-1 min-w-0 text-[11px]">
@@ -872,7 +895,7 @@ export function AcompanhamentoDemandasProjetos({
               <div className="bg-white border border-[#DCE2EA] rounded-xl p-4 shadow-2xs space-y-3">
                 <h3 className="text-xs font-bold text-[#0F172A] flex items-center gap-2"><AlertTriangle className="h-4 w-4 text-[#EA7A00]" /><span>Prazos e alertas</span></h3>
                 {alertsQuery.isLoading ? <div className="space-y-3"><div className="h-10 bg-[#D9DDE3] rounded-md animate-pulse" /><div className="h-10 bg-[#D9DDE3] rounded-md animate-pulse" /></div> : alertsQuery.data?.alerts.length === 0 ? <p className="text-xs text-[#475569]">Nenhum alerta pendente.</p> : (
-                  <div className="space-y-2.5">{alertsQuery.data?.alerts.map((alert) => (<div key={alert.id} className="p-2.5 bg-[#FFFBEB] border border-[#FCD34D]/40 rounded-lg text-xs space-y-0.5"><div className="flex items-center justify-between"><span className="font-mono font-bold text-[#0B5FEA]">{alert.workItemCode}</span><span className="text-[10px] font-semibold uppercase text-[#DC2626]">{alert.type}</span></div><p className="font-semibold text-[#0F172A] truncate">{alert.title}</p><p className="text-[11px] text-[#475569]">{alert.message}</p></div>))}</div>
+                  <div className="space-y-2.5">{alertsQuery.data?.alerts.map((alert) => (<div key={alert.id} className="p-2.5 bg-[#FFFBEB] border border-[#FCD34D]/40 rounded-lg text-xs space-y-0.5"><div className="flex items-center justify-between"><span className="font-mono font-bold text-[#0B5FEA] cursor-pointer hover:underline" onClick={() => handleOpenItem({ id: alert.workItemId, code: alert.workItemCode, title: alert.title })}>{alert.workItemCode}</span><span className="text-[10px] font-semibold uppercase text-[#DC2626]">{alert.type}</span></div><p className="font-semibold text-[#0F172A] truncate cursor-pointer hover:underline" onClick={() => handleOpenItem({ id: alert.workItemId, code: alert.workItemCode, title: alert.title })}>{alert.title}</p><p className="text-[11px] text-[#475569]">{alert.message}</p></div>))}</div>
                 )}
               </div>
 
@@ -880,7 +903,7 @@ export function AcompanhamentoDemandasProjetos({
               <div className="bg-white border border-[#DCE2EA] rounded-xl p-4 shadow-2xs space-y-3">
                 <h3 className="text-xs font-bold text-[#0F172A] flex items-center gap-2"><Clock className="h-4 w-4 text-[#0B5FEA]" /><span>Atividades recentes</span></h3>
                 {activitiesQuery.isLoading ? <div className="space-y-3"><div className="h-8 bg-[#D9DDE3] rounded-md animate-pulse" /><div className="h-8 bg-[#D9DDE3] rounded-md animate-pulse" /></div> : (
-                  <div className="space-y-3">{activitiesQuery.data?.activities.map((act) => (<div key={act.id} className="flex gap-2.5 text-xs"><div className="h-6 w-6 rounded-full bg-[#EFF6FF] text-[#0B5FEA] flex items-center justify-center shrink-0 text-[10px] font-bold">{act.userName.charAt(0)}</div><div className="space-y-0.5 min-w-0 flex-1"><p className="text-[#0F172A]"><strong className="font-semibold">{act.userName}</strong> {act.action} em <span className="font-mono text-[#0B5FEA] font-bold">{act.targetCode}</span></p><span className="text-[10px] text-[#94A3B8] block">{act.timestamp}</span></div></div>))}
+                  <div className="space-y-3">{activitiesQuery.data?.activities.map((act) => (<div key={act.id} className="flex gap-2.5 text-xs"><div className="h-6 w-6 rounded-full bg-[#EFF6FF] text-[#0B5FEA] flex items-center justify-center shrink-0 text-[10px] font-bold">{act.userName.charAt(0)}</div><div className="space-y-0.5 min-w-0 flex-1"><p className="text-[#0F172A]"><strong className="font-semibold">{act.userName}</strong> {act.action} em <span className="font-mono text-[#0B5FEA] font-bold cursor-pointer hover:underline" onClick={() => handleOpenItem({ id: act.targetId, code: act.targetCode, title: act.targetTitle })}>{act.targetCode}</span></p><span className="text-[10px] text-[#94A3B8] block">{act.timestamp}</span></div></div>))}
                   </div>
                 )}
               </div>
@@ -889,7 +912,7 @@ export function AcompanhamentoDemandasProjetos({
               <div className="bg-white border border-[#DCE2EA] rounded-xl p-4 shadow-2xs space-y-3">
                 <h3 className="text-xs font-bold text-[#0F172A] flex items-center gap-2"><TrendingUp className="h-4 w-4 text-[#059669]" /><span>Progresso dos projetos</span></h3>
                 {projectProgressQuery.isLoading ? <div className="space-y-3"><div className="h-4 bg-[#D9DDE3] rounded-md animate-pulse" /><div className="h-4 bg-[#D9DDE3] rounded-md animate-pulse" /></div> : (
-                  <div className="space-y-3">{projectProgressQuery.data?.projects.map((proj: any) => (<div key={proj.id} className="space-y-1"><div className="flex items-center justify-between text-xs"><span className="font-semibold text-[#0F172A] truncate max-w-[180px]">{proj.name}</span><span className="text-[11px] font-bold text-[#059669]">{proj.progressPercentage}%</span></div><div className="w-full bg-[#E2E8F0] rounded-full h-1.5 overflow-hidden"><div className="bg-[#059669] h-1.5 rounded-full" style={{ width: `${proj.progressPercentage}%` }} /></div></div>))}
+                  <div className="space-y-3">{projectProgressQuery.data?.projects.map((proj: any) => (<div key={proj.id} className="space-y-1"><div className="flex items-center justify-between text-xs"><span className="font-semibold text-[#0F172A] truncate max-w-[180px] cursor-pointer hover:underline" onClick={() => handleOpenItem(proj)}>{proj.name}</span><span className="text-[11px] font-bold text-[#059669]">{proj.progressPercentage}%</span></div><div className="w-full bg-[#E2E8F0] rounded-full h-1.5 overflow-hidden"><div className="bg-[#059669] h-1.5 rounded-full" style={{ width: `${proj.progressPercentage}%` }} /></div></div>))}
                   </div>
                 )}
               </div>
@@ -928,9 +951,9 @@ export function AcompanhamentoDemandasProjetos({
                     <tr key={i} className="h-[44px]">{Array.from({ length: 11 }).map((__, j) => <td key={j} className="px-2"><div className="h-3 w-full bg-[#D9DDE3] rounded animate-pulse" /></td>)}</tr>
                   )) : workItemsQuery.data?.items.map((item) => (
                     <tr key={item.id} className="hover:bg-[#F8FAFC] transition-colors">
-                      <td className="py-2.5 px-2 font-mono font-bold text-[#0B5FEA] cursor-pointer hover:underline" onClick={() => setSelectedDetailItem(item)}>{item.code}</td>
+                      <td className="py-2.5 px-2 font-mono font-bold text-[#0B5FEA] cursor-pointer hover:underline" onClick={() => handleOpenItem(item)}>{item.code}</td>
                       <td className="py-2.5 px-2">
-                        <div className="font-semibold text-[#0F172A] cursor-pointer hover:text-[#0B5FEA]" onClick={() => setSelectedDetailItem(item)}>{item.title}</div>
+                        <div className="font-semibold text-[#0F172A] cursor-pointer hover:text-[#0B5FEA]" onClick={() => handleOpenItem(item)}>{item.title}</div>
                         <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                           {item.project && <span className="text-[9px] text-[#0B5FEA] font-bold">{item.project.name}</span>}
                           {item.files && item.files.length > 0 && <span className="text-[9px] font-bold text-[#0B5FEA] bg-[#EFF6FF] px-1 py-0.2 rounded border border-[#BFDBFE]">📎 {item.files.length} doc(s)</span>}
@@ -951,7 +974,7 @@ export function AcompanhamentoDemandasProjetos({
                       </td>
                       <td className="py-2.5 px-2 text-center text-[10px] text-[#475569] whitespace-nowrap">{item.deadline ? new Date(item.deadline).toLocaleDateString("pt-BR") : "—"}</td>
                       <td className="py-2.5 px-2 text-center">{item.overdue ? <span className="px-1.5 py-0.5 rounded bg-[#FEF2F2] text-[#DC2626] text-[10px] font-bold border border-[#DC2626]/20">Sim</span> : <span className="text-[#94A3B8] text-[10px]">Não</span>}</td>
-                      <td className="py-2.5 px-2 text-center"><button type="button" onClick={() => setSelectedDetailItem(item)} className="p-1 text-[#475569] hover:text-[#0B5FEA] hover:bg-[#EFF6FF] rounded-md transition-colors" title="Ver detalhes"><Eye className="h-4 w-4" /></button></td>
+                      <td className="py-2.5 px-2 text-center"><button type="button" onClick={() => handleOpenItem(item)} className="p-1 text-[#475569] hover:text-[#0B5FEA] hover:bg-[#EFF6FF] rounded-md transition-colors" title="Ver detalhes"><Eye className="h-4 w-4" /></button></td>
                     </tr>
                   ))}
                 </tbody>
@@ -998,9 +1021,9 @@ export function AcompanhamentoDemandasProjetos({
                         {workItemsQuery.isLoading ? Array.from({ length: 3 }).map((_, i) => <div key={i} className="h-24 bg-[#D9DDE3] rounded-xl animate-pulse" />) :
                           colItems.length === 0 ? <div className="flex items-center justify-center h-20 border-2 border-dashed border-[#E2E8F0] rounded-xl text-[10px] text-[#94A3B8]">Vazio</div> :
                           colItems.map((item) => (
-                            <div key={item.id} className="bg-white border border-[#E2E8F0] rounded-xl p-3 shadow-2xs hover:shadow-md transition-shadow cursor-pointer group" onClick={() => setSelectedDetailItem(item)}>
+                            <div key={item.id} className="bg-white border border-[#E2E8F0] rounded-xl p-3 shadow-2xs hover:shadow-md transition-shadow cursor-pointer group" onClick={() => handleOpenItem(item)}>
                               <div className="flex items-start justify-between gap-2 mb-2">
-                                <span className="font-mono text-[10px] font-bold text-[#0B5FEA]">{item.code}</span>
+                                <span className="font-mono text-[10px] font-bold text-[#0B5FEA] hover:underline" onClick={(e) => { e.stopPropagation(); handleOpenItem(item); }}>{item.code}</span>
                                 <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full" style={{ backgroundColor: PRIORITY_COLORS[item.priority.code] + "20", color: PRIORITY_COLORS[item.priority.code] }}>{item.priority.label}</span>
                               </div>
                               <p className="text-[11px] font-semibold text-[#0F172A] line-clamp-2 mb-2">{item.title}</p>
@@ -1012,7 +1035,9 @@ export function AcompanhamentoDemandasProjetos({
                                 <div className="w-full bg-[#E2E8F0] rounded-full h-1 overflow-hidden"><div style={{ width: `${item.progress.percentage}%`, backgroundColor: col.color }} className="h-1 rounded-full" /></div>
                                 <span className="text-[9px] text-[#475569]">{item.progress.percentage}%</span>
                               </div>
-                              <button type="button" onClick={(e) => { e.stopPropagation(); setSelectedDetailItem(item); }} className="mt-2 w-full text-[10px] font-bold text-[#0B5FEA] hover:underline opacity-0 group-hover:opacity-100 transition text-left">Ver detalhes →</button>
+                              <button type="button" onClick={(e) => { e.stopPropagation(); handleOpenItem(item); }} className="mt-2 w-full text-[10px] font-bold text-[#0B5FEA] hover:underline opacity-0 group-hover:opacity-100 transition text-left">
+                                {item.type === "projeto" || item.code.startsWith("PRJ-") ? "Abrir tela do projeto →" : "Abrir análise da demanda →"}
+                              </button>
                             </div>
                           ))
                         }
@@ -1054,8 +1079,8 @@ export function AcompanhamentoDemandasProjetos({
                     const isOverdue = item.overdue;
                     const barColor = isOverdue ? "#DC2626" : pct >= 80 ? "#059669" : pct >= 50 ? "#0B5FEA" : "#EA7A00";
                     return (
-                      <tr key={item.id} className="hover:bg-[#F8FAFC] transition-colors group cursor-pointer" onClick={() => setSelectedDetailItem(item)}>
-                        <td className="py-3 px-3 font-mono font-bold text-[#0B5FEA]">{item.code}</td>
+                      <tr key={item.id} className="hover:bg-[#F8FAFC] transition-colors group cursor-pointer" onClick={() => handleOpenItem(item)}>
+                        <td className="py-3 px-3 font-mono font-bold text-[#0B5FEA] hover:underline" onClick={(e) => { e.stopPropagation(); handleOpenItem(item); }}>{item.code}</td>
                         <td className="py-3 px-3">
                           <div className="font-semibold text-[#0F172A]">{item.title}</div>
                           {item.project && <span className="text-[9px] text-[#0B5FEA]">{item.project.name}</span>}
@@ -1338,10 +1363,33 @@ export function AcompanhamentoDemandasProjetos({
         <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in-95">
             <div className="px-6 py-4 border-b border-[#DCE2EA] flex items-center justify-between bg-[#F8FAFC]">
-              <div className="flex items-center gap-2">
-                <span className="font-mono font-bold text-[#0B5FEA] text-sm">
-                  {selectedDetailItem.code}
-                </span>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const it = selectedDetailItem;
+                    setSelectedDetailItem(null);
+                    handleOpenItem(it);
+                  }}
+                  className="font-mono font-black text-[#0B5FEA] text-xs bg-[#EFF6FF] px-2.5 py-1 rounded-lg border border-[#BFDBFE] hover:bg-[#DBEAFE] transition flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                  title="Abrir tela correspondente"
+                >
+                  <span>{selectedDetailItem.code}</span>
+                  <ExternalLink className="h-3.5 w-3.5" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const it = selectedDetailItem;
+                    setSelectedDetailItem(null);
+                    handleOpenItem(it);
+                  }}
+                  className="px-3 py-1 bg-[#008B63] hover:bg-[#007553] text-white rounded-lg text-[11px] font-extrabold flex items-center gap-1 transition cursor-pointer shadow-xs"
+                >
+                  <span>{selectedDetailItem.type === "projeto" || selectedDetailItem.code?.startsWith("PRJ-") ? "Ir para Tela do Projeto →" : "Ir para Análise da Demanda →"}</span>
+                </button>
+
                 <span
                   className="px-2 py-0.5 rounded-full text-[11px] font-semibold text-white"
                   style={{

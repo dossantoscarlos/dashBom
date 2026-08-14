@@ -27,6 +27,7 @@ interface ProjectVisaoGeralProps {
   cronogramaData?: CronogramaItem[];
   kanbanTasks?: KanbanTask[];
   onNavigateTab: (tab: any) => void;
+  onOpenOriginalDemand?: () => void;
 }
 
 export function ProjectVisaoGeral({
@@ -38,6 +39,7 @@ export function ProjectVisaoGeral({
   cronogramaData = [],
   kanbanTasks = [],
   onNavigateTab,
+  onOpenOriginalDemand,
 }: ProjectVisaoGeralProps) {
   // Cálculo do Orçamento Real do Projeto
   const totalOrcado =
@@ -83,7 +85,15 @@ export function ProjectVisaoGeral({
             </span>
             <div>
               <span className="text-[10px] font-bold uppercase text-blue-700 dark:text-blue-400">
-                Projeto Criado a partir da Demanda {demanda.code}
+                Projeto Criado a partir da Demanda{" "}
+                <button
+                  type="button"
+                  onClick={onOpenOriginalDemand}
+                  className="font-mono font-black underline hover:text-[#008B63] transition cursor-pointer"
+                  title="Abrir Análise Técnica da Demanda Original"
+                >
+                  {demanda.code}
+                </button>
               </span>
               <h3 className="text-sm font-extrabold text-zinc-900 dark:text-zinc-100">{project.title}</h3>
               <p className="text-[11px] text-zinc-600 dark:text-zinc-400">

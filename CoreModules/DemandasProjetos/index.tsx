@@ -79,6 +79,7 @@ import {
   Wallet,
   Printer,
   AlertCircle,
+  Folder,
 } from "lucide-react";
 
 // Emissão automatizada do Parecer Técnico Circunstanciado com Escopo, Documentos, Centro de Custo e Orçamento
@@ -2074,6 +2075,22 @@ export function DemandasProjetosPanel() {
                 <span>Imprimir Parecer</span>
               </button>
 
+              {/* BOTÃO NAVEGAR PARA O PROJETO SE JÁ CONVERTIDO */}
+              {projectState && (projectState.demandaCode === currentDemanda.code || projectState.id === currentDemanda.convertedProjectId) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setProjectSubTab("visao_geral");
+                    setMainMode("projeto_ativo");
+                  }}
+                  className="h-10 px-4 rounded-xl bg-[#1264F3] hover:bg-[#0E52C9] text-white font-extrabold text-xs transition flex items-center gap-1.5 cursor-pointer shadow-xs"
+                  title="Abrir a tela do projeto gerado por esta demanda"
+                >
+                  <Folder className="h-4 w-4" />
+                  <span>Ir para o Projeto ({projectState.code}) →</span>
+                </button>
+              )}
+
               {currentDemanda.status === "Recebida" ? (
                 <button
                   type="button"
@@ -2664,6 +2681,7 @@ export function DemandasProjetosPanel() {
               cronogramaData={cronogramaData}
               kanbanTasks={kanbanTasks}
               onNavigateTab={(t) => setProjectSubTab(t)}
+              onOpenOriginalDemand={() => setMainMode("analise_demanda")}
             />
           )}
 
@@ -2756,6 +2774,7 @@ export function DemandasProjetosPanel() {
             <ProjectHistorico
               auditEvents={auditEvents}
               onNavigateTab={(t) => setProjectSubTab(t)}
+              onOpenOriginalDemand={() => setMainMode("analise_demanda")}
             />
           )}
         </div>

@@ -23,11 +23,13 @@ import {
 interface ProjectHistoricoProps {
   auditEvents: AuditEvent[];
   onNavigateTab: (tab: any) => void;
+  onOpenOriginalDemand?: () => void;
 }
 
 export function ProjectHistorico({
   auditEvents,
   onNavigateTab,
+  onOpenOriginalDemand,
 }: ProjectHistoricoProps) {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
@@ -257,7 +259,21 @@ export function ProjectHistorico({
                               <span className="bg-[#EAF2FF] text-[#1264F3] border border-[#1264F3]/30 px-2 py-0.2 rounded font-extrabold">
                                 {evt.eventType}
                               </span>
-                              <span className="font-mono font-extrabold text-[#1264F3]">{evt.targetCode}</span>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (evt.targetCode.startsWith("DEM-") && onOpenOriginalDemand) {
+                                    onOpenOriginalDemand();
+                                  } else {
+                                    onNavigateTab("visao_geral");
+                                  }
+                                }}
+                                className="font-mono font-black text-[#1264F3] hover:underline cursor-pointer"
+                                title="Navegar para a tela correspondente"
+                              >
+                                {evt.targetCode}
+                              </button>
                               <span className="text-[#64748B] truncate max-w-[220px]">{evt.targetTitle}</span>
                             </div>
                           </div>
@@ -320,9 +336,19 @@ export function ProjectHistorico({
 
                 <div className="flex justify-between items-start pt-1 border-t border-[#F1F5F9]">
                   <span className="text-[#64748B]">Registro afetado:</span>
-                  <span className="font-mono text-[#1264F3] font-bold flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (selectedEvt.targetCode.startsWith("DEM-") && onOpenOriginalDemand) {
+                        onOpenOriginalDemand();
+                      } else {
+                        onNavigateTab("visao_geral");
+                      }
+                    }}
+                    className="font-mono text-[#1264F3] font-bold flex items-center gap-1 hover:underline cursor-pointer"
+                  >
                     {selectedEvt.targetCode} <ExternalLink className="h-3 w-3" />
-                  </span>
+                  </button>
                 </div>
 
                 {selectedEvt.previousValue && (
@@ -366,7 +392,14 @@ export function ProjectHistorico({
                     <CheckCircle2 className="h-4 w-4" />
                     <span>Demanda original vinculada</span>
                   </span>
-                  <span className="font-mono font-black text-[#10213D]">DEM-0235</span>
+                  <button
+                    type="button"
+                    onClick={() => onOpenOriginalDemand?.()}
+                    className="font-mono font-black text-[#1264F3] hover:underline cursor-pointer"
+                    title="Abrir Demanda Original"
+                  >
+                    DEM-0235
+                  </button>
                 </li>
 
                 <li className="flex items-center justify-between">
