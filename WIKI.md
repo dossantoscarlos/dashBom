@@ -2,7 +2,7 @@
 
 > **Plataforma Integrada de Gestão Política, Eleitoral, Inteligência Estratégica, Demandas, Finanças e Acompanhamento de Projetos Mandatários**
 > 
-> 🌐 **Acesse a Wiki online no GitHub:** [https://github.com/dossantoscarlos/dashBom/wiki](https://github.com/dossantoscarlos/dashBom/wiki)
+> 🌐 **Repositório e Wiki no GitHub:** [https://github.com/dossantoscarlos/dashBom](https://github.com/dossantoscarlos/dashBom) | [Issues do Projeto](https://github.com/dossantoscarlos/dashBom/issues)
 
 ---
 
@@ -10,39 +10,39 @@
 
 1. **[Visão Geral do campanhaPRO](#1-visão-geral-do-campanhapro)**
 2. **[Arquitetura de CoreModules (/CoreModules)](#2-arquitetura-de-coremodules-coremodules)**
-3. **[Gestão de Demandas & Projetos (10 Telas)](#3-gestão-de-demandas--projetos-10-telas)**
-4. **[Inteligência Eleitoral & Consulta TSE/TRE](#4-inteligência-eleitoral--consulta-tsetre)**
-5. **[Agenda do Candidato & Roteirização](#5-agenda-do-candidato--roteirização)**
-6. **[Financeiro, Transparência & Prestação de Contas](#6-financeiro-transparência--prestação-de-contas)**
-7. **[Central de Push Notifications](#7-central-de-push-notifications)**
-8. **[Perfil de Usuário & Aplicação de Temas](#8-perfil-de-usuário--aplicação-de-temas)**
+3. **[Ciclo de Demandas, Pareceres Técnicos & Conversão em Projetos](#3-ciclo-de-demandas-pareceres-técnicos--conversão-em-projetos)**
+4. **[Integração Financeira: Orçamentos, Centros de Custo, Contratos e Contas Bancárias](#4-integração-financeira-orçamentos-centros-de-custo-contratos-e-contas-bancárias)**
+5. **[Agenda de Campanha & Integração com o Calendário Eleitoral TSE](#5-agenda-de-campanha--integração-com-o-calendário-eleitoral-tse)**
+6. **[Inteligência Eleitoral & Monitoramento TSE/TRE](#6-inteligência-eleitoral--monitoramento-tsetre)**
+7. **[Central de Notificações Push & Trilha de Auditoria](#7-central-de-notificações-push--trilha-de-auditoria)**
+8. **[Cronograma Executivo e Issues no GitHub](#8-cronograma-executivo-e-issues-no-github)**
 9. **[Guia de Instalação, Compilação e Deploy](#9-guia-de-instalação-compilação-e-deploy)**
 
 ---
 
 ## 1. Visão Geral do campanhaPRO
 
-O **campanhaPRO** é uma solução completa desenvolvida para gestão de mandato político, articulação eleitoral, controle financeiro transparente, acompanhamento de projetos e inteligência de campo.
+O **campanhaPRO** é uma solução corporativa completa desenvolvida para gestão de mandato político, articulação eleitoral, planejamento financeiro transparente com prestação de contas, governança de demandas públicas e inteligência de campo.
 
 ### Principais Objetivos:
-- **Centralização da Operação Mandatária:** Articulação de autoridades, voluntários, pareceres técnicos, finanças e prestação de contas.
-- **Ciclo Transacional Estrito:** Toda solicitação nasce obrigatoriamente como **Demanda** (`Recebida`) e só evolui para **Projeto (`PRJ-XXXX`)** após atender aos 5 critérios de conversão.
-- **Inteligência Eleitoral TSE/TRE:** Consulta paginada a dados abertos oficiais e monitoramento estatístico ao vivo.
+- **Centralização da Operação Mandatária:** Articulação de lideranças, voluntariado, pareceres técnicos, finanças e cronogramas.
+- **Ciclo Transacional Estrito:** Toda solicitação nasce obrigatoriamente como **Demanda** (`Recebida`) e só evolui para **Projeto (`PRJ-XXXX`)** após atender a requisitos rigorosos de documentação, validação técnica, aprovação formal e centro de custo orçado.
+- **Conformidade Eleitoral e Transparência:** Gestão financeira aderente às normas do TSE, com controle de contas bancárias específicas, contratos com marcos temporais e trilha de auditoria *append-only*.
 
 ---
 
 ## 2. Arquitetura de CoreModules (`/CoreModules`)
 
-O sistema conta com **18 CoreModules** desacoplados e padronizados:
+O sistema segue o padrão arquitetural de módulos desacoplados e independentes:
 
 ```text
 CoreModules/
-├── Agenda/              # Compromissos, eventos recorrentes, rota no Google Maps e status por data
-├── Autoridades/         # Cadastro e mapeamento de prefeitos, vereadores e lideranças institucionais
-├── Campaigns/           # Planejamento estratégico de ações eleitorais e comícios de rua
-├── Dashboard/           # Painel executivo com indicadores gerais mandatários
+├── Agenda/              # Compromissos, eventos com hora, rota Google Maps e Calendário Eleitoral TSE
+├── Autoridades/         # Mapeamento de prefeitos, vereadores e lideranças institucionais
+├── Campaigns/           # Planejamento estratégico de ações eleitorais e eventos de campanha
+├── Dashboard/           # Painel executivo com indicadores globais mandatários
 ├── DemandasProjetos/    # Suíte de 10 telas do ciclo de vida transacional de demandas e projetos
-├── Financeiro/          # Fluxo de caixa, orçamento, prestação de contas e relatórios reais
+├── Financeiro/          # Orçamentos, Centros de Custo, Contratos (Início/Meio/Fim) e Contas Bancárias
 ├── Locations/           # Mapeamento geográfico de comitês, sedes e pontos de apoio
 ├── Parecer/             # Emissão de pareceres técnicos e jurídicos de conversão
 ├── Partners/            # Entidades parceiras, sindicatos e associações apoiadoras
@@ -59,81 +59,129 @@ CoreModules/
 
 ---
 
-## 3. Gestão de Demandas & Projetos (10 Telas)
+## 3. Ciclo de Demandas, Pareceres Técnicos & Conversão em Projetos
 
-> **Premissa Inviolável:** É proibido criar um projeto diretamente. Toda solicitação deve nascer como **Demanda** (`Recebida`).
+> **Regra de Negócio Inviolável:** Nenhuma solicitação pode ser criada diretamente como projeto. O fluxo obrigatório é:
+> **Nova Demanda** ➔ **Análise Técnica (Parecer)** ➔ **Aprovação Formal** ➔ **Conversão em Projeto (`PRJ-XXXX`)**.
 
-### As 10 Telas do Módulo:
-1. **Nova Demanda:** Formulário dinâmico com integração CEP.
-2. **Análise Técnica:** Leitura do parecer e validação dos 5 critérios.
-3. **Conversão Transacional:** Confirmação da conversão e geração do código `PRJ-XXXX`.
-4. **Visão Geral:** Resumo executivo do projeto, prazos e orçamentos.
+### Requisitos Obrigatórios para Conversão:
+1. **Documentação em Anexo:** A demanda deve conter ao menos um documento em anexo (comprovante, ofício, planilha ou foto comprobatória).
+2. **Orçamento e Centro de Custo Definidos:** O valor estimado (`estimatedBudget > 0`) e o Centro de Custo vinculado da área financeira são obrigatórios. Demandas criadas sem orçamento exibem banner de alerta e formulário inline para **[✏️ Editar / Corrigir Orçamento]**.
+3. **Emissão de Parecer Técnico Completo:** O sistema gera parecer detalhado consolidando título, descrição, documentações anexadas, dotação orçamentária e justificativa de impacto.
+4. **Registro do Aprovador:** O fluxo registra formalmente o responsável pela aprovação (`approvedBy`) e a data da aprovação antes da transição de estado.
+
+### Telas do Módulo Demandas & Projetos:
+1. **Nova Demanda:** Formulário dinâmico com CEP, anexos de documentos e centros de custo dinâmicos.
+2. **Análise Técnica:** Emissão de parecer técnico e validação dos critérios de conversão.
+3. **Conversão Transacional:** Confirmação da conversão gerando código `PRJ-XXXX` e sincronizando a despesa inicial no módulo Financeiro.
+4. **Visão Geral:** Indicadores do projeto, prazos e percentuais de conclusão.
 5. **Quadro Kanban:** 5 colunas de status (*A Fazer*, *Em Análise*, *Em Execução*, *Validação*, *Concluído*).
-6. **Cronograma (Gantt):** Gráfico de Gantt interativo com marcos.
-7. **Orçamento & Finanças:** Acompanhamento financeiro por categoria.
+6. **Cronograma (Gantt):** Visualização de marcos e dependências.
+7. **Orçamento & Finanças:** Lançamento de despesas e conciliação bancária do projeto.
 8. **Equipe & RACI:** Alocação de recursos e matriz de responsabilidade.
 9. **Arquivos & Versões:** Árvore de documentos e versionamento.
-10. **Histórico & Auditoria:** Rastreabilidade completa de alterações.
+10. **Histórico & Auditoria:** Rastreabilidade completa de todas as alterações.
 
 ---
 
-## 4. Inteligência Eleitoral & Consulta TSE/TRE
+## 4. Integração Financeira: Orçamentos, Centros de Custo, Contratos e Contas Bancárias
 
-- **Monitor TSE ao Vivo:** Sincronização automática a cada 30 segundos.
+O módulo **Financeiro** (`CoreModules/Financeiro/index.tsx`) integra de ponta a ponta a governança de recursos:
+
+### A. Centros de Custo e Orçamentos (`activeSubTab === "orcamentos"`)
+- **Origem Dinâmica dos Centros de Custo:** Os centros de custo cadastrados no Financeiro alimentam dinamicamente os formulários de demandas e projetos.
+- **Contextos de Destinação:**
+  - 🏛️ `campanha`: Campanha Eleitoral / Comitê Central
+  - 🏢 `mandato`: Mandato Parlamentar Corrente / Gabinete
+  - 🤝 `partido`: Partido Político / Diretório Municipal/Estadual
+  - 💼 `interno`: Operações Administrativas Internas
+- **Formulário de Cadastro de Centro de Custo:** Modal com Nome, Código (`CC-xxx`), Contexto, Teto Limite (R$) e Status.
+- **Formulário de Alocação Orçamentária:** Definição de metas e dotações por centro e ano de exercício.
+
+### B. Gestão de Contratos com Marcos Temporais (`activeSubTab === "contratos"`)
+- **Controle de Vigência em 3 Marcos:**
+  - 🟢 **Início:** Data inicial de vigência contratual.
+  - 🟡 **Marco Intermediário (Meio):** Marco de entrega parcial, medição ou aditivo intermediário (50%).
+  - 🔴 **Término:** Data de conclusão e encerramento.
+- **Controle Orçamentário por Centro de Custo:**
+  - Valor total do contrato, despesas liquidadas/pagas e saldo remanescente a liquidar.
+  - Barra de progresso financeiro e status (`em_execucao`, `ativo`, `encerrado`).
+- **Modal de Cadastro de Contratos:** Cadastro ágil com objeto, fornecedor, centro de custo vinculado e vigências.
+
+### C. Registro de Contas Bancárias (`activeSubTab === "contas_bancarias"`)
+- **Contas Oficiais e Finalidades:**
+  - `eleitoral`: Conta Eleitoral Principal
+  - `fundo_partidario`: Fundo Partidário
+  - `doacao`: Doações de Campanha
+  - `operacional`: Despesas Operacionais
+  - `mandato`: Gestão do Mandato
+- **Campos de Cadastro:** Banco (BB, Caixa, Bradesco, Itaú, Santander, Sicoob, Nubank, etc.), Agência, Conta Corrente, Chave PIX, Tipo e Saldo Inicial.
+
+---
+
+## 5. Agenda de Campanha & Integração com o Calendário Eleitoral TSE
+
+O módulo **Agenda** (`CoreModules/Agenda/index.tsx`) une a rotina do candidato ao calendário oficial:
+
+- **Integração do Calendário Eleitoral TSE:**
+  - Eventos oficiais da Resolução do TSE são carregados e exibidos automaticamente com badge visual `⚖️ TSE Oficial`.
+- **Exigência de Horário de Início e Fim:**
+  - Eventos da agenda regular exigem hora de início (`startTime`) e término (`endTime`).
+  - Eventos do calendário eleitoral do TSE são tratados como marcos de dia inteiro.
+- **Roteirização:** Integração com Google Maps para visualização de trajetos entre compromissos.
+- **Eventos Recorrentes:** Agendamento de reuniões com tratamento de fuso horário neutro.
+
+---
+
+## 6. Inteligência Eleitoral & Monitoramento TSE/TRE
+
+- **Monitor TSE ao Vivo:** Sincronização e monitoramento estatístico a cada 30 segundos.
 - **Consulta Paginada de Candidatos:**
-  - Busca por nome, urna, número ou partido (com busca estrita por sigla para evitar falsos positivos).
+  - Busca por nome de urna, número ou partido (busca estrita por sigla).
   - Filtro por cargo com flexão de gênero (`Presidente`, `Governador`, `Senador`, `Deputado`, `Prefeito`, `Vereador`).
-  - Filtro por ano eleitoral (`2026`, `2024`, `2022`).
-  - Destaque visual de eleição e tentativas de reeleição.
+  - Filtro por anos eleitorais (`2026`, `2024`, `2022`).
 
 ---
 
-## 5. Agenda do Candidato & Roteirização
+## 7. Central de Notificações Push & Trilha de Auditoria
 
-- **Eventos Recorrentes:** Cálculo preciso entre `dataInicio` e `dataFim` nos dias da semana selecionados com timezone neutro (`T12:00:00`).
-- **Ações por Data Específica:** Opções separadas para **`🚫 Cancelar apenas este dia`** ou **`⏩ Adiar apenas este dia`** no calendário.
-- **Google Maps:** Incorporação de mapa interativo e botão de rota oficial.
-
----
-
-## 6. Financeiro, Transparência & Prestação de Contas
-
-- **Dados 100% Reais:** Sem dados mockados em memória.
-- **Relatórios Oficiais:**
-  - Orçado vs Realizado por Centro de Custo.
-  - Extrato de Receitas por Doador / CPF / CNPJ.
-  - Trilha de Auditoria Completa (*append-only*).
-- **Exportação:** Suporte a arquivos CSV UTF-8, Excel (`.xls`) e PDF (`window.print()`).
+- **Alertas em Tempo Real:** Consulta contínua com Web Push de desktop para prazos, novas demandas e atualizações do TSE.
+- **Trilha de Auditoria Imutável (*append-only*):** Registro de todas as operações (Criação, Edição, Aprovação, Pagamento, Conversão) com ator, data/hora e justificativa.
 
 ---
 
-## 7. Central de Push Notifications
+## 8. Cronograma Executivo e Issues no GitHub
 
-- **Alertas em Tempo Real:** Consulta contínua a cada 20 segundos.
-- **Notificações Web Push:** Popups de desktop do navegador para compromissos do dia, cancelamentos e informes do TSE.
+O planejamento de entrega e etapas do projeto está publicado em:
+[https://github.com/dossantoscarlos/dashBom/issues](https://github.com/dossantoscarlos/dashBom/issues)
 
----
-
-## 8. Perfil de Usuário & Aplicação de Temas
-
-- **Modos de Exibição:** ☀️ Claro, 🌙 Escuro e 💻 Sistema (aplicado na raiz HTML em tempo real).
-- **Foto de Perfil:** Upload de foto (PNG/JPG/WebP) com suporte `FileReader` e renderização global na barra superior.
+| Issue | Título da Etapa | Foco Principal |
+| :--- | :--- | :--- |
+| **#3** | **[PROJETO] Planejamento Geral e Cronograma Executivo** | Estrutura de prazos, entregáveis e cards de atividades |
+| **#4** | **[ETAPA 1] Módulo de Demandas, Pareceres e Projetos** | Anexos obrigatórios, parecer técnico e conversão transacional |
+| **#5** | **[ETAPA 2] Integração Orçamentária e Centros de Custo** | Centros de custo, dotações, contratos e contas bancárias |
+| **#6** | **[ETAPA 3] Integração do Calendário Eleitoral TSE na Agenda** | Marcos oficiais do TSE e horários de compromissos |
+| **#7** | **[ETAPA 4] Painel Executivo, Gestão de Documentos e Auditoria** | Indicadores consolidados, exportação e conformidade |
 
 ---
 
 ## 9. Guia de Instalação, Compilação e Deploy
 
 ```bash
-# Instalar dependências
+# 1. Clonar o repositório
+git clone https://github.com/dossantoscarlos/dashBom.git
+cd dashBom
+
+# 2. Instalar dependências
 npm install
 
-# Servidor de desenvolvimento local
+# 3. Executar o servidor de desenvolvimento
 npm run dev
 
-# Compilação e validação do build Next.js
+# 4. Compilação e validação do build de produção Next.js
 npm run build
 ```
 
 ---
 
-*Wiki publicada e mantida no repositório GitHub:* [https://github.com/dossantoscarlos/dashBom/wiki](https://github.com/dossantoscarlos/dashBom/wiki)
+*Documentação mantida e atualizada no repositório [dossantoscarlos/dashBom](https://github.com/dossantoscarlos/dashBom).*
