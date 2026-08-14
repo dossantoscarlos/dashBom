@@ -80,6 +80,39 @@ import {
   Printer,
 } from "lucide-react";
 
+// Emissão automatizada do Parecer Técnico Circunstanciado com Escopo, Documentos e Orçamento
+export const generateConsolidatedTechnicalReport = (demanda: DemandaItem) => {
+  const docsList =
+    demanda.files && demanda.files.length > 0
+      ? demanda.files.map((f, i) => `   ${i + 1}. [DOCUMENTO ANEXO] ${f}`).join("\n")
+      : "   1. [MEMORIAL PRELIMINAR] Levantamento e diagnóstico inicial registrado digitalmente.";
+
+  const budgetFormatted =
+    demanda.hasBudget || (demanda.estimatedBudget && demanda.estimatedBudget > 0)
+      ? `R$ ${(demanda.estimatedBudget || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })} (Fonte: ${demanda.budgetSource || "Dotação Orçamentária Geral / Fundo Municipal"})`
+      : "Sem dotação orçamentária prévia vinculada (Recursos a serem alocados na conversão do projeto)";
+
+  return `PARECER TÉCNICO CIRCUNSTANCIADO DE VIABILIDADE
+Nº REGISTRO: ${demanda.code} | DATA DE EMISSÃO: ${new Date().toLocaleDateString("pt-BR")}
+
+1. DESCRIÇÃO E ESCOPO DA DEMANDA:
+- Título da Solicitação: ${demanda.title}
+- Solicitante: ${demanda.applicantName || "Cidadão / Entidade Solicitante"} (Contato: ${demanda.applicantPhone || "Não informado"} | ${demanda.applicantEmail || "Não informado"})
+- Localização: ${demanda.address || "Endereço registrado"}, ${demanda.bairro || "Bairro"} — ${demanda.municipio || "São Paulo / SP"} (CEP: ${demanda.cep || "Não informado"})
+- Eixo Temático: ${demanda.category} | Prioridade: ${demanda.priority}
+- Objeto Detalhado: ${demanda.description}
+
+2. DOCUMENTAÇÃO TÉCNICA E ANEXOS ANALISADOS:
+${docsList}
+- Diagnóstico Documental: Peças técnicas conferidas e em conformidade com as diretrizes regulatórias.
+
+3. PREVISÃO E DOTAÇÃO ORÇAMENTÁRIA:
+- Dotação Estimada: ${budgetFormatted}
+- Viabilidade Econômica: Demanda compatível com a capacidade executiva e planejamento de investimentos.
+
+4. CONCLUSÃO TÉCNICA E RECOMENDAÇÃO:
+A solicitação atende aos critérios de interesse público, consistência técnica e viabilidade operacional. Recomendamos a HOMOLOGAÇÃO e CONVERSÃO DA DEMANDA EM PROJETO PÚBLICO para início imediato das entregas e cronograma de trabalho.`;
+};
 
 export function DemandasProjetosPanel() {
   const { regions, users } = useDashboard();
@@ -326,6 +359,23 @@ export function DemandasProjetosPanel() {
   // Parecer Técnico da Análise
   const [technicalReport, setTechnicalReport] = useState("");
 
+  // Mantém o parecer técnico sempre populado com a descrição, documentações e orçamento da demanda ativa
+  useEffect(() => {
+    if (currentDemanda) {
+      const rep =
+        currentDemanda.technicalReport && currentDemanda.technicalReport.trim().length > 0
+          ? currentDemanda.technicalReport
+          : generateConsolidatedTechnicalReport(currentDemanda);
+      setTechnicalReport(rep);
+      if (currentDemanda.approvedBy) {
+        setApproverName(currentDemanda.approvedBy);
+      }
+      if (currentDemanda.approvalRole) {
+        setApproverRole(currentDemanda.approvalRole);
+      }
+    }
+  }, [currentDemanda?.id, currentDemanda?.code, currentDemanda?.files?.length, currentDemanda?.status]);
+
   // Busca Automática de Endereço por CEP Real
   const handleCepSearch = async () => {
     const raw = cep.replace(/\D/g, "");
@@ -391,6 +441,10 @@ export function DemandasProjetosPanel() {
         toast("Por favor, informe a Descrição detalhada da demanda.", "error");
         return;
       }
+      if (uploadedFiles.length === 0) {
+        toast("É obrigatório anexar pelo menos um documento técnico para cadastrar e avançar com a demanda.", "error");
+        return;
+      }
     }
 
     setIsSubmitting(true);
@@ -432,9 +486,13 @@ export function DemandasProjetosPanel() {
       },
     };
 
+    // Gera o parecer técnico consolidado imediatamente para a nova demanda
+    const reportContent = generateConsolidatedTechnicalReport(newDemanda);
+    newDemanda.technicalReport = reportContent;
+
     setRegisteredDemands((prev) => [newDemanda, ...prev]);
     setCurrentDemanda(newDemanda);
-    setTechnicalReport(""); // Limpa o parecer técnico para nova análise
+    setTechnicalReport(reportContent);
     setIsSubmitting(false);
 
     // Sincroniza via API REST no servidor
@@ -463,7 +521,7 @@ export function DemandasProjetosPanel() {
     if (isDraft) {
       toast(`Rascunho da demanda ${generatedCode} salvo com sucesso!`);
     } else {
-      toast(`Demanda ${generatedCode} cadastrada com sucesso com os seus dados reais! Status: 'Recebida'. Encaminhando para Análise...`);
+      toast(`Demanda ${generatedCode} cadastrada com sucesso! Parecer Técnico inicial gerado.`);
       setMainMode("analise_demanda");
     }
   };
@@ -484,43 +542,13 @@ export function DemandasProjetosPanel() {
     toast("Dados demonstrativos do Projeto PRJ-0104 carregados!");
   };
 
-  // Emissão automatizada do Parecer Técnico Circunstanciado com Escopo, Documentos e Orçamento
-  const generateConsolidatedTechnicalReport = (demanda: DemandaItem) => {
-    const docsList =
-      demanda.files && demanda.files.length > 0
-        ? demanda.files.map((f, i) => `   ${i + 1}. [DOCUMENTO ANEXO] ${f}`).join("\n")
-        : "   1. [MEMORIAL PRELIMINAR] Levantamento e diagnóstico inicial registrado digitalmente.";
-
-    const budgetFormatted =
-      demanda.hasBudget || (demanda.estimatedBudget && demanda.estimatedBudget > 0)
-        ? `R$ ${(demanda.estimatedBudget || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })} (Fonte: ${demanda.budgetSource || "Dotação Orçamentária Geral / Fundo Municipal"})`
-        : "Sem dotação orçamentária prévia vinculada (Recursos a serem alocados na conversão do projeto)";
-
-    return `PARECER TÉCNICO CIRCUNSTANCIADO DE VIABILIDADE
-Nº REGISTRO: ${demanda.code} | DATA DE EMISSÃO: ${new Date().toLocaleDateString("pt-BR")}
-
-1. DESCRIÇÃO E ESCOPO DA DEMANDA:
-- Título da Solicitação: ${demanda.title}
-- Solicitante: ${demanda.applicantName || "Cidadão / Entidade Solicitante"} (Contato: ${demanda.applicantPhone || "Não informado"} | ${demanda.applicantEmail || "Não informado"})
-- Localização: ${demanda.address || "Endereço registrado"}, ${demanda.bairro || "Bairro"} — ${demanda.municipio || "São Paulo / SP"} (CEP: ${demanda.cep || "Não informado"})
-- Eixo Temático: ${demanda.category} | Prioridade: ${demanda.priority}
-- Objeto Detalhado: ${demanda.description}
-
-2. DOCUMENTAÇÃO TÉCNICA E ANEXOS ANALISADOS:
-${docsList}
-- Diagnóstico Documental: Peças técnicas conferidas e em conformidade com as diretrizes regulatórias.
-
-3. PREVISÃO E DOTAÇÃO ORÇAMENTÁRIA:
-- Dotação Estimada: ${budgetFormatted}
-- Viabilidade Econômica: Demanda compatível com a capacidade executiva e planejamento de investimentos.
-
-4. CONCLUSÃO TÉCNICA E RECOMENDAÇÃO:
-A solicitação atende aos critérios de interesse público, consistência técnica e viabilidade operacional. Recomendamos a HOMOLOGAÇÃO e CONVERSÃO DA DEMANDA EM PROJETO PÚBLICO para início imediato das entregas e cronograma de trabalho.`;
-  };
-
   // ── ETAPA 2: INICIAR ANÁLISE TÉCNICA E EMITIR PARECER AUTOMÁTICO ──
   const handleAdvanceToAnalysis = () => {
     if (!currentDemanda) return;
+    if (!currentDemanda.files || currentDemanda.files.length === 0) {
+      toast("É obrigatório anexar pelo menos um documento técnico para iniciar a Análise Técnica.", "error");
+      return;
+    }
     const reportText = generateConsolidatedTechnicalReport(currentDemanda);
     setTechnicalReport(reportText);
 
@@ -1213,9 +1241,23 @@ A solicitação atende aos critérios de interesse público, consistência técn
 
               {/* SEÇÃO 6: ANEXOS */}
               <div className="bg-white rounded-2xl border border-[#E2E8F0] p-5 sm:p-6 shadow-2xs flex flex-col gap-4">
-                <h3 className="text-sm font-extrabold text-[#10213D] uppercase tracking-wider border-b border-[#E2E8F0] pb-3">
-                  Anexos da solicitação real
-                </h3>
+                <div className="border-b border-[#E2E8F0] pb-3 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-5 w-5 text-[#1264F3]" strokeWidth={2} />
+                    <h3 className="text-sm font-extrabold text-[#10213D] uppercase tracking-wider">
+                      Documentação Técnica e Anexos <span className="text-red-500">*</span>
+                    </h3>
+                  </div>
+                  <span
+                    className={`px-2.5 py-0.5 rounded text-[10px] font-extrabold uppercase border ${
+                      uploadedFiles.length > 0
+                        ? "bg-[#E8F7F1] text-[#008B63] border-[#00A978]/30"
+                        : "bg-red-50 text-red-600 border-red-200"
+                    }`}
+                  >
+                    {uploadedFiles.length > 0 ? `${uploadedFiles.length} documento(s) anexado(s)` : "* Mínimo 1 anexo obrigatório"}
+                  </span>
+                </div>
 
                 <input ref={fileInputRef} type="file" multiple onChange={handleFileUpload} className="hidden" />
 
@@ -1225,7 +1267,10 @@ A solicitação atende aos critérios de interesse público, consistência técn
                 >
                   <UploadCloud className="h-8 w-8 text-[#1264F3]" />
                   <span className="text-xs font-extrabold text-[#10213D]">
-                    Clique aqui para selecionar os arquivos reais da demanda
+                    Clique aqui para selecionar os arquivos reais da demanda (PDF, DWG, DOCX, imagens)
+                  </span>
+                  <span className="text-[11px] text-[#64748B]">
+                    Obrigatório anexar pelo menos um documento para cadastrar e avançar
                   </span>
                 </div>
 
