@@ -556,6 +556,273 @@ export async function POST(request: Request) {
       });
     }
 
+    // 6. Cadastrar/Sincronizar Centro de Custo e Orçamento de Demanda
+    if (action === "register_demand_budget") {
+      const { costCenter, expense, actor } = body;
+
+      if (costCenter && costCenter.name) {
+        const existingCcIdx = costCenters.findIndex((c) => c.name.toLowerCase() === costCenter.name.toLowerCase());
+        if (existingCcIdx !== -1) {
+          costCenters[existingCcIdx] = {
+            ...costCenters[existingCcIdx],
+            budgetLimit: (costCenters[existingCcIdx].budgetLimit || 0) + (costCenter.budgetLimit || 0),
+          };
+        } else {
+          const newCc: CostCenter = {
+            id: costCenter.id || `cc-${Date.now()}`,
+            code: `CC-${String(costCenters.length + 1).padStart(3, "0")}`,
+            name: costCenter.name,
+            contextType: costCenter.contextType || "campanha",
+            budgetLimit: costCenter.budgetLimit || 0,
+            status: "ativo",
+          };
+          costCenters.unshift(newCc);
+        }
+      }
+
+      if (expense && expense.finalAmount > 0) {
+        const existingExpIdx = expenses.findIndex(
+          (e) => e.id === expense.id || (expense.docNumber && e.fiscalDocumentNumber === expense.docNumber)
+        );
+        const expenseItem: Expense = {
+          id: expense.id || `exp-dem-${Date.now()}`,
+          code: expense.code || `DESP-DEM-${Date.now().toString().slice(-4)}`,
+          contextType: expense.contextType || "campanha",
+          entityId: expense.docNumber || "dem-01",
+          entityName: expense.description || "Demanda Cadastrada",
+          expenseType: "avulsa",
+          description: expense.description || "Despesa vinculada a Demanda",
+          vendorId: "vnd-dem",
+          vendorName: "Dotação / Fornecedor a Definir",
+          vendorCpfCnpj: "00.000.000/0001-00",
+          dueDate: expense.dueDate || new Date().toISOString().slice(0, 10),
+          competencyDate: new Date().toISOString().slice(0, 10),
+          amount: Number(expense.finalAmount) || 0,
+          finalAmount: Number(expense.finalAmount) || 0,
+          bankAccountId: "bank-01",
+          bankAccountName: "Conta Operacional Principal",
+          status: expense.status === "aprovada" ? "aprovada" : "solicitada",
+          allocations: [
+            {
+              costCenterId: costCenter?.id || "cc-dem",
+              costCenterName: costCenter?.name || expense.costCenterName || "Campanha Parlamentar",
+              percentage: 100,
+              amount: Number(expense.finalAmount) || 0,
+            },
+          ],
+          fiscalDocumentType: "nota_fiscal",
+          fiscalDocumentNumber: expense.docNumber || "",
+          requestedBy: actor || "Gestor de Demandas",
+          reconciled: false,
+          approvalNotes: expense.purpose || "",
+          createdAt: new Date().toISOString().slice(0, 10),
+        };
+
+        if (existingExpIdx !== -1) {
+          expenses[existingExpIdx] = { ...expenses[existingExpIdx], ...expenseItem };
+        } else {
+          expenses.unshift(expenseItem);
+        }
+      }
+
+      logAudit(
+        actor || "Gestor de Demandas",
+        "CRIAR",
+        costCenter?.contextType || "campanha",
+        "CostCenter",
+        costCenter?.id || "cc-dem",
+        `Centro de custo '${costCenter?.name}' e alocação de demanda cadastrados no Financeiro (R$ ${expense?.finalAmount || 0} - Destinação: ${expense?.purpose || "Geral"}).`
+      );
+
+      return NextResponse.json({
+        status: "sucesso",
+        mensagem: `Centro de custo e valor de destinação da demanda integrados com sucesso na área financeira!`,
+      });
+    }
+
+    // 7. Cadastrar Centro de Custo
+    if (action === "create_cost_center") {
+      const { name, code, contextType, budgetLimit, status, actor } = body;
+      if (!name || name.trim() === "") {
+        return NextResponse.json({ error: "Nome do centro de custo é obrigatório." }, { status: 400 });
+      }
+
+      const generatedCode = code || `CC-${String(costCenters.length + 1).padStart(3, "0")}`;
+      const newCc: CostCenter = {
+        id: `cc-${Date.now()}`,
+        code: generatedCode,
+        name: name.trim(),
+        contextType: contextType || "campanha",
+        budgetLimit: Number(budgetLimit) || 0,
+        status: status || "ativo",
+      };
+
+      costCenters.unshift(newCc);
+
+      logAudit(
+        actor || "Administrador",
+        "CRIAR",
+        newCc.contextType,
+        "CostCenter",
+        newCc.id,
+        `Centro de custo '${newCc.name}' (${newCc.code}) cadastrado com teto de R$ ${newCc.budgetLimit}.`
+      );
+
+      return NextResponse.json({
+        status: "sucesso",
+        mensagem: `Centro de custo '${newCc.name}' cadastrado com sucesso!`,
+        costCenter: newCc,
+      });
+    }
+
+    // 8. Cadastrar / Alocar Orçamento
+    if (action === "create_budget") {
+      const { costCenterId, planned, year, contextType, actor } = body;
+      const cc = costCenters.find((c) => c.id === costCenterId);
+      const plannedNum = Number(planned) || 0;
+
+      const newBudget: Budget = {
+        id: `bdg-${Date.now()}`,
+        contextType: contextType || cc?.contextType || "campanha",
+        costCenterId: costCenterId || "cc-1",
+        costCenterName: cc?.name || "Centro de Custo Geral",
+        year: Number(year) || 2026,
+        planned: plannedNum,
+        reserved: 0,
+        committed: 0,
+        contracted: 0,
+        paid: 0,
+        available: plannedNum,
+      };
+
+      budgets.unshift(newBudget);
+
+      // Se o limite do centro de custo for menor que o orçado, atualiza o teto
+      if (cc && plannedNum > cc.budgetLimit) {
+        cc.budgetLimit = plannedNum;
+      }
+
+      logAudit(
+        actor || "Administrador",
+        "CRIAR",
+        newBudget.contextType,
+        "Budget",
+        newBudget.id,
+        `Orçamento de R$ ${plannedNum} alocado para o centro de custo '${newBudget.costCenterName}' (Ano: ${newBudget.year}).`
+      );
+
+      return NextResponse.json({
+        status: "sucesso",
+        mensagem: `Orçamento alocado com sucesso para '${newBudget.costCenterName}'!`,
+        budget: newBudget,
+      });
+    }
+
+    // 9. Cadastrar Contrato com Início, Meio, Término e Orçamento Utilizado por Centro de Custo
+    if (action === "create_contract") {
+      const {
+        title,
+        vendorId,
+        vendorName,
+        startDate,
+        midDate,
+        endDate,
+        totalAmount,
+        costCenterId,
+        costCenterName,
+        status,
+        notes,
+        contextType,
+        actor,
+      } = body;
+
+      if (!title || !startDate || !endDate) {
+        return NextResponse.json({ error: "Título, data de início e término são obrigatórios." }, { status: 400 });
+      }
+
+      const totalVal = Number(totalAmount) || 0;
+      const cc = costCenters.find((c) => c.id === costCenterId || c.name === costCenterName);
+      const resolvedCcName = costCenterName || cc?.name || "Campanha Parlamentar";
+      const resolvedCcId = costCenterId || cc?.id || "cc-1";
+
+      const newContract: Contract = {
+        id: `ctr-${Date.now()}`,
+        code: `CTR-2026-${String(contracts.length + 1).padStart(3, "0")}`,
+        contextType: contextType || "campanha",
+        title: title.trim(),
+        vendorId: vendorId || `vnd-${Date.now()}`,
+        vendorName: vendorName || "Fornecedor / Contratado",
+        startDate,
+        midDate: midDate || "",
+        endDate,
+        totalAmount: totalVal,
+        paidAmount: 0,
+        remainingAmount: totalVal,
+        costCenterId: resolvedCcId,
+        costCenterName: resolvedCcName,
+        status: status || "ativo",
+        notes: notes || "",
+      };
+
+      contracts.unshift(newContract);
+
+      logAudit(
+        actor || "Gestor de Contratos",
+        "CRIAR",
+        newContract.contextType,
+        "Contract",
+        newContract.id,
+        `Contrato '${newContract.title}' (${newContract.code}) cadastrado no valor de R$ ${totalVal} vinculado ao centro '${resolvedCcName}'.`
+      );
+
+      return NextResponse.json({
+        status: "sucesso",
+        mensagem: `Contrato '${newContract.title}' cadastrado com sucesso!`,
+        contract: newContract,
+      });
+    }
+
+    // 10. Cadastrar Conta Bancária
+    if (action === "create_bank_account") {
+      const { name, bankName, bankCode, agency, accountNumber, pixKey, type, initialBalance, status, contextType, actor } = body;
+      if (!name || !bankName || !accountNumber) {
+        return NextResponse.json({ error: "Nome, banco e número de conta são obrigatórios." }, { status: 400 });
+      }
+
+      const initBal = Number(initialBalance) || 0;
+      const newAcc: BankAccount = {
+        id: `bank-${Date.now()}`,
+        contextType: contextType || "campanha",
+        name: name.trim(),
+        bankName: bankName.trim(),
+        bankCode: bankCode || "001",
+        agency: agency || "0001",
+        accountNumber: accountNumber.trim(),
+        pixKey: pixKey || "",
+        type: type || "eleitoral",
+        initialBalance: initBal,
+        balance: initBal,
+        status: status || "ativa",
+      };
+
+      bankAccounts.unshift(newAcc);
+
+      logAudit(
+        actor || "Gestor Financeiro",
+        "CRIAR",
+        newAcc.contextType,
+        "BankAccount",
+        newAcc.id,
+        `Conta bancária '${newAcc.name}' (${newAcc.bankName} Ag: ${newAcc.agency} CC: ${newAcc.accountNumber}) cadastrada com saldo inicial de R$ ${initBal}.`
+      );
+
+      return NextResponse.json({
+        status: "sucesso",
+        mensagem: `Conta bancária '${newAcc.name}' cadastrada com sucesso!`,
+        account: newAcc,
+      });
+    }
+
     return NextResponse.json({ error: "Ação não reconhecida." }, { status: 400 });
   } catch (error) {
     return NextResponse.json({ error: "Falha ao processar operação financeira: " + String(error) }, { status: 500 });

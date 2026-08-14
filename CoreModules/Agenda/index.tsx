@@ -15,26 +15,172 @@ const WEEKDAYS = [
   { id: "domingo", label: "Domingo" },
 ];
 
+export const TSE_OFFICIAL_CALENDAR_EVENTS: CandidateEvent[] = [
+  {
+    id: "tse-evt-1",
+    titulo: "🏛️ Janela de Transferência Partidária 2026",
+    descricao: "Período em que deputadas e deputados federais, estaduais e distritais podem mudar de partido sem perder o mandato.",
+    data: "06 MAR",
+    dataInicio: "2026-03-06",
+    dataFim: "2026-04-05",
+    dataCompleta: "06/03/2026 a 05/04/2026",
+    diaInteiro: true,
+    horaInicio: "08:00",
+    horaFim: "18:00",
+    local: "Tribunal Superior Eleitoral / Diretórios Partidários",
+    cidade: "Brasília / Nacional",
+    uf: "DF",
+    responsavel: "Justiça Eleitoral - TSE",
+    tipo: "tse_calendario",
+    status: "confirmado",
+  },
+  {
+    id: "tse-evt-2",
+    titulo: "🏛️ Período de Convenções Partidárias",
+    descricao: "Realização de convenções partidárias para escolha oficial dos candidatos aos cargos em disputa.",
+    data: "20 JUL",
+    dataInicio: "2026-07-20",
+    dataFim: "2026-08-05",
+    dataCompleta: "20/07/2026 a 05/08/2026",
+    diaInteiro: true,
+    horaInicio: "08:00",
+    horaFim: "22:00",
+    local: "Comitês e Convenções Partidárias",
+    cidade: "Nacional",
+    uf: "BR",
+    responsavel: "Justiça Eleitoral - TSE",
+    tipo: "tse_calendario",
+    status: "confirmado",
+  },
+  {
+    id: "tse-evt-3",
+    titulo: "🏛️ Prazo Limite para Registro de Candidaturas",
+    descricao: "Último dia para que os partidos e coligações requeiram o registro de seus candidatos na Justiça Eleitoral (Sistema CAND).",
+    data: "15 AGO",
+    dataInicio: "2026-08-15",
+    dataCompleta: "15/08/2026 às 19h",
+    diaInteiro: true,
+    horaInicio: "08:00",
+    horaFim: "19:00",
+    local: "Tribunais Regionais Eleitorais e TSE",
+    cidade: "Nacional",
+    uf: "BR",
+    responsavel: "Justiça Eleitoral - TSE",
+    tipo: "tse_calendario",
+    status: "confirmado",
+  },
+  {
+    id: "tse-evt-4",
+    titulo: "🏛️ Início Oficial da Propaganda Eleitoral",
+    descricao: "Permitida a propaganda eleitoral nas ruas, internet, comícios, carreatas e distribuição de material gráfico.",
+    data: "16 AGO",
+    dataInicio: "2026-08-16",
+    dataCompleta: "A partir de 16/08/2026",
+    diaInteiro: true,
+    horaInicio: "00:00",
+    horaFim: "23:59",
+    local: "Território Nacional",
+    cidade: "Nacional",
+    uf: "BR",
+    responsavel: "Justiça Eleitoral - TSE",
+    tipo: "tse_calendario",
+    status: "confirmado",
+  },
+  {
+    id: "tse-evt-5",
+    titulo: "🏛️ Horário Gratuito de Propaganda no Rádio e TV",
+    descricao: "Exibição do guia eleitoral gratuito nas emissoras de rádio e televisão para todos os cargos em disputa.",
+    data: "28 AGO",
+    dataInicio: "2026-08-28",
+    dataFim: "2026-10-01",
+    dataCompleta: "28/08/2026 a 01/10/2026",
+    diaInteiro: true,
+    horaInicio: "07:00",
+    horaFim: "21:00",
+    local: "Emissoras de Rádio e TV",
+    cidade: "Nacional",
+    uf: "BR",
+    responsavel: "Justiça Eleitoral - TSE",
+    tipo: "tse_calendario",
+    status: "confirmado",
+  },
+  {
+    id: "tse-evt-6",
+    titulo: "🏛️ Votação do 1º TURNO - Eleições Gerais 2026",
+    descricao: "Dia da votação para Presidente, Governador, Senador, Deputado Federal e Deputado Estadual/Distrital das 8h às 17h.",
+    data: "04 OUT",
+    dataInicio: "2026-10-04",
+    dataCompleta: "04/10/2026 (Domingo)",
+    diaInteiro: true,
+    horaInicio: "08:00",
+    horaFim: "17:00",
+    local: "Seções Eleitorais de Todo o Brasil",
+    cidade: "Nacional",
+    uf: "BR",
+    responsavel: "Justiça Eleitoral - TSE",
+    tipo: "tse_calendario",
+    status: "confirmado",
+  },
+  {
+    id: "tse-evt-7",
+    titulo: "🏛️ Votação do 2º TURNO - Eleições Gerais 2026",
+    descricao: "Dia da votação de 2º turno para os cargos de Presidente e Governador onde for necessário.",
+    data: "25 OUT",
+    dataInicio: "2026-10-25",
+    dataCompleta: "25/10/2026 (Domingo)",
+    diaInteiro: true,
+    horaInicio: "08:00",
+    horaFim: "17:00",
+    local: "Seções Eleitorais",
+    cidade: "Nacional",
+    uf: "BR",
+    responsavel: "Justiça Eleitoral - TSE",
+    tipo: "tse_calendario",
+    status: "confirmado",
+  },
+  {
+    id: "tse-evt-8",
+    titulo: "🏛️ Diplomação dos Eleitos nas Eleições 2026",
+    descricao: "Data limite para a diplomação de todos os candidatos eleitos e suplentes pela Justiça Eleitoral.",
+    data: "19 DEZ",
+    dataInicio: "2026-12-19",
+    dataCompleta: "Até 19/12/2026",
+    diaInteiro: true,
+    horaInicio: "10:00",
+    horaFim: "18:00",
+    local: "Tribunais Eleitorais",
+    cidade: "Nacional",
+    uf: "BR",
+    responsavel: "Justiça Eleitoral - TSE",
+    tipo: "tse_calendario",
+    status: "confirmado",
+  },
+];
+
 function isEventOnDate(evt: CandidateEvent, dateStr: string): boolean {
   if (!evt) return false;
   if (evt.dataInicio === dateStr || evt.dataCompleta === dateStr) return true;
   if (evt.datasRecorrencia && Array.isArray(evt.datasRecorrencia) && evt.datasRecorrencia.includes(dateStr)) {
     return true;
   }
-  if (evt.recorrente && evt.dataInicio && evt.dataFim && dateStr >= evt.dataInicio && dateStr <= evt.dataFim) {
-    if (!evt.diasSemana || evt.diasSemana.length === 0) return true;
-    const d = new Date(`${dateStr}T12:00:00`).getDay();
-    const dayMap: Record<number, string> = {
-      0: "domingo",
-      1: "segunda",
-      2: "terca",
-      3: "quarta",
-      4: "quinta",
-      5: "sexta",
-      6: "sabado",
-    };
-    const dayId = dayMap[d];
-    return Boolean(dayId && evt.diasSemana.includes(dayId));
+  // Suporte a intervalos de data (como eventos do TSE)
+  if (evt.dataInicio && evt.dataFim && dateStr >= evt.dataInicio && dateStr <= evt.dataFim) {
+    if (evt.recorrente) {
+      if (!evt.diasSemana || evt.diasSemana.length === 0) return true;
+      const d = new Date(`${dateStr}T12:00:00`).getDay();
+      const dayMap: Record<number, string> = {
+        0: "domingo",
+        1: "segunda",
+        2: "terca",
+        3: "quarta",
+        4: "quinta",
+        5: "sexta",
+        6: "sabado",
+      };
+      const dayId = dayMap[d];
+      return Boolean(dayId && evt.diasSemana.includes(dayId));
+    }
+    return true;
   }
   return false;
 }
@@ -240,29 +386,39 @@ export function AgendaPanel() {
       const data = await res.json();
       if (res.ok) {
         const apiEvents = data.eventos ?? [];
-        // Combinar eventos locais salvos com eventos do servidor sem duplicidade por ID
+        // Combinar eventos locais salvos + marcos do Calendário TSE + eventos do servidor sem duplicidade por ID
         const combinedMap = new Map<string, CandidateEvent>();
+        TSE_OFFICIAL_CALENDAR_EVENTS.forEach((evt) => combinedMap.set(evt.id, evt));
         [...localEvents, ...apiEvents].forEach((evt) => {
           if (evt && evt.id) combinedMap.set(evt.id, evt);
         });
         setEventos(Array.from(combinedMap.values()));
       } else {
-        if (localEvents.length > 0) {
-          setEventos(localEvents);
-        } else {
-          throw new Error(data.erro || data.error || "Erro ao carregar agenda.");
-        }
+        const combinedMap = new Map<string, CandidateEvent>();
+        TSE_OFFICIAL_CALENDAR_EVENTS.forEach((evt) => combinedMap.set(evt.id, evt));
+        localEvents.forEach((evt) => {
+          if (evt && evt.id) combinedMap.set(evt.id, evt);
+        });
+        setEventos(Array.from(combinedMap.values()));
       }
     } catch (err: any) {
       if (typeof window !== "undefined") {
         const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
           try {
-            setEventos(JSON.parse(saved));
+            const local = JSON.parse(saved);
+            const combinedMap = new Map<string, CandidateEvent>();
+            TSE_OFFICIAL_CALENDAR_EVENTS.forEach((evt) => combinedMap.set(evt.id, evt));
+            local.forEach((evt: CandidateEvent) => {
+              if (evt && evt.id) combinedMap.set(evt.id, evt);
+            });
+            setEventos(Array.from(combinedMap.values()));
             return;
           } catch (e) {}
         }
       }
+      // Se falhar o backend, garante pelo menos os eventos oficiais do TSE no calendário
+      setEventos(TSE_OFFICIAL_CALENDAR_EVENTS);
       setErrorMsg(err?.message ?? "Falha de conexão com a agenda.");
     } finally {
       setLoading(false);
@@ -301,6 +457,13 @@ export function AgendaPanel() {
     setSubmitting(true);
     setErrorMsg(null);
     setSuccessMsg(null);
+
+    // Validação estrita: horário é obrigatório para eventos da agenda do candidato
+    if (!diaInteiro && (!horaInicio || !horaFim || horaInicio.trim() === "" || horaFim.trim() === "")) {
+      setErrorMsg("O horário de início e o horário de término são obrigatórios para agendamentos.");
+      setSubmitting(false);
+      return;
+    }
 
     // MODO EDIÇÃO
     if (editingEventId) {
@@ -1254,11 +1417,12 @@ export function AgendaPanel() {
                   <div className="grid grid-cols-2 gap-3">
                     <div className="flex flex-col gap-1">
                       <label htmlFor="evt-horainicio" className="font-bold text-zinc-700 dark:text-zinc-300">
-                        Hora Início
+                        Hora Início <span className="text-red-500">*</span>
                       </label>
                       <input
                         id="evt-horainicio"
                         type="time"
+                        required={!diaInteiro}
                         className={inputClass}
                         value={horaInicio}
                         onChange={(e) => setHoraInicio(e.target.value)}
@@ -1266,11 +1430,12 @@ export function AgendaPanel() {
                     </div>
                     <div className="flex flex-col gap-1">
                       <label htmlFor="evt-horafim" className="font-bold text-zinc-700 dark:text-zinc-300">
-                        Hora Fim
+                        Hora Fim <span className="text-red-500">*</span>
                       </label>
                       <input
                         id="evt-horafim"
                         type="time"
+                        required={!diaInteiro}
                         className={inputClass}
                         value={horaFim}
                         onChange={(e) => setHoraFim(e.target.value)}

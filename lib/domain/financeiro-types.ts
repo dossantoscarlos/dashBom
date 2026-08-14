@@ -182,14 +182,16 @@ export type Contract = {
   vendorId: string;
   vendorName: string;
   startDate: string;
+  midDate?: string; // Marco intermediário / meio do contrato
   endDate: string;
   totalAmount: number;
   paidAmount: number;
   remainingAmount: number;
   costCenterId: string;
   costCenterName: string;
-  status: "ativo" | "encerrado" | "suspenso" | "proximo_vencimento";
+  status: "ativo" | "em_execucao" | "encerrado" | "suspenso" | "proximo_vencimento";
   documentUrl?: string;
+  notes?: string;
 };
 
 export type BankTransaction = {

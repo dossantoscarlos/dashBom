@@ -78,9 +78,10 @@ import {
   Download,
   Wallet,
   Printer,
+  AlertCircle,
 } from "lucide-react";
 
-// Emissão automatizada do Parecer Técnico Circunstanciado com Escopo, Documentos e Orçamento
+// Emissão automatizada do Parecer Técnico Circunstanciado com Escopo, Documentos, Centro de Custo e Orçamento
 export const generateConsolidatedTechnicalReport = (demanda: DemandaItem) => {
   const docsList =
     demanda.files && demanda.files.length > 0
@@ -89,7 +90,7 @@ export const generateConsolidatedTechnicalReport = (demanda: DemandaItem) => {
 
   const budgetFormatted =
     demanda.hasBudget || (demanda.estimatedBudget && demanda.estimatedBudget > 0)
-      ? `R$ ${(demanda.estimatedBudget || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })} (Fonte: ${demanda.budgetSource || "Dotação Orçamentária Geral / Fundo Municipal"})`
+      ? `R$ ${(demanda.estimatedBudget || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })} (Centro de Custo: ${demanda.budgetSource || "Campanha Parlamentar"} | Destinação: ${demanda.budgetDestination || demanda.title})`
       : "Sem dotação orçamentária prévia vinculada (Recursos a serem alocados na conversão do projeto)";
 
   return `PARECER TÉCNICO CIRCUNSTANCIADO DE VIABILIDADE
@@ -106,8 +107,9 @@ Nº REGISTRO: ${demanda.code} | DATA DE EMISSÃO: ${new Date().toLocaleDateStrin
 ${docsList}
 - Diagnóstico Documental: Peças técnicas conferidas e em conformidade com as diretrizes regulatórias.
 
-3. PREVISÃO E DOTAÇÃO ORÇAMENTÁRIA:
-- Dotação Estimada: ${budgetFormatted}
+3. PREVISÃO E DOTAÇÃO ORÇAMENTÁRIA (INTEGRAÇÃO FINANCEIRA):
+- Dotação & Centro de Custo: ${budgetFormatted}
+- Destinação Específica: ${demanda.budgetDestination || "Alocação conforme plano executivo de demandas e obras"}
 - Viabilidade Econômica: Demanda compatível com a capacidade executiva e planejamento de investimentos.
 
 4. CONCLUSÃO TÉCNICA E RECOMENDAÇÃO:
@@ -350,11 +352,185 @@ export function DemandasProjetosPanel() {
   const [uploadedFiles, setUploadedFiles] = useState<any[]>([]);
   const [hasBudget, setHasBudget] = useState(false);
   const [estimatedBudget, setEstimatedBudget] = useState("");
-  const [budgetSource, setBudgetSource] = useState("Dotação Orçamentária Geral");
+  const [budgetSource, setBudgetSource] = useState("Campanha Parlamentar");
+  const [costCenterChoice, setCostCenterChoice] = useState("Campanha Parlamentar");
+  const [customCostCenterName, setCustomCostCenterName] = useState("");
+  const [budgetDestination, setBudgetDestination] = useState("");
   const [approverName, setApproverName] = useState("Ana Martins");
   const [approverRole, setApproverRole] = useState("Coordenadora de Projetos / Gestora Técnica");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
+
+  // Lista dinâmica de Centros de Custo originados da Área Financeira
+  const [availableCostCenters, setAvailableCostCenters] = useState<{ id: string; name: string; contextType: string }[]>([
+    { id: "cc-1", name: "Campanha Parlamentar", contextType: "campanha" },
+    { id: "cc-2", name: "Mandato Corrente", contextType: "mandato" },
+    { id: "cc-3", name: "Partido / Diretório", contextType: "partido" },
+    { id: "cc-4", name: "Financeiro Interno Campanha", contextType: "interno" },
+  ]);
+
+  // Carrega centros de custo da Área Financeira (GET /api/financeiro)
+  useEffect(() => {
+    async function loadFinancialCostCenters() {
+      try {
+        const res = await fetch("/api/financeiro?contextType=campanha");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.costCenters && Array.isArray(data.costCenters) && data.costCenters.length > 0) {
+            const list = data.costCenters.map((c: any) => ({
+              id: c.id,
+              name: c.name,
+              contextType: c.contextType || "campanha",
+            }));
+            setAvailableCostCenters((prev) => {
+              const map = new Map<string, { id: string; name: string; contextType: string }>();
+              [...prev, ...list].forEach((item) => map.set(item.name.toLowerCase(), item));
+              return Array.from(map.values());
+            });
+          }
+        }
+      } catch (e) {}
+    }
+    loadFinancialCostCenters();
+  }, []);
+
+  // Estados para Edição e Correção de Orçamento & Centro de Custo na Análise Técnica
+  const [isEditingDemandBudget, setIsEditingDemandBudget] = useState(false);
+  const [editBudgetAmount, setEditBudgetAmount] = useState("");
+  const [editCostCenterChoice, setEditCostCenterChoice] = useState("Campanha Parlamentar");
+  const [editCustomCostCenterName, setEditCustomCostCenterName] = useState("");
+  const [editBudgetDestination, setEditBudgetDestination] = useState("");
+  const [editHasBudget, setEditHasBudget] = useState(true);
+
+  // Sincroniza campos de edição ao trocar de demanda ativa
+  useEffect(() => {
+    if (currentDemanda) {
+      setEditHasBudget(Boolean(currentDemanda.hasBudget || (currentDemanda.estimatedBudget && currentDemanda.estimatedBudget > 0)));
+      setEditBudgetAmount(currentDemanda.estimatedBudget ? String(currentDemanda.estimatedBudget) : "");
+      setEditCostCenterChoice(currentDemanda.budgetSource || "Campanha Parlamentar");
+      setEditBudgetDestination(currentDemanda.budgetDestination || currentDemanda.title || "");
+    }
+  }, [currentDemanda?.id, currentDemanda?.estimatedBudget, currentDemanda?.budgetSource]);
+
+  // Helper para obter centro de custo e contexto
+  const getEffectiveCostCenter = (choice = costCenterChoice, customName = customCostCenterName) => {
+    if (choice === "outro") {
+      return {
+        name: customName.trim() || "Centro de Custo Personalizado",
+        context: "campanha" as const,
+      };
+    }
+    const found = availableCostCenters.find((c) => c.name === choice);
+    if (found) {
+      return {
+        name: found.name,
+        context: (found.contextType as any) || "campanha",
+      };
+    }
+    const map: Record<string, { name: string; context: "campanha" | "mandato" | "partido" | "interno" }> = {
+      "Campanha Parlamentar": { name: "Campanha Parlamentar", context: "campanha" },
+      "Mandato Corrente": { name: "Mandato Corrente", context: "mandato" },
+      "Partido / Diretório": { name: "Partido / Diretório", context: "partido" },
+      "Financeiro Interno Campanha": { name: "Financeiro Interno Campanha", context: "interno" },
+    };
+    return map[choice] || { name: choice, context: "campanha" as const };
+  };
+
+  // Sincronização automática com a Área Financeira por Centro de Custo, Valor e Destinação
+  const syncWithFinancialArea = (demanda: DemandaItem) => {
+    if (!demanda.hasBudget || !demanda.estimatedBudget || demanda.estimatedBudget <= 0) return;
+
+    const ccInfo = getEffectiveCostCenter(demanda.budgetSource);
+    const costCenterName = demanda.budgetSource || ccInfo.name;
+    const contextType = demanda.costCenterContext || ccInfo.context;
+    const destination = demanda.budgetDestination || `Destinação: ${demanda.title}`;
+
+    fetch("/api/financeiro", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "register_demand_budget",
+        costCenter: {
+          id: `cc-${costCenterName.toLowerCase().replace(/[^a-z0-9]/g, "-")}`,
+          name: costCenterName,
+          contextType,
+          budgetLimit: demanda.estimatedBudget,
+        },
+        expense: {
+          id: `exp-dem-${demanda.id}`,
+          code: `DESP-${demanda.code}`,
+          description: `[Demanda ${demanda.code}] ${demanda.title}`,
+          finalAmount: demanda.estimatedBudget,
+          costCenterName,
+          contextType,
+          purpose: destination,
+          status: demanda.decision === "Aprovada para Projeto" ? "aprovada" : "solicitada",
+          docNumber: demanda.code,
+          dueDate: demanda.analysisDeadline || new Date().toISOString().slice(0, 10),
+          category: demanda.category,
+        },
+      }),
+    }).catch(() => {});
+  };
+
+  // Salvar a correção/edição de Orçamento e Centro de Custo de uma demanda existente
+  const handleSaveEditedDemandBudget = () => {
+    if (!currentDemanda) return;
+
+    let finalCostCenterName = editCostCenterChoice;
+    let finalContext: "campanha" | "mandato" | "partido" | "interno" = "campanha";
+
+    if (editCostCenterChoice === "outro") {
+      finalCostCenterName = editCustomCostCenterName.trim() || "Centro de Custo Personalizado";
+      finalContext = "campanha";
+      setAvailableCostCenters((prev) => [
+        ...prev,
+        { id: `cc-${Date.now()}`, name: finalCostCenterName, contextType: finalContext },
+      ]);
+    } else {
+      const found = availableCostCenters.find((c) => c.name === editCostCenterChoice);
+      if (found) {
+        finalContext = (found.contextType as any) || "campanha";
+      }
+    }
+
+    const numAmount = editHasBudget && editBudgetAmount ? parseFloat(editBudgetAmount.replace(",", ".")) : 0;
+    const finalDest = editBudgetDestination.trim() || currentDemanda.title;
+
+    const updated: DemandaItem = {
+      ...currentDemanda,
+      hasBudget: editHasBudget,
+      estimatedBudget: numAmount,
+      budgetSource: editHasBudget ? finalCostCenterName : undefined,
+      budgetDestination: editHasBudget ? finalDest : undefined,
+      costCenterContext: editHasBudget ? finalContext : undefined,
+      criteria: {
+        ...currentDemanda.criteria,
+        needsBudget: Boolean(editHasBudget && numAmount > 0),
+      },
+    };
+
+    // Atualiza o parecer técnico consolidado com os dados orçamentários corrigidos
+    const updatedReport = generateConsolidatedTechnicalReport(updated);
+    updated.technicalReport = updatedReport;
+
+    setCurrentDemanda(updated);
+    setTechnicalReport(updatedReport);
+    setRegisteredDemands((prev) => prev.map((d) => (d.id === updated.id ? updated : d)));
+    setIsEditingDemandBudget(false);
+
+    // Sincroniza com o Financeiro
+    syncWithFinancialArea(updated);
+
+    // Sincroniza com a API de demandas
+    fetch("/api/demandas", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updated),
+    }).catch(() => {});
+
+    toast(`✓ Orçamento e Centro de Custo da demanda ${updated.code} atualizados e refletidos na Área Financeira!`);
+  };
 
   // Parecer Técnico da Análise
   const [technicalReport, setTechnicalReport] = useState("");
@@ -450,6 +626,7 @@ export function DemandasProjetosPanel() {
     setIsSubmitting(true);
 
     const generatedCode = `DEM-${Math.floor(1000 + Math.random() * 9000)}`;
+    const effectiveCc = getEffectiveCostCenter();
 
     const newDemanda: DemandaItem = {
       id: `dem-${Date.now()}`,
@@ -475,13 +652,15 @@ export function DemandasProjetosPanel() {
       files: uploadedFiles.map((f) => f.name),
       hasBudget,
       estimatedBudget: hasBudget && estimatedBudget ? parseFloat(estimatedBudget.replace(",", ".")) : 0,
-      budgetSource: hasBudget ? budgetSource : undefined,
+      budgetSource: hasBudget ? effectiveCc.name : undefined,
+      budgetDestination: hasBudget ? budgetDestination.trim() || title.trim() : undefined,
+      costCenterContext: hasBudget ? effectiveCc.context : undefined,
       createdAt: new Date().toLocaleString("pt-BR"),
       criteria: {
         multDeliveries: false,
         needsTeam: false,
         hasTimeline: false,
-        needsBudget: false,
+        needsBudget: Boolean(hasBudget && estimatedBudget && parseFloat(estimatedBudget.replace(",", ".")) > 0),
         approvedByResponsible: false,
       },
     };
@@ -494,6 +673,9 @@ export function DemandasProjetosPanel() {
     setCurrentDemanda(newDemanda);
     setTechnicalReport(reportContent);
     setIsSubmitting(false);
+
+    // Integração com Financeiro por Centro de Custo, Valor e Destinação
+    syncWithFinancialArea(newDemanda);
 
     // Sincroniza via API REST no servidor
     fetch("/api/demandas", {
@@ -516,12 +698,14 @@ export function DemandasProjetosPanel() {
     setUploadedFiles([]);
     setHasBudget(false);
     setEstimatedBudget("");
-    setBudgetSource("Dotação Orçamentária Geral");
+    setBudgetDestination("");
+    setCostCenterChoice("Campanha Parlamentar");
+    setCustomCostCenterName("");
 
     if (isDraft) {
       toast(`Rascunho da demanda ${generatedCode} salvo com sucesso!`);
     } else {
-      toast(`Demanda ${generatedCode} cadastrada com sucesso! Parecer Técnico inicial gerado.`);
+      toast(`Demanda ${generatedCode} cadastrada com sucesso! Centro de custo integrado à Área Financeira.`);
       setMainMode("analise_demanda");
     }
   };
@@ -1235,32 +1419,74 @@ export function DemandasProjetosPanel() {
                   </div>
 
                   {hasBudget && (
-                    <div className="grid gap-4 sm:grid-cols-2 p-4 bg-[#F0FDF4] border border-[#86EFAC]/50 rounded-xl">
-                      <div className="flex flex-col gap-1.5">
-                        <label className="text-xs font-bold text-[#10213D]">
-                          Valor estimado do orçamento (R$) *
-                        </label>
-                        <input
-                          type="number"
-                          step="0.01"
-                          value={estimatedBudget}
-                          onChange={(e) => setEstimatedBudget(e.target.value)}
-                          placeholder="Ex.: 150000.00"
-                          className="h-10 px-3.5 rounded-xl border border-[#86EFAC] bg-white text-xs font-mono font-bold text-[#10213D] focus:border-[#008B63] focus:outline-hidden"
-                        />
+                    <div className="flex flex-col gap-4 p-4 bg-[#F0FDF4] border border-[#86EFAC]/60 rounded-xl">
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-xs font-bold text-[#10213D]">
+                            Valor da Dotação / Orçamento (R$) <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={estimatedBudget}
+                            onChange={(e) => setEstimatedBudget(e.target.value)}
+                            placeholder="Ex.: 150000.00"
+                            className="h-10 px-3.5 rounded-xl border border-[#86EFAC] bg-white text-xs font-mono font-bold text-[#10213D] focus:border-[#008B63] focus:outline-hidden"
+                            required
+                          />
+                        </div>
+
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-xs font-bold text-[#10213D]">
+                            Centro de Custo (Origem Financeira) <span className="text-red-500">*</span>
+                          </label>
+                          <select
+                            value={costCenterChoice}
+                            onChange={(e) => setCostCenterChoice(e.target.value)}
+                            className="h-10 px-3.5 rounded-xl border border-[#86EFAC] bg-white text-xs font-bold text-[#10213D] focus:border-[#008B63] focus:outline-hidden cursor-pointer"
+                          >
+                            {availableCostCenters.map((cc) => (
+                              <option key={cc.id} value={cc.name}>
+                                {cc.contextType === "campanha" ? "🏛️ " : cc.contextType === "mandato" ? "🏢 " : cc.contextType === "partido" ? "🤝 " : "💼 "}
+                                {cc.name} ({cc.contextType.toUpperCase()})
+                              </option>
+                            ))}
+                            <option value="outro">➕ Cadastrar Novo Centro de Custo...</option>
+                          </select>
+                        </div>
                       </div>
+
+                      {costCenterChoice === "outro" && (
+                        <div className="flex flex-col gap-1.5 pt-1">
+                          <label className="text-xs font-bold text-[#10213D]">
+                            Nome do Novo Centro de Custo a Cadastrar <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            value={customCostCenterName}
+                            onChange={(e) => setCustomCostCenterName(e.target.value)}
+                            placeholder="Digite o nome do novo centro de custo (Ex.: Fundo de Apoio Comunitário)..."
+                            className="h-10 px-3.5 rounded-xl border border-[#86EFAC] bg-white text-xs font-medium text-[#10213D] focus:border-[#008B63] focus:outline-hidden"
+                            required
+                          />
+                        </div>
+                      )}
 
                       <div className="flex flex-col gap-1.5">
                         <label className="text-xs font-bold text-[#10213D]">
-                          Fonte de recursos / Centro de custo
+                          Destinação Orçamentária / Objeto do Gasto <span className="text-red-500">*</span>
                         </label>
                         <input
                           type="text"
-                          value={budgetSource}
-                          onChange={(e) => setBudgetSource(e.target.value)}
-                          placeholder="Ex.: Secretaria de Obras / Emenda Parlamentar"
+                          value={budgetDestination}
+                          onChange={(e) => setBudgetDestination(e.target.value)}
+                          placeholder="Informe a destinação (Ex.: Obras de Pavimentação, Estrutura Comunitária, Material de Comunicação)..."
                           className="h-10 px-3.5 rounded-xl border border-[#86EFAC] bg-white text-xs font-medium text-[#10213D] focus:border-[#008B63] focus:outline-hidden"
+                          required
                         />
+                        <span className="text-[10px] text-[#059669] font-medium mt-0.5">
+                          ✓ O valor e a destinação serão automaticamente cadastrados e integrados na Área Financeira por este centro de custo.
+                        </span>
                       </div>
                     </div>
                   )}
@@ -1596,45 +1822,194 @@ export function DemandasProjetosPanel() {
               )}
             </div>
 
-            {/* SEÇÃO DE PREVISÃO E DOTAÇÃO ORÇAMENTÁRIA */}
+            {/* SEÇÃO DE PREVISÃO E DOTAÇÃO ORÇAMENTÁRIA (COM EDIÇÃO E CORREÇÃO DIRETA) */}
             <div className="border border-[#E2E8F0] rounded-2xl p-5 flex flex-col gap-4 bg-[#F0FDF4]/40">
-              <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-2.5">
+              <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-2.5 flex-wrap gap-2">
                 <div className="flex items-center gap-2">
                   <Wallet className="h-4 w-4 text-[#008B63]" />
                   <h4 className="text-xs font-extrabold text-[#10213D] uppercase tracking-wider">
-                    Diagnóstico Orçamentário e Financeiro
+                    Diagnóstico Orçamentário e Centro de Custo
                   </h4>
                 </div>
-                <span
-                  className={`px-2.5 py-0.5 rounded text-[10px] font-extrabold uppercase border ${
-                    currentDemanda.hasBudget || (currentDemanda.estimatedBudget && currentDemanda.estimatedBudget > 0)
-                      ? "bg-[#E8F7F1] text-[#008B63] border-[#00A978]/30"
-                      : "bg-[#F8FAFC] text-[#64748B] border-[#E2E8F0]"
-                  }`}
-                >
-                  {currentDemanda.hasBudget || (currentDemanda.estimatedBudget && currentDemanda.estimatedBudget > 0)
-                    ? "Possui Orçamento Previsto"
-                    : "Sem Orçamento Previsto"}
-                </span>
-              </div>
 
-              <div className="grid gap-4 sm:grid-cols-2 text-xs">
-                <div className="flex flex-col gap-1 p-3 bg-white border border-[#E2E8F0] rounded-xl">
-                  <span className="text-[#64748B] font-bold text-[10px] uppercase">Valor Estimado</span>
-                  <span className="text-sm font-black text-[#10213D]">
-                    {currentDemanda.estimatedBudget && currentDemanda.estimatedBudget > 0
-                      ? `R$ ${currentDemanda.estimatedBudget.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`
-                      : "R$ 0,00 (Não orçado)"}
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`px-2.5 py-0.5 rounded text-[10px] font-extrabold uppercase border ${
+                      currentDemanda.hasBudget || (currentDemanda.estimatedBudget && currentDemanda.estimatedBudget > 0)
+                        ? "bg-[#E8F7F1] text-[#008B63] border-[#00A978]/30"
+                        : "bg-amber-50 text-amber-700 border-amber-200"
+                    }`}
+                  >
+                    {currentDemanda.hasBudget || (currentDemanda.estimatedBudget && currentDemanda.estimatedBudget > 0)
+                      ? "Possui Orçamento e Centro de Custo"
+                      : "⚠️ Sem Centro de Custo Vinculado"}
                   </span>
-                </div>
 
-                <div className="flex flex-col gap-1 p-3 bg-white border border-[#E2E8F0] rounded-xl">
-                  <span className="text-[#64748B] font-bold text-[10px] uppercase">Fonte de Recursos</span>
-                  <span className="text-xs font-extrabold text-[#10213D]">
-                    {currentDemanda.budgetSource || "Dotação Geral / A definir na conversão"}
-                  </span>
+                  {!isEditingDemandBudget ? (
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingDemandBudget(true)}
+                      className="px-3 py-1 bg-white hover:bg-[#EFF6FF] border border-[#1264F3]/40 text-[#1264F3] rounded-lg text-[11px] font-extrabold flex items-center gap-1 transition cursor-pointer shadow-2xs"
+                    >
+                      <span>✏️ Editar / Corrigir Orçamento</span>
+                    </button>
+                  ) : null}
                 </div>
               </div>
+
+              {!isEditingDemandBudget ? (
+                <>
+                  <div className="grid gap-3 sm:grid-cols-3 text-xs">
+                    <div className="flex flex-col gap-1 p-3 bg-white border border-[#E2E8F0] rounded-xl shadow-2xs">
+                      <span className="text-[#64748B] font-bold text-[10px] uppercase">Valor Estimado / Dotação</span>
+                      <span className="text-sm font-black text-[#10213D]">
+                        {currentDemanda.estimatedBudget && currentDemanda.estimatedBudget > 0
+                          ? `R$ ${currentDemanda.estimatedBudget.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`
+                          : "R$ 0,00 (Não orçado)"}
+                      </span>
+                    </div>
+
+                    <div className="flex flex-col gap-1 p-3 bg-white border border-[#E2E8F0] rounded-xl shadow-2xs">
+                      <span className="text-[#64748B] font-bold text-[10px] uppercase">Centro de Custo (Financeiro)</span>
+                      <span className="text-xs font-black text-[#10213D] flex items-center gap-1.5">
+                        <span className="h-2 w-2 rounded-full bg-[#008B63]"></span>
+                        {currentDemanda.budgetSource || "Sem centro de custo atrelado"}
+                      </span>
+                    </div>
+
+                    <div className="flex flex-col gap-1 p-3 bg-white border border-[#E2E8F0] rounded-xl shadow-2xs">
+                      <span className="text-[#64748B] font-bold text-[10px] uppercase">Destinação / Objeto do Gasto</span>
+                      <span className="text-xs font-bold text-[#10213D] truncate" title={currentDemanda.budgetDestination || currentDemanda.title}>
+                        {currentDemanda.budgetDestination || currentDemanda.title || "Não informada"}
+                      </span>
+                    </div>
+                  </div>
+
+                  {(!currentDemanda.hasBudget || !currentDemanda.estimatedBudget || currentDemanda.estimatedBudget <= 0) && (
+                    <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-between gap-3 text-xs">
+                      <div className="flex items-center gap-2">
+                        <AlertCircle className="h-4 w-4 text-amber-600 shrink-0" />
+                        <span className="font-bold text-amber-900">
+                          Esta demanda foi criada sem centro de custo ou orçamento. Para convertê-la em projeto, vincule o centro de custo e o valor orçado.
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setIsEditingDemandBudget(true)}
+                        className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-black text-[11px] shrink-0 cursor-pointer shadow-xs"
+                      >
+                        Vincular Centro de Custo Agora
+                      </button>
+                    </div>
+                  )}
+                </>
+              ) : (
+                /* FORMULÁRIO DE EDIÇÃO E CORREÇÃO DO ORÇAMENTO E CENTRO DE CUSTO */
+                <div className="flex flex-col gap-4 p-4 bg-white border-2 border-[#008B63]/40 rounded-xl shadow-sm">
+                  <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-2">
+                    <span className="text-xs font-extrabold text-[#10213D]">
+                      ✏️ Editar e Corrigir Orçamento da Demanda (Sincronizado com o Financeiro)
+                    </span>
+                    <span className="text-[10px] text-[#64748B]">Preencha os dados e clique em salvar</span>
+                  </div>
+
+                  <div className="flex items-center gap-3 p-3 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl">
+                    <input
+                      type="checkbox"
+                      id="chk-edit-budget"
+                      checked={editHasBudget}
+                      onChange={(e) => setEditHasBudget(e.target.checked)}
+                      className="h-4 w-4 rounded border-[#E2E8F0] text-[#008B63] focus:ring-[#00A978] cursor-pointer"
+                    />
+                    <label htmlFor="chk-edit-budget" className="text-xs font-extrabold text-[#10213D] cursor-pointer flex-1">
+                      Demanda com orçamento e centro de custo vinculado
+                    </label>
+                  </div>
+
+                  {editHasBudget && (
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-xs font-bold text-[#10213D]">
+                          Valor da Dotação / Orçamento (R$) <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={editBudgetAmount}
+                          onChange={(e) => setEditBudgetAmount(e.target.value)}
+                          placeholder="Ex.: 150000.00"
+                          className="h-10 px-3.5 rounded-xl border border-[#86EFAC] bg-white text-xs font-mono font-bold text-[#10213D] focus:border-[#008B63] focus:outline-hidden"
+                        />
+                      </div>
+
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-xs font-bold text-[#10213D]">
+                          Centro de Custo (Área Financeira) <span className="text-red-500">*</span>
+                        </label>
+                        <select
+                          value={editCostCenterChoice}
+                          onChange={(e) => setEditCostCenterChoice(e.target.value)}
+                          className="h-10 px-3.5 rounded-xl border border-[#86EFAC] bg-white text-xs font-bold text-[#10213D] focus:border-[#008B63] focus:outline-hidden cursor-pointer"
+                        >
+                          {availableCostCenters.map((cc) => (
+                            <option key={cc.id} value={cc.name}>
+                              {cc.contextType === "campanha" ? "🏛️ " : cc.contextType === "mandato" ? "🏢 " : cc.contextType === "partido" ? "🤝 " : "💼 "}
+                              {cc.name} ({cc.contextType.toUpperCase()})
+                            </option>
+                          ))}
+                          <option value="outro">➕ Cadastrar Novo Centro de Custo...</option>
+                        </select>
+                      </div>
+
+                      {editCostCenterChoice === "outro" && (
+                        <div className="sm:col-span-2 flex flex-col gap-1.5">
+                          <label className="text-xs font-bold text-[#10213D]">
+                            Nome do Novo Centro de Custo a Cadastrar <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            value={editCustomCostCenterName}
+                            onChange={(e) => setEditCustomCostCenterName(e.target.value)}
+                            placeholder="Digite o nome do novo centro de custo..."
+                            className="h-10 px-3.5 rounded-xl border border-[#86EFAC] bg-white text-xs font-medium text-[#10213D] focus:border-[#008B63] focus:outline-hidden"
+                          />
+                        </div>
+                      )}
+
+                      <div className="sm:col-span-2 flex flex-col gap-1.5">
+                        <label className="text-xs font-bold text-[#10213D]">
+                          Destinação / Objeto do Gasto <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={editBudgetDestination}
+                          onChange={(e) => setEditBudgetDestination(e.target.value)}
+                          placeholder="Informe a destinação (Ex.: Obras de Pavimentação, Estrutura, etc)..."
+                          className="h-10 px-3.5 rounded-xl border border-[#86EFAC] bg-white text-xs font-medium text-[#10213D] focus:border-[#008B63] focus:outline-hidden"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#E2E8F0]">
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingDemandBudget(false)}
+                      className="px-4 py-2 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] hover:bg-[#F1F5F9] text-[#64748B] font-bold text-xs cursor-pointer transition"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSaveEditedDemandBudget}
+                      className="px-5 py-2 rounded-xl bg-[#008B63] hover:bg-[#007553] text-white font-extrabold text-xs cursor-pointer shadow-md transition flex items-center gap-1.5"
+                    >
+                      <CheckCircle2 className="h-4 w-4" />
+                      <span>Salvar e Atualizar Orçamento da Demanda</span>
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* SEÇÃO 2: SOLICITAÇÃO E HOMOLOGAÇÃO DE APROVAÇÃO */}

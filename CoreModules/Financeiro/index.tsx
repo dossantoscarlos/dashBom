@@ -46,6 +46,7 @@ import { formatCurrencyBR } from "@/lib/data/financeiro-store";
 import type {
   FinancialContextType,
   BankAccount,
+  BankAccountType,
   CostCenter,
   Budget,
   Revenue,
@@ -149,6 +150,10 @@ export function FinanceiroPanel() {
   const [showRevenueModal, setShowRevenueModal] = useState(false);
   const [showVendorModal, setShowVendorModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [showCostCenterModal, setShowCostCenterModal] = useState(false);
+  const [showBudgetModal, setShowBudgetModal] = useState(false);
+  const [showContractModal, setShowContractModal] = useState(false);
+  const [showAccountModal, setShowAccountModal] = useState(false);
   const [deleteExpenseId, setDeleteExpenseId] = useState<string | null>(null);
   const [approvalTarget, setApprovalTarget] = useState<{ expense: Expense; decision: "aprovar" | "rejeitar" | "ressalva" } | null>(null);
   const [approvalNotes, setApprovalNotes] = useState("");
@@ -176,6 +181,36 @@ export function FinanceiroPanel() {
   const [vndEmail, setVndEmail] = useState("");
   const [vndPhone, setVndPhone] = useState("");
   const [vndCategory, setVndCategory] = useState("");
+
+  // Formulário Centro de Custo
+  const [ccName, setCcName] = useState("");
+  const [ccCode, setCcCode] = useState("");
+  const [ccBudgetLimit, setCcBudgetLimit] = useState("");
+  const [ccStatus, setCcStatus] = useState<"ativo" | "inativo">("ativo");
+
+  // Formulário Orçamento / Alocação
+  const [bdgCostCenterId, setBdgCostCenterId] = useState("");
+  const [bdgPlanned, setBdgPlanned] = useState("");
+  const [bdgYear, setBdgYear] = useState(2026);
+
+  // Formulário Contrato
+  const [ctrTitle, setCtrTitle] = useState("");
+  const [ctrVendorId, setCtrVendorId] = useState("");
+  const [ctrCostCenterId, setCtrCostCenterId] = useState("");
+  const [ctrTotalAmount, setCtrTotalAmount] = useState("");
+  const [ctrStartDate, setCtrStartDate] = useState(new Date().toISOString().slice(0, 10));
+  const [ctrMidDate, setCtrMidDate] = useState("");
+  const [ctrEndDate, setCtrEndDate] = useState("");
+  const [ctrNotes, setCtrNotes] = useState("");
+
+  // Formulário Conta Bancária
+  const [accName, setAccName] = useState("");
+  const [accBankName, setAccBankName] = useState("001 - Banco do Brasil S.A.");
+  const [accAgency, setAccAgency] = useState("");
+  const [accNumber, setAccNumber] = useState("");
+  const [accPix, setAccPix] = useState("");
+  const [accType, setAccType] = useState<BankAccountType>("eleitoral");
+  const [accInitialBalance, setAccInitialBalance] = useState("");
 
   // Extrato OFX/CSV Import
   const [importFileContent, setImportFileContent] = useState("");
@@ -328,6 +363,144 @@ export function FinanceiroPanel() {
       loadFinancialData();
     } catch (err: any) {
       setErrorMsg(err?.message || "Erro ao cadastrar fornecedor.");
+    }
+  }
+
+  async function handleCreateCostCenter(e: React.FormEvent) {
+    e.preventDefault();
+    setErrorMsg(null);
+    try {
+      const res = await fetch("/api/financeiro", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "create_cost_center",
+          name: ccName,
+          code: ccCode,
+          budgetLimit: parseFloat(ccBudgetLimit) || 0,
+          status: ccStatus,
+          contextType: activeContext,
+          actor: userEmail,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Erro ao cadastrar centro de custo.");
+
+      setSuccessMsg("🏛️ Centro de custo cadastrado com sucesso!");
+      setShowCostCenterModal(false);
+      setCcName("");
+      setCcCode("");
+      setCcBudgetLimit("");
+      loadFinancialData();
+    } catch (err: any) {
+      setErrorMsg(err?.message || "Erro ao salvar centro de custo.");
+    }
+  }
+
+  async function handleCreateBudget(e: React.FormEvent) {
+    e.preventDefault();
+    setErrorMsg(null);
+    try {
+      const res = await fetch("/api/financeiro", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "create_budget",
+          costCenterId: bdgCostCenterId || (costCenters[0]?.id || "cc-1"),
+          planned: parseFloat(bdgPlanned) || 0,
+          year: Number(bdgYear) || 2026,
+          contextType: activeContext,
+          actor: userEmail,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Erro ao alocar orçamento.");
+
+      setSuccessMsg("🎯 Dotação orçamentária alocada com sucesso!");
+      setShowBudgetModal(false);
+      setBdgPlanned("");
+      loadFinancialData();
+    } catch (err: any) {
+      setErrorMsg(err?.message || "Erro ao salvar orçamento.");
+    }
+  }
+
+  async function handleCreateContract(e: React.FormEvent) {
+    e.preventDefault();
+    setErrorMsg(null);
+    try {
+      const selectedVendor = vendors.find((v) => v.id === ctrVendorId);
+      const selectedCc = costCenters.find((c) => c.id === ctrCostCenterId);
+      const res = await fetch("/api/financeiro", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "create_contract",
+          title: ctrTitle,
+          vendorId: ctrVendorId,
+          vendorName: selectedVendor?.name || "Fornecedor / Prestador",
+          costCenterId: ctrCostCenterId || (costCenters[0]?.id || "cc-1"),
+          costCenterName: selectedCc?.name || "Campanha Parlamentar",
+          totalAmount: parseFloat(ctrTotalAmount) || 0,
+          startDate: ctrStartDate,
+          midDate: ctrMidDate,
+          endDate: ctrEndDate,
+          notes: ctrNotes,
+          contextType: activeContext,
+          actor: userEmail,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Erro ao cadastrar contrato.");
+
+      setSuccessMsg("📜 Contrato cadastrado com vigência e centro de custo vinculado!");
+      setShowContractModal(false);
+      setCtrTitle("");
+      setCtrTotalAmount("");
+      setCtrMidDate("");
+      setCtrEndDate("");
+      setCtrNotes("");
+      loadFinancialData();
+    } catch (err: any) {
+      setErrorMsg(err?.message || "Erro ao salvar contrato.");
+    }
+  }
+
+  async function handleCreateBankAccount(e: React.FormEvent) {
+    e.preventDefault();
+    setErrorMsg(null);
+    try {
+      const bankCode = accBankName.split(" - ")[0] || "001";
+      const res = await fetch("/api/financeiro", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "create_bank_account",
+          name: accName,
+          bankName: accBankName,
+          bankCode,
+          agency: accAgency,
+          accountNumber: accNumber,
+          pixKey: accPix,
+          type: accType,
+          initialBalance: parseFloat(accInitialBalance) || 0,
+          contextType: activeContext,
+          actor: userEmail,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Erro ao cadastrar conta bancária.");
+
+      setSuccessMsg("🏦 Conta bancária registrada com sucesso!");
+      setShowAccountModal(false);
+      setAccName("");
+      setAccAgency("");
+      setAccNumber("");
+      setAccPix("");
+      setAccInitialBalance("");
+      loadFinancialData();
+    } catch (err: any) {
+      setErrorMsg(err?.message || "Erro ao salvar conta bancária.");
     }
   }
 
@@ -2129,15 +2302,655 @@ export function FinanceiroPanel() {
           </div>
         )}
 
-        {/* ---------------- 11. DEMAIS SUB-VISÕES SIMPLIFICADAS DA ESTRUTURA ---------------- */}
-        {["orcamentos", "contratos", "contas_bancarias", "prestacao_contas"].includes(activeSubTab as any) && (
+        {/* ---------------- 4. SUB-VISÃO: ORÇAMENTOS & CENTROS DE CUSTO ---------------- */}
+        {activeSubTab === "orcamentos" && (
+          <div className="flex flex-col gap-6">
+            {/* CABEÇALHO DA ABA ORÇAMENTOS */}
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-black text-zinc-900 dark:text-zinc-100 tracking-tight">
+                  Orçamentos e Centros de Custo
+                </h2>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">
+                  Planejamento orçamentário, dotações por centro de custo e limites de gastos ({activeContext.toUpperCase()})
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setShowCostCenterModal(true)}
+                  disabled={!canManage}
+                  className="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-blue-700 transition shadow-sm disabled:opacity-50 cursor-pointer"
+                >
+                  <CirclePlus className="h-4 w-4" />
+                  Novo Centro de Custo
+                </button>
+
+                <button
+                  onClick={() => setShowBudgetModal(true)}
+                  disabled={!canManage}
+                  className="flex items-center gap-2 rounded-xl border border-blue-600 bg-white px-4 py-2.5 text-xs font-bold text-blue-600 hover:bg-blue-50 dark:bg-zinc-900 dark:hover:bg-blue-950/30 transition shadow-xs disabled:opacity-50 cursor-pointer"
+                >
+                  <Target className="h-4 w-4" />
+                  Alocar Orçamento
+                </button>
+              </div>
+            </div>
+
+            {/* 4 CARDS DE KPIS DE ORÇAMENTO */}
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950 shadow-xs flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-950/60 shrink-0">
+                  <Target className="h-6 w-6" strokeWidth={1.75} />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[11px] font-bold text-zinc-500 dark:text-zinc-400">Total Planejado / Orçado</span>
+                  <span className="text-xl font-black text-zinc-900 dark:text-zinc-100 mt-0.5">
+                    {formatCurrencyBR(summary.totalOrcado || budgets.reduce((acc, b) => acc + b.planned, 0))}
+                  </span>
+                  <span className="text-[10px] text-zinc-400 font-medium">
+                    {budgets.length} dotações cadastradas
+                  </span>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950 shadow-xs flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-purple-50 text-purple-600 dark:bg-purple-950/60 shrink-0">
+                  <Building className="h-6 w-6" strokeWidth={1.75} />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[11px] font-bold text-zinc-500 dark:text-zinc-400">Teto Centros de Custo</span>
+                  <span className="text-xl font-black text-purple-600 mt-0.5">
+                    {formatCurrencyBR(costCenters.reduce((acc, c) => acc + (c.budgetLimit || 0), 0))}
+                  </span>
+                  <span className="text-[10px] text-purple-600 font-medium">
+                    {costCenters.length} centros de custo
+                  </span>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950 shadow-xs flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 dark:bg-amber-950/60 shrink-0">
+                  <Lock className="h-6 w-6" strokeWidth={1.75} />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[11px] font-bold text-zinc-500 dark:text-zinc-400">Orçamento Comprometido</span>
+                  <span className="text-xl font-black text-amber-600 mt-0.5">
+                    {formatCurrencyBR(summary.totalComprometido)}
+                  </span>
+                  <span className="text-[10px] text-amber-600 font-medium">
+                    {summary.pctValorComprometido ?? 0}% em execução
+                  </span>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950 shadow-xs flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 shrink-0">
+                  <Coins className="h-6 w-6" strokeWidth={1.75} />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[11px] font-bold text-zinc-500 dark:text-zinc-400">Saldo Disponível</span>
+                  <span className="text-xl font-black text-emerald-600 mt-0.5">
+                    {formatCurrencyBR(summary.totalDisponivel)}
+                  </span>
+                  <span className="text-[10px] text-emerald-600 font-medium">
+                    Livre para novas dotações
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* SEÇÃO 1: CARDS DE CENTROS DE CUSTO */}
+            <div className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950 shadow-xs flex flex-col gap-4">
+              <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-850 pb-3">
+                <div className="flex items-center gap-2">
+                  <Building className="h-5 w-5 text-blue-600" />
+                  <h3 className="text-sm font-extrabold text-zinc-900 dark:text-zinc-100">
+                    Centros de Custo Cadastrados ({costCenters.length})
+                  </h3>
+                </div>
+                <button
+                  onClick={() => setShowCostCenterModal(true)}
+                  className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 cursor-pointer"
+                >
+                  <CirclePlus className="h-3.5 w-3.5" /> Adicionar Centro
+                </button>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {costCenters.length === 0 ? (
+                  <div className="col-span-full py-8 text-center text-zinc-400 text-xs">
+                    Nenhum centro de custo cadastrado no contexto selecionado.
+                  </div>
+                ) : (
+                  costCenters.map((cc) => {
+                    const totalSpent = expenses.reduce((sum, exp) => {
+                      const alloc = exp.allocations?.find((a) => a.costCenterId === cc.id || a.costCenterName === cc.name);
+                      return sum + (alloc ? alloc.amount : 0);
+                    }, 0);
+                    const limit = cc.budgetLimit || 0;
+                    const pct = limit > 0 ? Math.min(100, Math.round((totalSpent / limit) * 100)) : 0;
+                    const available = Math.max(0, limit - totalSpent);
+
+                    return (
+                      <div key={cc.id} className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/30 flex flex-col gap-3 shadow-2xs">
+                        <div className="flex items-center justify-between">
+                          <span className="font-mono text-[10px] font-extrabold text-blue-600 bg-blue-50 dark:bg-blue-950 px-2 py-0.5 rounded border border-blue-200 dark:border-blue-800">
+                            {cc.code}
+                          </span>
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${cc.status === "ativo" ? "bg-emerald-100 text-emerald-800" : "bg-zinc-200 text-zinc-600"}`}>
+                            {cc.status === "ativo" ? "Ativo" : "Inativo"}
+                          </span>
+                        </div>
+
+                        <div>
+                          <h4 className="font-extrabold text-sm text-zinc-900 dark:text-zinc-100">{cc.name}</h4>
+                          <span className="text-[10px] text-zinc-400 font-semibold uppercase">Contexto: {cc.contextType}</span>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2 text-xs border-t border-zinc-200/60 dark:border-zinc-800 pt-2 font-medium">
+                          <div>
+                            <span className="text-[10px] text-zinc-400 block">Teto Orçado:</span>
+                            <span className="font-bold text-zinc-900 dark:text-zinc-100">{formatCurrencyBR(limit)}</span>
+                          </div>
+                          <div>
+                            <span className="text-[10px] text-zinc-400 block">Utilizado:</span>
+                            <span className="font-bold text-rose-600">{formatCurrencyBR(totalSpent)}</span>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col gap-1 pt-1">
+                          <div className="flex justify-between text-[10px] font-bold">
+                            <span className="text-zinc-500">Execução: {pct}%</span>
+                            <span className="text-emerald-600">Saldo: {formatCurrencyBR(available)}</span>
+                          </div>
+                          <div className="w-full bg-zinc-200 dark:bg-zinc-800 h-1.5 rounded-full overflow-hidden">
+                            <div
+                              className={`h-full rounded-full transition-all ${pct > 90 ? "bg-rose-500" : pct > 75 ? "bg-amber-500" : "bg-blue-600"}`}
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+
+            {/* SEÇÃO 2: DOTAÇÕES ORÇAMENTÁRIAS POR CATEGORIA / ANO */}
+            <div className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950 shadow-xs flex flex-col gap-4">
+              <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-850 pb-3">
+                <div className="flex items-center gap-2">
+                  <Target className="h-5 w-5 text-emerald-600" />
+                  <h3 className="text-sm font-extrabold text-zinc-900 dark:text-zinc-100">
+                    Alocações Orçamentárias por Categoria / Ano ({budgets.length})
+                  </h3>
+                </div>
+                <button
+                  onClick={() => setShowBudgetModal(true)}
+                  className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 cursor-pointer"
+                >
+                  <Target className="h-3.5 w-3.5" /> Nova Dotação
+                </button>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="border-b border-zinc-100 text-[10px] uppercase font-bold text-zinc-400 dark:border-zinc-850">
+                      <th className="py-2.5 px-3">Centro de Custo</th>
+                      <th className="py-2.5 px-3">Ano</th>
+                      <th className="py-2.5 px-3 text-right">Planejado / Orçado</th>
+                      <th className="py-2.5 px-3 text-right">Comprometido</th>
+                      <th className="py-2.5 px-3 text-right">Pago / Liquidado</th>
+                      <th className="py-2.5 px-3 text-right">Saldo Disponível</th>
+                      <th className="py-2.5 px-3 text-center">Progresso</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-100 dark:divide-zinc-850 font-medium">
+                    {budgets.length === 0 ? (
+                      <tr>
+                        <td colSpan={7} className="py-8 text-center text-zinc-400">
+                          Nenhuma alocação orçamentária cadastrada. Clique em "Alocar Orçamento" para definir as metas.
+                        </td>
+                      </tr>
+                    ) : (
+                      budgets.map((b) => {
+                        const pct = b.planned > 0 ? Math.min(100, Math.round(((b.paid + b.committed) / b.planned) * 100)) : 0;
+                        return (
+                          <tr key={b.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-900/50">
+                            <td className="py-3 px-3 font-bold text-zinc-800 dark:text-zinc-200">{b.costCenterName}</td>
+                            <td className="py-3 px-3 font-mono text-zinc-500">{b.year}</td>
+                            <td className="py-3 px-3 text-right font-mono font-bold text-zinc-900 dark:text-zinc-100">
+                              {formatCurrencyBR(b.planned)}
+                            </td>
+                            <td className="py-3 px-3 text-right font-mono text-amber-600">
+                              {formatCurrencyBR(b.committed)}
+                            </td>
+                            <td className="py-3 px-3 text-right font-mono text-blue-600">
+                              {formatCurrencyBR(b.paid)}
+                            </td>
+                            <td className="py-3 px-3 text-right font-mono font-bold text-emerald-600">
+                              {formatCurrencyBR(b.available)}
+                            </td>
+                            <td className="py-3 px-3 text-center min-w-[120px]">
+                              <div className="flex items-center gap-2">
+                                <div className="flex-1 bg-zinc-200 dark:bg-zinc-800 h-2 rounded-full overflow-hidden">
+                                  <div
+                                    className={`h-full rounded-full ${pct > 90 ? "bg-rose-500" : pct > 75 ? "bg-amber-500" : "bg-emerald-500"}`}
+                                    style={{ width: `${pct}%` }}
+                                  />
+                                </div>
+                                <span className="font-mono text-[10px] font-bold text-zinc-600 dark:text-zinc-400 w-8 text-right">
+                                  {pct}%
+                                </span>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ---------------- 5. SUB-VISÃO: CONTRATOS (COM INÍCIO, MEIO, TÉRMINO E CENTRO DE CUSTO) ---------------- */}
+        {activeSubTab === "contratos" && (
+          <div className="flex flex-col gap-6">
+            {/* CABEÇALHO DA ABA CONTRATOS */}
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-black text-zinc-900 dark:text-zinc-100 tracking-tight">
+                  Contratos e Compromissos Firmados
+                </h2>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">
+                  Controle de vigência (Início, Meio, Término), valores e execução orçamentária por centro de custo ({activeContext.toUpperCase()})
+                </p>
+              </div>
+
+              <button
+                onClick={() => setShowContractModal(true)}
+                disabled={!canManage}
+                className="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-blue-700 transition shadow-sm disabled:opacity-50 cursor-pointer"
+              >
+                <CirclePlus className="h-4 w-4" />
+                Novo Contrato
+              </button>
+            </div>
+
+            {/* 4 CARDS DE KPIS DE CONTRATOS */}
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950 shadow-xs flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-950/60 shrink-0">
+                  <FileText className="h-6 w-6" strokeWidth={1.75} />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[11px] font-bold text-zinc-500 dark:text-zinc-400">Total em Contratos</span>
+                  <span className="text-xl font-black text-zinc-900 dark:text-zinc-100 mt-0.5">
+                    {formatCurrencyBR(contracts.reduce((acc, c) => acc + c.totalAmount, 0))}
+                  </span>
+                  <span className="text-[10px] text-zinc-400 font-medium">
+                    {contracts.length} instrumentos vigentes
+                  </span>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950 shadow-xs flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 shrink-0">
+                  <CheckCircle2 className="h-6 w-6" strokeWidth={1.75} />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[11px] font-bold text-zinc-500 dark:text-zinc-400">Orçamento Liquidado</span>
+                  <span className="text-xl font-black text-emerald-600 mt-0.5">
+                    {formatCurrencyBR(contracts.reduce((acc, c) => acc + (c.paidAmount || 0), 0))}
+                  </span>
+                  <span className="text-[10px] text-emerald-600 font-medium">
+                    Parcelas pagas
+                  </span>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950 shadow-xs flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 dark:bg-amber-950/60 shrink-0">
+                  <Clock3 className="h-6 w-6" strokeWidth={1.75} />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[11px] font-bold text-zinc-500 dark:text-zinc-400">Saldo a Liquidar</span>
+                  <span className="text-xl font-black text-amber-600 mt-0.5">
+                    {formatCurrencyBR(contracts.reduce((acc, c) => acc + (c.remainingAmount || (c.totalAmount - (c.paidAmount || 0))), 0))}
+                  </span>
+                  <span className="text-[10px] text-amber-600 font-medium">
+                    Comprometido a vencer
+                  </span>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950 shadow-xs flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-purple-50 text-purple-600 dark:bg-purple-950/60 shrink-0">
+                  <Building className="h-6 w-6" strokeWidth={1.75} />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[11px] font-bold text-zinc-500 dark:text-zinc-400">Centros Vinculados</span>
+                  <span className="text-xl font-black text-purple-600 mt-0.5">
+                    {Array.from(new Set(contracts.map((c) => c.costCenterName))).length} Centros
+                  </span>
+                  <span className="text-[10px] text-purple-600 font-medium">
+                    Rateio orçamentário ativo
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* LISTA DETALHADA DE CONTRATOS COM LINHA DO TEMPO (INÍCIO, MEIO, TÉRMINO) */}
+            <div className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950 shadow-xs flex flex-col gap-4">
+              <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-850 pb-3">
+                <div className="flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-blue-600" />
+                  <h3 className="text-sm font-extrabold text-zinc-900 dark:text-zinc-100">
+                    Instrumentos Contratuais e Marcos Temporais ({contracts.length})
+                  </h3>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-4">
+                {contracts.length === 0 ? (
+                  <div className="py-10 text-center text-zinc-400 text-xs">
+                    Nenhum contrato cadastrado no contexto selecionado. Clique em "Novo Contrato" para adicionar.
+                  </div>
+                ) : (
+                  contracts.map((ctr) => {
+                    const paid = ctr.paidAmount || 0;
+                    const pctPaid = ctr.totalAmount > 0 ? Math.min(100, Math.round((paid / ctr.totalAmount) * 100)) : 0;
+                    const remaining = ctr.totalAmount - paid;
+
+                    return (
+                      <div
+                        key={ctr.id}
+                        className="p-5 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/40 dark:bg-zinc-900/30 flex flex-col gap-4 shadow-2xs hover:border-blue-300 transition"
+                      >
+                        {/* CABEÇALHO DO CONTRATO */}
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div className="flex flex-col gap-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono text-[10px] font-black text-blue-700 bg-blue-100 dark:bg-blue-950 px-2 py-0.5 rounded border border-blue-300 dark:border-blue-800">
+                                {ctr.code}
+                              </span>
+                              <h4 className="font-extrabold text-sm text-zinc-900 dark:text-zinc-100">{ctr.title}</h4>
+                            </div>
+                            <span className="text-xs text-zinc-600 dark:text-zinc-400 font-medium">
+                              Fornecedor / Contratado: <strong>{ctr.vendorName}</strong>
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-xs font-black text-zinc-900 dark:text-zinc-100 bg-white dark:bg-zinc-800 px-3 py-1 rounded-xl border border-zinc-200 dark:border-zinc-700 shadow-2xs">
+                              Total: {formatCurrencyBR(ctr.totalAmount)}
+                            </span>
+                            <span
+                              className={`px-2.5 py-0.5 rounded text-[10px] font-extrabold uppercase ${
+                                ctr.status === "ativo" || ctr.status === "em_execucao"
+                                  ? "bg-emerald-100 text-emerald-800"
+                                  : ctr.status === "encerrado"
+                                  ? "bg-zinc-200 text-zinc-700"
+                                  : "bg-amber-100 text-amber-800"
+                              }`}
+                            >
+                              {ctr.status === "em_execucao" ? "Em Execução" : ctr.status}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* LINHA DO TEMPO VISUAL DO CONTRATO (INÍCIO, MEIO, TÉRMINO) */}
+                        <div className="p-3.5 bg-white dark:bg-zinc-950 rounded-xl border border-zinc-200/80 dark:border-zinc-800 flex flex-col gap-2">
+                          <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
+                            Linha do Tempo e Vigência Contratual
+                          </span>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                            <div className="flex items-center gap-2 p-2 rounded-lg bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-200/60">
+                              <span className="h-6 w-6 rounded-full bg-emerald-600 text-white font-black text-[10px] flex items-center justify-center shrink-0">
+                                1
+                              </span>
+                              <div>
+                                <span className="text-[10px] text-zinc-500 font-bold block">🟢 Início do Contrato</span>
+                                <span className="font-mono font-extrabold text-zinc-800 dark:text-zinc-200">{ctr.startDate}</span>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2 p-2 rounded-lg bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200/60">
+                              <span className="h-6 w-6 rounded-full bg-amber-600 text-white font-black text-[10px] flex items-center justify-center shrink-0">
+                                2
+                              </span>
+                              <div>
+                                <span className="text-[10px] text-zinc-500 font-bold block">🟡 Marco Intermediário (Meio)</span>
+                                <span className="font-mono font-extrabold text-zinc-800 dark:text-zinc-200">
+                                  {ctr.midDate || "Entrega / Revisão 50%"}
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2 p-2 rounded-lg bg-rose-50/60 dark:bg-rose-950/20 border border-rose-200/60">
+                              <span className="h-6 w-6 rounded-full bg-rose-600 text-white font-black text-[10px] flex items-center justify-center shrink-0">
+                                3
+                              </span>
+                              <div>
+                                <span className="text-[10px] text-zinc-500 font-bold block">🔴 Término / Encerramento</span>
+                                <span className="font-mono font-extrabold text-zinc-800 dark:text-zinc-200">{ctr.endDate}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* CONTROLE ORÇAMENTÁRIO DO CONTRATO POR CENTRO DE CUSTO */}
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs pt-1">
+                          <div className="flex flex-col gap-0.5">
+                            <span className="text-[10px] text-zinc-400 font-bold">Centro de Custo Vinculado:</span>
+                            <span className="font-extrabold text-blue-600 dark:text-blue-400 flex items-center gap-1">
+                              🏛️ {ctr.costCenterName}
+                            </span>
+                          </div>
+
+                          <div className="flex flex-col gap-0.5">
+                            <span className="text-[10px] text-zinc-400 font-bold">Orçamento Pago / Utilizado:</span>
+                            <span className="font-mono font-extrabold text-emerald-600">{formatCurrencyBR(paid)} ({pctPaid}%)</span>
+                          </div>
+
+                          <div className="flex flex-col gap-0.5">
+                            <span className="text-[10px] text-zinc-400 font-bold">Saldo a Liquidar:</span>
+                            <span className="font-mono font-extrabold text-amber-600">{formatCurrencyBR(remaining)}</span>
+                          </div>
+                        </div>
+
+                        {/* BARRA DE PROGRESSO DE EXECUÇÃO */}
+                        <div className="w-full bg-zinc-200 dark:bg-zinc-800 h-2 rounded-full overflow-hidden">
+                          <div
+                            className="bg-blue-600 h-full rounded-full transition-all"
+                            style={{ width: `${pctPaid}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ---------------- 6. SUB-VISÃO: REGISTRO DE CONTAS BANCÁRIAS ---------------- */}
+        {activeSubTab === "contas_bancarias" && (
+          <div className="flex flex-col gap-6">
+            {/* CABEÇALHO DA ABA CONTAS BANCÁRIAS */}
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-black text-zinc-900 dark:text-zinc-100 tracking-tight">
+                  Registro de Contas Bancárias Oficiais
+                </h2>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">
+                  Contas correntes registradas na Justiça Eleitoral, doações e contas operacionais ({activeContext.toUpperCase()})
+                </p>
+              </div>
+
+              <button
+                onClick={() => setShowAccountModal(true)}
+                disabled={!canManage}
+                className="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-blue-700 transition shadow-sm disabled:opacity-50 cursor-pointer"
+              >
+                <Landmark className="h-4 w-4" />
+                Nova Conta Bancária
+              </button>
+            </div>
+
+            {/* 4 CARDS DE KPIS BANCÁRIOS */}
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950 shadow-xs flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 shrink-0">
+                  <Banknote className="h-6 w-6" strokeWidth={1.75} />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[11px] font-bold text-zinc-500 dark:text-zinc-400">Saldo Consolidado</span>
+                  <span className="text-xl font-black text-emerald-600 mt-0.5">
+                    {formatCurrencyBR(accounts.reduce((acc, a) => acc + (a.balance || 0), 0))}
+                  </span>
+                  <span className="text-[10px] text-zinc-400 font-medium">
+                    Todas as contas ativas
+                  </span>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950 shadow-xs flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-950/60 shrink-0">
+                  <Landmark className="h-6 w-6" strokeWidth={1.75} />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[11px] font-bold text-zinc-500 dark:text-zinc-400">Contas Registradas</span>
+                  <span className="text-xl font-black text-zinc-900 dark:text-zinc-100 mt-0.5">
+                    {accounts.length} Contas
+                  </span>
+                  <span className="text-[10px] text-blue-600 font-medium">
+                    {accounts.filter((a) => a.status === "ativa").length} em operação
+                  </span>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950 shadow-xs flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-purple-50 text-purple-600 dark:bg-purple-950/60 shrink-0">
+                  <Coins className="h-6 w-6" strokeWidth={1.75} />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[11px] font-bold text-zinc-500 dark:text-zinc-400">Contas Eleitorais / FEFC</span>
+                  <span className="text-xl font-black text-purple-600 mt-0.5">
+                    {accounts.filter((a) => a.type === "eleitoral" || a.type === "fundo_partidario").length}
+                  </span>
+                  <span className="text-[10px] text-purple-600 font-medium">
+                    Contas oficiais de campanha
+                  </span>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950 shadow-xs flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 dark:bg-amber-950/60 shrink-0">
+                  <Scale className="h-6 w-6" strokeWidth={1.75} />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[11px] font-bold text-zinc-500 dark:text-zinc-400">Conciliação de Extratos</span>
+                  <span className="text-xl font-black text-zinc-900 dark:text-zinc-100 mt-0.5">
+                    100%
+                  </span>
+                  <span className="text-[10px] text-emerald-600 font-medium">
+                    Em conformidade
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* GRID DE CARDS DE CONTAS BANCÁRIAS */}
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {accounts.length === 0 ? (
+                <div className="col-span-full py-10 text-center text-zinc-400 text-xs">
+                  Nenhuma conta bancária cadastrada. Clique em "Nova Conta Bancária" para adicionar.
+                </div>
+              ) : (
+                accounts.map((acc) => {
+                  const typeLabelMap: Record<string, string> = {
+                    eleitoral: "🏛️ Conta Eleitoral Principal",
+                    fundo_partidario: "🤝 Fundo Partidário",
+                    doacao: "💰 Doações de Campanha",
+                    operacional: "💼 Operacional & Logística",
+                    mandato: "🏢 Conta de Mandato",
+                  };
+
+                  return (
+                    <div
+                      key={acc.id}
+                      className="p-5 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 flex flex-col gap-4 shadow-xs hover:border-blue-300 transition"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex flex-col">
+                          <span className="text-[10px] font-extrabold uppercase text-blue-600 dark:text-blue-400">
+                            {typeLabelMap[acc.type] || "Conta Bancária"}
+                          </span>
+                          <h4 className="font-extrabold text-sm text-zinc-900 dark:text-zinc-100 mt-0.5">{acc.name}</h4>
+                        </div>
+
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${acc.status === "ativa" ? "bg-emerald-100 text-emerald-800" : "bg-zinc-200 text-zinc-700"}`}>
+                          {acc.status === "ativa" ? "Ativa" : "Bloqueada"}
+                        </span>
+                      </div>
+
+                      <div className="p-3 bg-zinc-50 dark:bg-zinc-900 rounded-xl border border-zinc-200/60 dark:border-zinc-800 flex flex-col gap-1.5 text-xs">
+                        <div className="flex justify-between">
+                          <span className="text-zinc-500">Banco:</span>
+                          <span className="font-bold text-zinc-800 dark:text-zinc-200">{acc.bankName}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-zinc-500">Agência:</span>
+                          <span className="font-mono font-bold text-zinc-800 dark:text-zinc-200">{acc.agency}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-zinc-500">Conta Corrente:</span>
+                          <span className="font-mono font-bold text-zinc-800 dark:text-zinc-200">{acc.accountNumber}</span>
+                        </div>
+                        {acc.pixKey && (
+                          <div className="flex justify-between">
+                            <span className="text-zinc-500">Chave PIX:</span>
+                            <span className="font-mono text-[11px] text-blue-600 truncate max-w-[150px]">{acc.pixKey}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex items-center justify-between border-t border-zinc-100 dark:border-zinc-850 pt-2 text-xs">
+                        <div className="flex flex-col">
+                          <span className="text-[10px] text-zinc-400 font-bold uppercase">Saldo Atual</span>
+                          <span className="text-lg font-black text-emerald-600">{formatCurrencyBR(acc.balance)}</span>
+                        </div>
+
+                        <div className="flex flex-col text-right">
+                          <span className="text-[10px] text-zinc-400 font-bold uppercase">Saldo Inicial</span>
+                          <span className="text-xs font-mono font-bold text-zinc-500">{formatCurrencyBR(acc.initialBalance)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ---------------- 7. SUB-VISÃO: PRESTAÇÃO DE CONTAS ---------------- */}
+        {activeSubTab === "prestacao_contas" && (
           <div className="p-6 border rounded-2xl bg-white dark:bg-zinc-950 text-center flex flex-col items-center gap-2">
-            <span className="text-3xl">⚙️</span>
+            <span className="text-3xl">📋</span>
             <h3 className="font-bold text-xs uppercase text-zinc-800 dark:text-zinc-200">
-              {activeSubTab.replace("_", " ").toUpperCase()} — Módulo Operacional Ativo
+              Prestação de Contas Eleitorais e Fiscais — {activeContext.toUpperCase()}
             </h3>
             <p className="text-[11px] text-zinc-500 max-w-md">
-              Visualização totalmente integrada ao repositório de dados do contexto <strong className="uppercase">{activeContext}</strong>.
+              Geração de relatórios parciais e finais em conformidade com as resoluções do TSE e normas de transparência.
             </p>
           </div>
         )}
@@ -2351,6 +3164,354 @@ export function FinanceiroPanel() {
                 <button type="button" onClick={handleConfirmApproval} className={buttonPrimaryClass}>Registrar Decisão</button>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* MODAL NOVO CENTRO DE CUSTO */}
+        {showCostCenterModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            <form onSubmit={handleCreateCostCenter} className="w-full max-w-md rounded-2xl bg-white p-5 dark:bg-zinc-950 space-y-4 text-xs shadow-2xl">
+              <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-850 pb-2">
+                <h3 className="font-extrabold text-sm text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+                  <Building className="h-4 w-4 text-blue-600" />
+                  Cadastrar Novo Centro de Custo ({activeContext.toUpperCase()})
+                </h3>
+                <button type="button" onClick={() => setShowCostCenterModal(false)} className="text-zinc-400 hover:text-zinc-600 font-bold text-base">×</button>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className={labelClass}>Nome do Centro de Custo *</label>
+                <input
+                  required
+                  className={inputClass}
+                  value={ccName}
+                  onChange={(e) => setCcName(e.target.value)}
+                  placeholder="Ex: Campanha Parlamentar, Obras Comunitárias, Comunicação..."
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1">
+                  <label className={labelClass}>Código / Sigla</label>
+                  <input
+                    className={inputClass}
+                    value={ccCode}
+                    onChange={(e) => setCcCode(e.target.value)}
+                    placeholder="Ex: CC-005"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className={labelClass}>Teto / Limite Orçamentário (R$)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    className={inputClass}
+                    value={ccBudgetLimit}
+                    onChange={(e) => setCcBudgetLimit(e.target.value)}
+                    placeholder="0,00"
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className={labelClass}>Status</label>
+                <select className={inputClass} value={ccStatus} onChange={(e) => setCcStatus(e.target.value as any)}>
+                  <option value="ativo">Ativo (Em Operação)</option>
+                  <option value="inativo">Inativo</option>
+                </select>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2 border-t border-zinc-100 dark:border-zinc-850">
+                <button type="button" onClick={() => setShowCostCenterModal(false)} className={buttonSecondaryClass}>Cancelar</button>
+                <button type="submit" className={buttonPrimaryClass}>Cadastrar Centro de Custo</button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {/* MODAL ALOCAR / CADASTRAR ORÇAMENTO */}
+        {showBudgetModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            <form onSubmit={handleCreateBudget} className="w-full max-w-md rounded-2xl bg-white p-5 dark:bg-zinc-950 space-y-4 text-xs shadow-2xl">
+              <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-850 pb-2">
+                <h3 className="font-extrabold text-sm text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+                  <Target className="h-4 w-4 text-emerald-600" />
+                  Alocar Nova Dotação Orçamentária
+                </h3>
+                <button type="button" onClick={() => setShowBudgetModal(false)} className="text-zinc-400 hover:text-zinc-600 font-bold text-base">×</button>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className={labelClass}>Centro de Custo Vinculado *</label>
+                <select
+                  required
+                  className={inputClass}
+                  value={bdgCostCenterId}
+                  onChange={(e) => setBdgCostCenterId(e.target.value)}
+                >
+                  {costCenters.map((cc) => (
+                    <option key={cc.id} value={cc.id}>{cc.name} ({cc.code})</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1">
+                  <label className={labelClass}>Valor Planejado / Orçado (R$) *</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    required
+                    className={inputClass}
+                    value={bdgPlanned}
+                    onChange={(e) => setBdgPlanned(e.target.value)}
+                    placeholder="Ex: 50000.00"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className={labelClass}>Ano de Exercício</label>
+                  <input
+                    type="number"
+                    className={inputClass}
+                    value={bdgYear}
+                    onChange={(e) => setBdgYear(Number(e.target.value))}
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2 border-t border-zinc-100 dark:border-zinc-850">
+                <button type="button" onClick={() => setShowBudgetModal(false)} className={buttonSecondaryClass}>Cancelar</button>
+                <button type="submit" className={buttonPrimaryClass}>Alocar Orçamento</button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {/* MODAL NOVO CONTRATO (COM INÍCIO, MEIO, TÉRMINO E CENTRO DE CUSTO) */}
+        {showContractModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            <form onSubmit={handleCreateContract} className="w-full max-w-lg rounded-2xl bg-white p-5 dark:bg-zinc-950 space-y-3.5 text-xs shadow-2xl max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-850 pb-2">
+                <h3 className="font-extrabold text-sm text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-blue-600" />
+                  Registrar Contrato de Prestação / Fornecimento
+                </h3>
+                <button type="button" onClick={() => setShowContractModal(false)} className="text-zinc-400 hover:text-zinc-600 font-bold text-base">×</button>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className={labelClass}>Título / Objeto do Contrato *</label>
+                <input
+                  required
+                  className={inputClass}
+                  value={ctrTitle}
+                  onChange={(e) => setCtrTitle(e.target.value)}
+                  placeholder="Ex: Contrato de Prestação de Serviços de Marketing e Tráfego..."
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1">
+                  <label className={labelClass}>Fornecedor / Contratado *</label>
+                  <select
+                    className={inputClass}
+                    value={ctrVendorId}
+                    onChange={(e) => setCtrVendorId(e.target.value)}
+                  >
+                    <option value="">Selecione ou deixe geral...</option>
+                    {vendors.map((v) => (
+                      <option key={v.id} value={v.id}>{v.name} ({v.cpfCnpj})</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label className={labelClass}>Centro de Custo Vinculado *</label>
+                  <select
+                    className={inputClass}
+                    value={ctrCostCenterId}
+                    onChange={(e) => setCtrCostCenterId(e.target.value)}
+                  >
+                    {costCenters.map((cc) => (
+                      <option key={cc.id} value={cc.id}>{cc.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className={labelClass}>Valor Total do Contrato (R$) *</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  required
+                  className={inputClass}
+                  value={ctrTotalAmount}
+                  onChange={(e) => setCtrTotalAmount(e.target.value)}
+                  placeholder="Ex: 75000.00"
+                />
+              </div>
+
+              {/* CRONOGRAMA E VIGÊNCIA (INÍCIO, MEIO, TÉRMINO) */}
+              <div className="p-3 bg-zinc-50 dark:bg-zinc-900 rounded-xl border border-zinc-200/80 dark:border-zinc-800 space-y-2.5">
+                <span className="font-bold text-[11px] text-zinc-700 dark:text-zinc-300 block">
+                  Marcos Temporais de Vigência (Início, Meio e Término)
+                </span>
+
+                <div className="grid grid-cols-3 gap-2 text-xs">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400">🟢 Início *</label>
+                    <input
+                      type="date"
+                      required
+                      className={inputClass}
+                      value={ctrStartDate}
+                      onChange={(e) => setCtrStartDate(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[10px] font-bold text-amber-700 dark:text-amber-400">🟡 Marco Meio (Intermediário)</label>
+                    <input
+                      type="date"
+                      className={inputClass}
+                      value={ctrMidDate}
+                      onChange={(e) => setCtrMidDate(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[10px] font-bold text-rose-700 dark:text-rose-400">🔴 Término *</label>
+                    <input
+                      type="date"
+                      required
+                      className={inputClass}
+                      value={ctrEndDate}
+                      onChange={(e) => setCtrEndDate(e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className={labelClass}>Observações / Cláusulas de Pagamento</label>
+                <textarea
+                  rows={2}
+                  className={inputClass}
+                  value={ctrNotes}
+                  onChange={(e) => setCtrNotes(e.target.value)}
+                  placeholder="Ex: Pagamento parcelado em 3 parcelas vinculadas a entregas..."
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2 border-t border-zinc-100 dark:border-zinc-850">
+                <button type="button" onClick={() => setShowContractModal(false)} className={buttonSecondaryClass}>Cancelar</button>
+                <button type="submit" className={buttonPrimaryClass}>Registrar Contrato</button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {/* MODAL NOVA CONTA BANCÁRIA */}
+        {showAccountModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            <form onSubmit={handleCreateBankAccount} className="w-full max-w-md rounded-2xl bg-white p-5 dark:bg-zinc-950 space-y-3.5 text-xs shadow-2xl">
+              <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-850 pb-2">
+                <h3 className="font-extrabold text-sm text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+                  <Landmark className="h-4 w-4 text-blue-600" />
+                  Registrar Nova Conta Bancária
+                </h3>
+                <button type="button" onClick={() => setShowAccountModal(false)} className="text-zinc-400 hover:text-zinc-600 font-bold text-base">×</button>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className={labelClass}>Nome / Identificação da Conta *</label>
+                <input
+                  required
+                  className={inputClass}
+                  value={accName}
+                  onChange={(e) => setAccName(e.target.value)}
+                  placeholder="Ex: Conta Eleitoral Principal 2026, Fundo Partidário..."
+                />
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className={labelClass}>Instituição Financeira / Banco *</label>
+                <select className={inputClass} value={accBankName} onChange={(e) => setAccBankName(e.target.value)}>
+                  <option value="001 - Banco do Brasil S.A.">001 - Banco do Brasil S.A.</option>
+                  <option value="104 - Caixa Econômica Federal">104 - Caixa Econômica Federal</option>
+                  <option value="237 - Banco Bradesco S.A.">237 - Banco Bradesco S.A.</option>
+                  <option value="341 - Banco Itaú Unibanco S.A.">341 - Banco Itaú Unibanco S.A.</option>
+                  <option value="033 - Banco Santander (Brasil) S.A.">033 - Banco Santander (Brasil) S.A.</option>
+                  <option value="756 - Banco Cooperativo Sicoob S.A.">756 - Banco Cooperativo Sicoob S.A.</option>
+                  <option value="260 - Nu Pagamentos S.A. (Nubank)">260 - Nu Pagamentos S.A. (Nubank)</option>
+                  <option value="336 - Banco C6 S.A.">336 - Banco C6 S.A.</option>
+                  <option value="077 - Banco Inter S.A.">077 - Banco Inter S.A.</option>
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1">
+                  <label className={labelClass}>Agência *</label>
+                  <input
+                    required
+                    className={inputClass}
+                    value={accAgency}
+                    onChange={(e) => setAccAgency(e.target.value)}
+                    placeholder="Ex: 1234-5"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className={labelClass}>Conta Corrente *</label>
+                  <input
+                    required
+                    className={inputClass}
+                    value={accNumber}
+                    onChange={(e) => setAccNumber(e.target.value)}
+                    placeholder="Ex: 98765-4"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1">
+                  <label className={labelClass}>Tipo de Conta</label>
+                  <select className={inputClass} value={accType} onChange={(e) => setAccType(e.target.value as any)}>
+                    <option value="eleitoral">🏛️ Conta Eleitoral Principal</option>
+                    <option value="fundo_partidario">🤝 Fundo Partidário</option>
+                    <option value="doacao">💰 Doações de Campanha</option>
+                    <option value="operacional">💼 Operacional</option>
+                    <option value="mandato">🏢 Mandato Corrente</option>
+                  </select>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className={labelClass}>Saldo Inicial (R$)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    className={inputClass}
+                    value={accInitialBalance}
+                    onChange={(e) => setAccInitialBalance(e.target.value)}
+                    placeholder="0,00"
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className={labelClass}>Chave PIX (Opcional)</label>
+                <input
+                  className={inputClass}
+                  value={accPix}
+                  onChange={(e) => setAccPix(e.target.value)}
+                  placeholder="Ex: CNPJ da campanha ou e-mail..."
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2 border-t border-zinc-100 dark:border-zinc-850">
+                <button type="button" onClick={() => setShowAccountModal(false)} className={buttonSecondaryClass}>Cancelar</button>
+                <button type="submit" className={buttonPrimaryClass}>Registrar Conta Bancária</button>
+              </div>
+            </form>
           </div>
         )}
 
