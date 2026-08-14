@@ -243,7 +243,29 @@ export async function GET(request: Request) {
       projections,
       recentTransactions: combinedTransactions.slice(0, 5),
       accounts: filteredAccounts,
-      costCenters: costCenters.filter((c) => c.contextType === contextType),
+      costCenters: (costCenters.length > 0
+        ? costCenters
+        : [
+            { id: "cc-1", code: "CC-CAMP-01", name: "Campanha Parlamentar", contextType: "campanha" as const, budgetLimit: 500000 },
+            { id: "cc-2", code: "CC-MAND-01", name: "Mandato Corrente", contextType: "mandato" as const, budgetLimit: 350000 },
+            { id: "cc-3", code: "CC-PART-01", name: "Partido / Diretório", contextType: "partido" as const, budgetLimit: 200000 },
+            { id: "cc-4", code: "CC-INT-01", name: "Financeiro Interno Campanha", contextType: "interno" as const, budgetLimit: 150000 },
+          ]
+      ).map((cc) => {
+        const ccBudgets = budgets.filter((b) => b.costCenterId === cc.id || b.costCenterId === cc.name);
+        const planned = ccBudgets.length > 0 ? ccBudgets.reduce((s, b) => s + b.planned, 0) : (cc.budgetLimit || 0);
+        const ccExpenses = expenses.filter((e) => e.allocations?.some((a) => a.costCenterId === cc.id || a.costCenterName === cc.name) || (e as any).costCenterName === cc.name);
+        const realized = ccExpenses.filter((e) => e.status === "paga" || e.status === "conciliada").reduce((s, e) => s + e.finalAmount, 0);
+        const committed = ccExpenses.filter((e) => e.status === "solicitada" || e.status === "em_validacao" || e.status === "aprovada").reduce((s, e) => s + e.finalAmount, 0);
+        const available = Math.max(0, planned - (realized + committed));
+        return {
+          ...cc,
+          budgetLimit: planned,
+          committed,
+          realized,
+          available,
+        };
+      }),
       budgets: filteredBudgets,
       vendors,
       revenues: filteredRevenues,

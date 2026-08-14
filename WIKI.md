@@ -66,7 +66,14 @@ CoreModules/
 
 ### Requisitos Obrigatórios para Conversão:
 1. **Documentação em Anexo:** A demanda deve conter ao menos um documento em anexo (comprovante, ofício, planilha ou foto comprobatória).
-2. **Orçamento e Centro de Custo Definidos:** O valor estimado (`estimatedBudget > 0`) e o Centro de Custo vinculado da área financeira são obrigatórios. Demandas criadas sem orçamento exibem banner de alerta e formulário inline para **[✏️ Editar / Corrigir Orçamento]**.
+2. **Orçamento e Centro de Custo Definidos (Sem Criação na Demanda):**
+   - **Gestão Exclusiva no Financeiro:** Centros de Custo **não podem** ser criados no formulário de demanda; devem ser previamente cadastrados no Módulo Financeiro (*Orçamentos & Centros*).
+   - **Diagnóstico Financeiro em Tempo Real:** Ao selecionar o centro e informar o valor estimado da demanda, o sistema calcula e exibe em tempo real:
+     - 🏛️ **Saldo Disponível no Centro:** Saldo líquido remanescente da dotação orçamentária.
+     - 💰 **Custo da Demanda:** Valor estimado a ser executado.
+     - 📊 **Percentual de Consumo / Déficit:** Mostra quantos por cento da verba disponível será consumida (se suficiente) ou quantos por cento faltam para cobrir o custo (se insuficiente).
+     - 🚦 **Bloqueio de Conversão por Verba Insuficiente:** Demandas cujo valor exceda o saldo do centro não podem ser homologadas para projeto sem suplementação na Área Financeira.
+   - Demandas criadas sem orçamento exibem banner de alerta e formulário inline para **[✏️ Editar / Corrigir Orçamento]**.
 3. **Emissão de Parecer Técnico Completo:** O sistema gera parecer detalhado consolidando título, descrição, documentações anexadas, dotação orçamentária e justificativa de impacto.
 4. **Registro do Aprovador:** O fluxo registra formalmente o responsável pela aprovação (`approvedBy`) e a data da aprovação antes da transição de estado.
 
