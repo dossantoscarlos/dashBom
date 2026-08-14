@@ -11,7 +11,7 @@ export type CandidateEvent = {
   titulo: string;
   descricao: string;
   local: string;
-  tipo: "comicio" | "caminhada" | "debate" | "entrevista" | "reuniao" | "reuniao_comite";
+  tipo: "comicio" | "caminhada" | "debate" | "entrevista" | "reuniao" | "reuniao_comite" | "inauguracao" | "vistoria" | "audiencia_publica" | "entrega_projeto" | "marco_projeto" | string;
   status: "confirmado" | "pendente" | "realizado" | "nao_realizado" | "cancelado";
   uf: string;
   cidade: string;
@@ -25,6 +25,9 @@ export type CandidateEvent = {
   mapeadoNoMaps?: boolean;
   datasRecorrencia?: string[];
   datasCanceladas?: string[];
+  projectCode?: string;
+  deliveryCode?: string;
+  isProjectMilestone?: boolean;
 };
 
 // Repositório de Agenda Limpo (0% Dados Mockados)
@@ -146,6 +149,9 @@ export async function POST(request: Request) {
         : typeof body.convidados === "string" && body.convidados.trim()
         ? body.convidados.split(",").map((c: string) => c.trim())
         : [],
+      projectCode: body.projectCode,
+      deliveryCode: body.deliveryCode,
+      isProjectMilestone: Boolean(body.isProjectMilestone),
     };
 
     AGENDA_STORE.unshift(newEvent);

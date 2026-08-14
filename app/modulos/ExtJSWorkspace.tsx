@@ -47,6 +47,8 @@ import { AutoridadesPanel } from "@/CoreModules/Autoridades";
 import { AgendaPanel } from "@/CoreModules/Agenda";
 import { VoluntariadoPanel } from "@/CoreModules/Voluntariado";
 import { DemandasProjetosPanel } from "@/CoreModules/DemandasProjetos";
+import { AcompanhamentoDemandasProjetos } from "@/CoreModules/DemandasProjetos/AcompanhamentoDemandasProjetos";
+
 import { PushNotifier } from "@/components/notifications/PushNotifier";
 
 type ExtJSWorkspaceProps = {
@@ -136,14 +138,14 @@ export function ExtJSWorkspace({ userName, userEmail }: ExtJSWorkspaceProps) {
     }
   }, []);
 
-  // Iniciar na aba "Nova demanda" com as abas Dashboard, Demandas e Projetos, e Nova demanda ativas
+  // Iniciar na aba "Demandas e Projetos" com a Tela de Acompanhamento como visão principal
   const [openTabs, setOpenTabs] = useState<TabItem[]>(() => [
     { id: "dashboard", title: "Dashboard", iconNode: TAB_ICONS_MAP["dashboard"], closable: true },
     { id: "demandas", title: "Demandas e Projetos", iconNode: TAB_ICONS_MAP["demandas"], closable: true },
-    { id: "novademanda", title: "Nova demanda", iconNode: TAB_ICONS_MAP["novademanda"], closable: true },
   ]);
 
-  const [activeTab, setActiveTab] = useState<string>("novademanda");
+  const [activeTab, setActiveTab] = useState<string>("demandas");
+
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [showTabOverflow, setShowTabOverflow] = useState(false);
@@ -257,6 +259,8 @@ export function ExtJSWorkspace({ userName, userEmail }: ExtJSWorkspaceProps) {
       title: "Nova demanda",
       component: <DemandasProjetosPanel />
     },
+
+
     campanhas: {
       title: "Campanhas",
       component: can("campanhas:gerenciar") ? <CampaignsPanel /> : <div className="p-6 text-red-600 font-bold">Acesso Negado</div>

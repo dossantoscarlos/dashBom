@@ -151,6 +151,8 @@ export type Expense = {
   approvalNotes?: string;
   paidBy?: string;
   reconciled: boolean;
+  projectCode?: string;
+  projectId?: string;
   createdAt: string;
 };
 

@@ -727,7 +727,14 @@ export function AgendaPanel() {
                           title={`${evt.titulo} - ${evt.local}`}
                         >
                           <div className="flex items-center justify-between font-extrabold gap-1">
-                            <span className="truncate leading-tight">{evt.titulo}</span>
+                            <span className="truncate leading-tight flex items-center gap-1">
+                              {evt.projectCode && (
+                                <span className="px-1 py-0.2 rounded bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300 font-mono text-[8px] font-black shrink-0">
+                                  {evt.projectCode}
+                                </span>
+                              )}
+                              <span className="truncate">{evt.titulo}</span>
+                            </span>
                             <span className="font-mono text-[10px] shrink-0 opacity-90 bg-white/70 dark:bg-black/40 px-1 py-0.2 rounded border border-black/5 dark:border-white/10">
                               {evt.diaInteiro ? "Dia Todo" : evt.horaInicio}
                             </span>
@@ -772,9 +779,16 @@ export function AgendaPanel() {
                       <div className="flex items-start justify-between gap-2 border-b border-zinc-100 dark:border-zinc-850 pb-2.5">
                         <div className="flex items-center gap-2">
                           <span className="text-base">📍</span>
-                          <h4 className="text-xs font-bold text-zinc-900 dark:text-zinc-100 leading-tight">
-                            {evt.titulo}
-                          </h4>
+                          <div>
+                            <h4 className="text-xs font-bold text-zinc-900 dark:text-zinc-100 leading-tight">
+                              {evt.titulo}
+                            </h4>
+                            {evt.projectCode && (
+                              <span className="inline-block mt-0.5 px-1.5 py-0.2 rounded bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300 font-mono text-[9px] font-black">
+                                📁 Projeto {evt.projectCode}
+                              </span>
+                            )}
+                          </div>
                         </div>
                         <div className="flex items-center gap-1.5 shrink-0">
                           {evt.status === "realizado" ? (

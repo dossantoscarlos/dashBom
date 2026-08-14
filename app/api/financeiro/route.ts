@@ -20,6 +20,7 @@ import type {
   Budget,
   Revenue,
   Expense,
+  ExpenseStatus,
   Vendor,
   Contract,
   BankTransaction,
@@ -475,6 +476,83 @@ export async function POST(request: Request) {
         status: "sucesso",
         mensagem: `${importedCount} lançamentos de extrato bancário importados com sucesso para conciliação!`,
         importedCount,
+      });
+    }
+
+    // 5. Sincronizar Despesa de Projeto / Demanda
+    if (action === "sync_project_expense") {
+      const { transaction, projectCode, projectName, actor } = body;
+      if (!transaction || !transaction.id) {
+        return NextResponse.json({ error: "Dados da transação do projeto inválidos." }, { status: 400 });
+      }
+
+      const existingIndex = expenses.findIndex(
+        (e) => e.id === transaction.id || (transaction.document && e.fiscalDocumentNumber === transaction.document)
+      );
+      const amountNum = Number(transaction.value) || 0;
+
+      const mappedStatus: ExpenseStatus =
+        transaction.status === "Pago"
+          ? "paga"
+          : transaction.status === "Comprometido"
+          ? "aprovada"
+          : transaction.status === "Rejeitado"
+          ? "rejeitada"
+          : "solicitada";
+
+      const expenseData: Expense = {
+        id: transaction.id,
+        code: `PRJ-${projectCode ? projectCode.replace(/[^a-zA-Z0-9]/g, "") : "2026"}-${String(transaction.id).slice(-4)}`,
+        contextType: "campanha",
+        entityId: projectCode || "proj-01",
+        entityName: projectName || `Projeto ${projectCode || "Geral"}`,
+        expenseType: "avulsa",
+        description: `[Projeto ${projectCode || "Geral"}] ${transaction.description}`,
+        vendorId: `vnd-${Date.now()}`,
+        vendorName: transaction.supplier || "Fornecedor Cadastrado",
+        vendorCpfCnpj: "00.000.000/0001-00",
+        dueDate: transaction.date || new Date().toISOString().slice(0, 10),
+        competencyDate: transaction.date || new Date().toISOString().slice(0, 10),
+        amount: amountNum,
+        finalAmount: amountNum,
+        bankAccountId: "bank-01",
+        bankAccountName: "Conta de Gestão de Projetos",
+        status: mappedStatus,
+        allocations: [
+          {
+            costCenterId: "cc-proj",
+            costCenterName: `Projetos: ${transaction.category || "Obras e Infraestrutura"}`,
+            percentage: 100,
+            amount: amountNum,
+          },
+        ],
+        fiscalDocumentType: "nota_fiscal",
+        fiscalDocumentNumber: transaction.document || "",
+        requestedBy: actor || "Gestor de Projetos",
+        reconciled: transaction.status === "Pago",
+        projectCode: projectCode || "PRJ-2026",
+        createdAt: new Date().toISOString().slice(0, 10),
+      };
+
+      if (existingIndex !== -1) {
+        expenses[existingIndex] = { ...expenses[existingIndex], ...expenseData };
+      } else {
+        expenses.unshift(expenseData);
+      }
+
+      logAudit(
+        actor || "Gestor de Projetos",
+        existingIndex !== -1 ? "EDITAR" : "CRIAR",
+        "campanha",
+        "Expense",
+        expenseData.id,
+        `Despesa do projeto ${projectCode || "Geral"} sincronizada no módulo financeiro (R$ ${amountNum}).`
+      );
+
+      return NextResponse.json({
+        status: "sucesso",
+        mensagem: "Despesa do projeto sincronizada com sucesso no Financeiro!",
+        expense: expenseData,
       });
     }
 

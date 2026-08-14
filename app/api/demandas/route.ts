@@ -24,6 +24,12 @@ let globalDemandas: any[] = [
     applicantPhone: "(21) 98765-4321",
     applicantEmail: "contato@amquintino.org.br",
     files: ["memorial_descritivo.pdf", "planta_parque.dwg"],
+    hasBudget: true,
+    estimatedBudget: 350000,
+    budgetSource: "Secretaria de Obras / Fundo de Iluminação",
+    approvedBy: "Ana Martins",
+    approvalDate: "12/07/2026 às 16:00",
+    approvalRole: "Coordenadora de Projetos",
     createdAt: "10/07/2026 14:30:00",
     criteria: {
       multDeliveries: true,

@@ -38,6 +38,10 @@ import { ProjectOrcamento } from "./ProjectOrcamento";
 import { ProjectEquipe } from "./ProjectEquipe";
 import { ProjectArquivos } from "./ProjectArquivos";
 import { ProjectHistorico } from "./ProjectHistorico";
+import { AcompanhamentoDemandasProjetos } from "./AcompanhamentoDemandasProjetos";
+
+export { AcompanhamentoDemandasProjetos };
+
 
 import {
   FileText,
@@ -67,11 +71,14 @@ import {
   Plus,
   RotateCcw,
   ExternalLink,
-  Layers,
   Search,
   ArrowLeft,
   RefreshCw,
+  Eye,
+  Download,
+  Wallet,
 } from "lucide-react";
+
 
 export function DemandasProjetosPanel() {
   const { regions, users } = useDashboard();
@@ -79,7 +86,8 @@ export function DemandasProjetosPanel() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // MODO PRINCIPAL DO MÓDULO:
-  const [mainMode, setMainMode] = useState<"nova_demanda" | "analise_demanda" | "projeto_ativo">("nova_demanda");
+  const [mainMode, setMainMode] = useState<"acompanhamento" | "nova_demanda" | "analise_demanda" | "projeto_ativo">("acompanhamento");
+
 
   // Sub-aba ativa do projeto
   const [projectSubTab, setProjectSubTab] = useState<ProjectSubTab>("kanban");
@@ -147,9 +155,12 @@ export function DemandasProjetosPanel() {
       }
 
       const savedMainMode = localStorage.getItem(STORAGE_KEYS.MAIN_MODE);
-      if (savedMainMode) {
-        setMainMode(savedMainMode as any);
+      if (savedMainMode && savedMainMode === "acompanhamento") {
+        setMainMode("acompanhamento");
+      } else {
+        setMainMode("acompanhamento");
       }
+
 
       const savedSubTab = localStorage.getItem(STORAGE_KEYS.PROJECT_SUBTAB);
       if (savedSubTab) {
@@ -303,6 +314,11 @@ export function DemandasProjetosPanel() {
   const [applicantPhone, setApplicantPhone] = useState("");
   const [applicantEmail, setApplicantEmail] = useState("");
   const [uploadedFiles, setUploadedFiles] = useState<any[]>([]);
+  const [hasBudget, setHasBudget] = useState(false);
+  const [estimatedBudget, setEstimatedBudget] = useState("");
+  const [budgetSource, setBudgetSource] = useState("Dotação Orçamentária Geral");
+  const [approverName, setApproverName] = useState("Ana Martins");
+  const [approverRole, setApproverRole] = useState("Coordenadora de Projetos / Gestora Técnica");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
 
@@ -402,6 +418,9 @@ export function DemandasProjetosPanel() {
       applicantPhone: applicantPhone.trim(),
       applicantEmail: applicantEmail.trim(),
       files: uploadedFiles.map((f) => f.name),
+      hasBudget,
+      estimatedBudget: hasBudget && estimatedBudget ? parseFloat(estimatedBudget.replace(",", ".")) : 0,
+      budgetSource: hasBudget ? budgetSource : undefined,
       createdAt: new Date().toLocaleString("pt-BR"),
       criteria: {
         multDeliveries: false,
@@ -436,6 +455,9 @@ export function DemandasProjetosPanel() {
     setApplicantPhone("");
     setApplicantEmail("");
     setUploadedFiles([]);
+    setHasBudget(false);
+    setEstimatedBudget("");
+    setBudgetSource("Dotação Orçamentária Geral");
 
     if (isDraft) {
       toast(`Rascunho da demanda ${generatedCode} salvo com sucesso!`);
@@ -492,7 +514,15 @@ export function DemandasProjetosPanel() {
   // Define Decisão Formal
   const handleSetDecision = (decision: string) => {
     if (!currentDemanda) return;
-    const updated = { ...currentDemanda, decision, technicalReport };
+    const isApproved = decision === "Aprovada para Projeto";
+    const updated: DemandaItem = {
+      ...currentDemanda,
+      decision,
+      technicalReport,
+      approvedBy: isApproved ? (approverName || currentDemanda.responsible || "Ana Martins") : currentDemanda.approvedBy,
+      approvalDate: isApproved ? new Date().toLocaleString("pt-BR") : currentDemanda.approvalDate,
+      approvalRole: isApproved ? (approverRole || "Coordenadora de Projetos / Gestora Técnica") : currentDemanda.approvalRole,
+    };
     setCurrentDemanda(updated);
     setRegisteredDemands((prev) => prev.map((d) => (d.id === updated.id ? updated : d)));
   };
@@ -618,93 +648,71 @@ export function DemandasProjetosPanel() {
 
   return (
     <div className="flex flex-col gap-6 font-sans text-xs bg-[#F6F8FB] max-w-[1671px] mx-auto antialiased select-none">
-      
-      {/* ── BARRA DE FLUXO E MODO DE DADOS (SELETOR DE DADOS REAIS vs DEMO) ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-[#E2E8F0] shadow-2xs">
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Aba 1: Nova Demanda */}
-          <button
-            type="button"
-            onClick={() => setMainMode("nova_demanda")}
-            className={`px-4 py-2 rounded-xl font-extrabold text-xs transition flex items-center gap-2 cursor-pointer ${
-              mainMode === "nova_demanda"
-                ? "bg-[#008B63] text-white shadow-xs font-black"
-                : "bg-[#F8FAFC] text-[#64748B] hover:bg-[#E8F7F1] hover:text-[#008B63]"
-            }`}
-          >
-            <Plus className="h-4 w-4" strokeWidth={2.5} />
-            <span>1. Nova demanda (Dados Reais)</span>
-          </button>
-
-          {/* Aba 2: Análise da Demanda */}
-          <button
-            type="button"
-            onClick={() => {
-              if (!currentDemanda) {
-                toast("Cadastre uma nova demanda primeiro.", "error");
-                return;
-              }
-              setMainMode("analise_demanda");
-            }}
-            className={`px-4 py-2 rounded-xl font-extrabold text-xs transition flex items-center gap-2 cursor-pointer ${
-              mainMode === "analise_demanda"
-                ? "bg-[#1264F3] text-white shadow-xs font-black"
-                : currentDemanda
-                ? "bg-[#F8FAFC] text-[#64748B] hover:bg-[#EAF2FF] hover:text-[#1264F3]"
-                : "bg-slate-100 text-[#94A3B8] cursor-not-allowed opacity-60"
-            }`}
-          >
-            <FileText className="h-4 w-4" strokeWidth={2} />
-            <span>2. Análise {currentDemanda ? `(${currentDemanda.code})` : ""}</span>
-            {currentDemanda && (
-              <span className="text-[9px] px-2 py-0.2 rounded font-extrabold uppercase bg-[#E8F7F1] text-[#008B63] border border-[#00A978]/30">
-                {currentDemanda.status}
-              </span>
-            )}
-          </button>
-
-          {/* Aba 3: Projeto Criado */}
-          <button
-            type="button"
-            onClick={() => {
-              if (!projectState) {
-                toast("Nenhum projeto gerado ainda. Cadastre e converta uma demanda.", "error");
-                return;
-              }
-              setMainMode("projeto_ativo");
-            }}
-            className={`px-4 py-2 rounded-xl font-extrabold text-xs transition flex items-center gap-2 cursor-pointer ${
-              mainMode === "projeto_ativo"
-                ? "bg-[#7928F5] text-white shadow-xs font-black"
-                : projectState
-                ? "bg-[#F8FAFC] text-[#7928F5] hover:bg-[#F3EAFF]"
-                : "bg-slate-100 text-[#94A3B8] cursor-not-allowed opacity-60"
-            }`}
-          >
-            {projectState ? (
-              <FolderKanban className="h-4 w-4 text-[#7928F5]" strokeWidth={2} />
-            ) : (
-              <Lock className="h-4 w-4 text-[#94A3B8]" strokeWidth={2} />
-            )}
-            <span>3. Projeto {projectState ? `(${projectState.code})` : ""}</span>
-          </button>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={handleLoadDemoData}
-            className="h-8 px-3 rounded-lg bg-[#F1F5F9] hover:bg-slate-200 text-[#10213D] font-extrabold text-[11px] transition flex items-center gap-1.5 cursor-pointer border border-[#E2E8F0]"
-            title="Carregar dados demonstrativos de referência"
-          >
-            <RefreshCw className="h-3.5 w-3.5 text-[#1264F3]" />
-            <span>Carregar Exemplo Demonstrativo</span>
-          </button>
-        </div>
-      </div>
+      {/* ── TELA 0 — ACOMPANHAMENTO EXECUTIVO DE DEMANDAS E PROJETOS ── */}
+      {mainMode === "acompanhamento" && (
+        <AcompanhamentoDemandasProjetos
+          onOpenNovaDemanda={() => setMainMode("nova_demanda")}
+          onOpenAnaliseDemanda={(item: any) => {
+            setCurrentDemanda({
+              id: item.id || `dem-${Date.now()}`,
+              code: item.code || "DEM-2026-0104",
+              title: item.title || "Solicitação sem título",
+              category: "Infraestrutura e Obras Públicas",
+              description: item.description || item.title || "",
+              priority: item.priority?.label || "Média",
+              channelOrigin: "Gabinete Virtual",
+              regionId: "reg-01",
+              municipio: "Rio de Janeiro / RJ",
+              bairro: "Bairro Central",
+              address: "Rua Principal, 100",
+              cep: "21380-000",
+              responsible: item.assignee?.name || "Ana Martins",
+              team: "Equipe de Gestão de Projetos",
+              status: item.status?.label || "Em análise",
+              receiptDate: item.createdAt ? item.createdAt.substring(0, 10) : "2026-08-01",
+              analysisDeadline: item.deadline || "2026-09-01",
+              applicantName: item.requestingArea?.name || "Associação de Moradores",
+              applicantPhone: "(21) 98765-4321",
+              applicantEmail: "contato@solicitante.org.br",
+              files: ["memorial_descritivo.pdf"],
+              createdAt: item.createdAt || "2026-08-01 14:30:00",
+              criteria: {
+                multDeliveries: true,
+                needsTeam: true,
+                hasTimeline: true,
+                needsBudget: true,
+                approvedByResponsible: true,
+              },
+              decision: "Aprovada para Projeto",
+              technicalReport: "Demanda tecnicamente viável após parecer da equipe de engenharia.",
+            });
+            setMainMode("analise_demanda");
+          }}
+          onOpenProjetoAtivo={(item: any) => {
+            setProjectState({
+              id: item.id || `prj-${Date.now()}`,
+              code: item.code || "PRJ-2026-0042",
+              title: item.title || "Projeto sem título",
+              demandaId: `dem-${item.id}`,
+              demandaCode: item.code || "DEM-2026-0104",
+              category: "Infraestrutura",
+              responsible: item.assignee?.name || "Carlos Eduardo Santos",
+              status: "Em execução",
+              priority: item.priority?.label || "Urgente",
+              description: item.description || item.title || "",
+              startDate: item.startDate || "01/08/2026",
+              endDate: item.deadline || "31/12/2026",
+              progress: item.progress?.percentage || 35,
+              createdAt: item.createdAt || "2026-08-01 08:00:00",
+            });
+            setMainMode("projeto_ativo");
+          }}
+        />
+      )}
 
       {/* ── TELA 1 — CADASTRO DE NOVA DEMANDA COM DADOS LIMPOS E REAIS ── */}
       {mainMode === "nova_demanda" && (
+
         <>
           {/* Cabeçalho da Página */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E2E8F0] pb-4">
@@ -1057,7 +1065,75 @@ export function DemandasProjetosPanel() {
                 </div>
               </div>
 
-              {/* SEÇÃO 5: ANEXOS */}
+              {/* SEÇÃO 5: PREVISÃO ORÇAMENTÁRIA */}
+              <div className="bg-white rounded-2xl border border-[#E2E8F0] p-5 sm:p-6 shadow-2xs flex flex-col gap-5">
+                <div className="border-b border-[#E2E8F0] pb-3 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Wallet className="h-5 w-5 text-[#1264F3]" strokeWidth={2} />
+                    <h3 className="text-sm font-extrabold text-[#10213D] uppercase tracking-wider">
+                      Previsão e Dotação Orçamentária
+                    </h3>
+                  </div>
+                  <span className="text-[11px] font-bold text-[#64748B]">Obrigatório informar se tem orçamento</span>
+                </div>
+
+                <div className="flex flex-col gap-4">
+                  <div className="flex items-center gap-3 p-3.5 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl">
+                    <input
+                      type="checkbox"
+                      id="chk-has-budget"
+                      checked={hasBudget}
+                      onChange={(e) => setHasBudget(e.target.checked)}
+                      className="h-4 w-4 rounded border-[#E2E8F0] text-[#008B63] focus:ring-[#00A978] cursor-pointer"
+                    />
+                    <label htmlFor="chk-has-budget" className="text-xs font-extrabold text-[#10213D] cursor-pointer flex-1">
+                      Esta demanda possui orçamento previsto, verba vinculada ou dotação estimada?
+                    </label>
+                    <span
+                      className={`px-2.5 py-0.5 rounded text-[10px] font-extrabold uppercase border ${
+                        hasBudget
+                          ? "bg-[#E8F7F1] text-[#008B63] border-[#00A978]/30"
+                          : "bg-[#F8FAFC] text-[#64748B] border-[#E2E8F0]"
+                      }`}
+                    >
+                      {hasBudget ? "Sim (Com Orçamento)" : "Não (Sem Orçamento)"}
+                    </span>
+                  </div>
+
+                  {hasBudget && (
+                    <div className="grid gap-4 sm:grid-cols-2 p-4 bg-[#F0FDF4] border border-[#86EFAC]/50 rounded-xl">
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-xs font-bold text-[#10213D]">
+                          Valor estimado do orçamento (R$) *
+                        </label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={estimatedBudget}
+                          onChange={(e) => setEstimatedBudget(e.target.value)}
+                          placeholder="Ex.: 150000.00"
+                          className="h-10 px-3.5 rounded-xl border border-[#86EFAC] bg-white text-xs font-mono font-bold text-[#10213D] focus:border-[#008B63] focus:outline-hidden"
+                        />
+                      </div>
+
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-xs font-bold text-[#10213D]">
+                          Fonte de recursos / Centro de custo
+                        </label>
+                        <input
+                          type="text"
+                          value={budgetSource}
+                          onChange={(e) => setBudgetSource(e.target.value)}
+                          placeholder="Ex.: Secretaria de Obras / Emenda Parlamentar"
+                          className="h-10 px-3.5 rounded-xl border border-[#86EFAC] bg-white text-xs font-medium text-[#10213D] focus:border-[#008B63] focus:outline-hidden"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* SEÇÃO 6: ANEXOS */}
               <div className="bg-white rounded-2xl border border-[#E2E8F0] p-5 sm:p-6 shadow-2xs flex flex-col gap-4">
                 <h3 className="text-sm font-extrabold text-[#10213D] uppercase tracking-wider border-b border-[#E2E8F0] pb-3">
                   Anexos da solicitação real
@@ -1079,18 +1155,50 @@ export function DemandasProjetosPanel() {
                   <div className="flex flex-col gap-2 pt-2">
                     {uploadedFiles.map((file) => (
                       <div key={file.id} className="flex items-center justify-between p-3 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] text-xs">
-                        <span className="font-extrabold text-[#10213D]">{file.name}</span>
-                        <button
-                          type="button"
-                          onClick={() => setUploadedFiles((prev) => prev.filter((f) => f.id !== file.id))}
-                          className="text-red-500 p-1 hover:bg-red-50 rounded cursor-pointer"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <FileText className="h-4 w-4 text-[#1264F3]" />
+                          <span className="font-extrabold text-[#10213D]">{file.name}</span>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (file.url && file.url !== "#") {
+                                window.open(file.url, "_blank");
+                              } else {
+                                alert(`Visualizando documento: ${file.name}`);
+                              }
+                            }}
+                            className="px-2.5 py-1 bg-white border border-[#E2E8F0] text-[#10213D] hover:bg-slate-100 rounded-lg text-[10px] font-bold flex items-center gap-1 transition cursor-pointer"
+                          >
+                            <Eye className="h-3 w-3 text-[#1264F3]" />
+                            <span>Visualizar</span>
+                          </button>
+
+                          <a
+                            href={file.url}
+                            download={file.name}
+                            className="px-2.5 py-1 bg-[#008B63] hover:bg-[#007553] text-white rounded-lg text-[10px] font-bold flex items-center gap-1 transition cursor-pointer"
+                          >
+                            <Download className="h-3 w-3" />
+                            <span>Baixar</span>
+                          </a>
+
+                          <button
+                            type="button"
+                            onClick={() => setUploadedFiles((prev) => prev.filter((f) => f.id !== file.id))}
+                            className="text-red-500 p-1 hover:bg-red-50 rounded cursor-pointer"
+                            title="Remover arquivo"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
                 )}
+
               </div>
             </div>
 
@@ -1185,6 +1293,106 @@ export function DemandasProjetosPanel() {
               />
             </div>
 
+            {/* SEÇÃO DE DOCUMENTOS ANEXADOS DA DEMANDA (SE HOUVER) */}
+            <div className="border border-[#E2E8F0] rounded-2xl p-5 flex flex-col gap-4 bg-[#F8FAFC]">
+              <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-2.5">
+                <div className="flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-[#1264F3]" />
+                  <h4 className="text-xs font-extrabold text-[#10213D] uppercase tracking-wider">
+                    Documentos e Anexos da Demanda
+                  </h4>
+                </div>
+                <span className="text-[11px] font-bold text-[#64748B]">
+                  {currentDemanda.files && currentDemanda.files.length > 0
+                    ? `${currentDemanda.files.length} documento(s) anexado(s)`
+                    : "Sem anexos"}
+                </span>
+              </div>
+
+              {currentDemanda.files && currentDemanda.files.length > 0 ? (
+                <div className="grid gap-2.5 sm:grid-cols-2">
+                  {currentDemanda.files.map((file, idx) => (
+                    <div
+                      key={idx}
+                      className="flex items-center justify-between p-3 rounded-xl border border-[#E2E8F0] bg-white shadow-2xs text-xs"
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <FileText className="h-4 w-4 text-[#1264F3] shrink-0" />
+                        <div className="truncate">
+                          <span className="font-extrabold text-[#10213D] block truncate">{file}</span>
+                          <span className="text-[10px] text-[#64748B] block">Documento Técnico da Demanda</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => alert(`Visualizando documento: ${file}`)}
+                          className="px-2.5 py-1 bg-[#F8FAFC] border border-[#E2E8F0] hover:bg-[#EFF6FF] text-[#10213D] rounded-lg text-[10px] font-bold flex items-center gap-1 transition cursor-pointer"
+                        >
+                          <Eye className="h-3 w-3 text-[#1264F3]" />
+                          <span>Visualizar</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => toast(`Download do arquivo ${file} iniciado.`)}
+                          className="px-2.5 py-1 bg-[#008B63] hover:bg-[#007553] text-white rounded-lg text-[10px] font-bold flex items-center gap-1 transition cursor-pointer"
+                        >
+                          <Download className="h-3 w-3" />
+                          <span>Baixar</span>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-4 rounded-xl border border-dashed border-[#E2E8F0] bg-white text-center text-[#64748B] text-xs">
+                  Nenhum documento anexado a esta demanda durante o cadastro inicial.
+                </div>
+              )}
+            </div>
+
+            {/* SEÇÃO DE PREVISÃO E DOTAÇÃO ORÇAMENTÁRIA */}
+            <div className="border border-[#E2E8F0] rounded-2xl p-5 flex flex-col gap-4 bg-[#F0FDF4]/40">
+              <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-2.5">
+                <div className="flex items-center gap-2">
+                  <Wallet className="h-4 w-4 text-[#008B63]" />
+                  <h4 className="text-xs font-extrabold text-[#10213D] uppercase tracking-wider">
+                    Previsão e Dotação Orçamentária
+                  </h4>
+                </div>
+                <span
+                  className={`px-2.5 py-0.5 rounded text-[10px] font-extrabold uppercase border ${
+                    currentDemanda.hasBudget || (currentDemanda.estimatedBudget && currentDemanda.estimatedBudget > 0)
+                      ? "bg-[#E8F7F1] text-[#008B63] border-[#00A978]/30"
+                      : "bg-[#F8FAFC] text-[#64748B] border-[#E2E8F0]"
+                  }`}
+                >
+                  {currentDemanda.hasBudget || (currentDemanda.estimatedBudget && currentDemanda.estimatedBudget > 0)
+                    ? "Possui Orçamento Previsto"
+                    : "Sem Orçamento Previsto"}
+                </span>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2 text-xs">
+                <div className="flex flex-col gap-1 p-3 bg-white border border-[#E2E8F0] rounded-xl">
+                  <span className="text-[#64748B] font-bold text-[10px] uppercase">Valor Estimado</span>
+                  <span className="text-sm font-black text-[#10213D]">
+                    {currentDemanda.estimatedBudget && currentDemanda.estimatedBudget > 0
+                      ? `R$ ${currentDemanda.estimatedBudget.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`
+                      : "R$ 0,00 (Não orçado)"}
+                  </span>
+                </div>
+
+                <div className="flex flex-col gap-1 p-3 bg-white border border-[#E2E8F0] rounded-xl">
+                  <span className="text-[#64748B] font-bold text-[10px] uppercase">Fonte de Recursos</span>
+                  <span className="text-xs font-extrabold text-[#10213D]">
+                    {currentDemanda.budgetSource || "Dotação Geral / A definir na conversão"}
+                  </span>
+                </div>
+              </div>
+            </div>
+
             {/* Checklist dos 5 Critérios */}
             <div className="border border-[#E2E8F0] rounded-2xl p-5 flex flex-col gap-4 bg-[#FAF5FF]/30">
               <h4 className="text-xs font-extrabold text-[#10213D] uppercase tracking-wider border-b border-[#E2E8F0] pb-2">
@@ -1250,6 +1458,37 @@ export function DemandasProjetosPanel() {
                 </label>
               </div>
 
+              {/* SEÇÃO DE APROVAÇÃO & IDENTIFICAÇÃO DO APROVADOR */}
+              <div className="grid gap-4 sm:grid-cols-2 pt-3 border-t border-[#E2E8F0]">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-[#10213D]">
+                    Nome do Aprovador / Autoridade Responsável *
+                  </label>
+                  <input
+                    type="text"
+                    value={approverName}
+                    onChange={(e) => setApproverName(e.target.value)}
+                    placeholder="Ex.: Ana Martins"
+                    disabled={currentDemanda.status !== "Em análise"}
+                    className="h-10 px-3.5 rounded-xl border border-[#E2E8F0] bg-white text-xs font-extrabold text-[#10213D] focus:border-[#1264F3] focus:outline-hidden disabled:bg-[#F8FAFC]"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-[#10213D]">
+                    Cargo / Função do Aprovador *
+                  </label>
+                  <input
+                    type="text"
+                    value={approverRole}
+                    onChange={(e) => setApproverRole(e.target.value)}
+                    placeholder="Ex.: Coordenadora de Projetos"
+                    disabled={currentDemanda.status !== "Em análise"}
+                    className="h-10 px-3.5 rounded-xl border border-[#E2E8F0] bg-white text-xs font-medium text-[#10213D] focus:border-[#1264F3] focus:outline-hidden disabled:bg-[#F8FAFC]"
+                  />
+                </div>
+              </div>
+
               {/* Seletor de Decisão Formal */}
               <div className="flex flex-col gap-1.5 pt-2 border-t border-[#E2E8F0]">
                 <label className="text-xs font-bold text-[#10213D]">Decisão formal da análise *</label>
@@ -1257,7 +1496,7 @@ export function DemandasProjetosPanel() {
                   disabled={currentDemanda.status !== "Em análise"}
                   value={currentDemanda.decision || ""}
                   onChange={(e) => handleSetDecision(e.target.value)}
-                  className="h-10 px-3.5 rounded-xl border border-[#E2E8F0] bg-white text-xs font-extrabold text-[#10213D] focus:border-[#1264F3] focus:outline-none cursor-pointer disabled:bg-[#F8FAFC]"
+                  className="h-10 px-3.5 rounded-xl border border-[#E2E8F0] bg-white text-xs font-extrabold text-[#10213D] focus:border-[#1264F3] focus:outline-hidden cursor-pointer disabled:bg-[#F8FAFC]"
                 >
                   <option value="">Aguardando decisão formal...</option>
                   <option value="Aprovada para Projeto">✓ Aprovada para Conversão em Projeto</option>
@@ -1265,6 +1504,26 @@ export function DemandasProjetosPanel() {
                   <option value="Recusada">✕ Recusada</option>
                 </select>
               </div>
+
+              {/* CARIMBO DE APROVAÇÃO SE APROVADA */}
+              {currentDemanda.approvedBy && (
+                <div className="p-3 bg-[#ECFDF5] border border-[#A7F3D0] rounded-xl flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-[#059669] shrink-0" />
+                    <div>
+                      <span className="font-extrabold text-[#065F46] block">
+                        Aprovada por: {currentDemanda.approvedBy} ({currentDemanda.approvalRole || "Gestor Responsável"})
+                      </span>
+                      <span className="text-[10px] text-[#047857]">
+                        Homologada em: {currentDemanda.approvalDate || "Hoje"}
+                      </span>
+                    </div>
+                  </div>
+                  <span className="px-2 py-0.5 bg-[#059669] text-white rounded text-[10px] font-black uppercase">
+                    Aprovado
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* BOTÃO CONVERTER AGORA EM PROJETO */}
@@ -1333,6 +1592,12 @@ export function DemandasProjetosPanel() {
               categorias={categorias}
               transacoes={transacoes}
               onAddTransaction={(tx) => setTransacoes((prev) => [tx, ...prev])}
+              onUpdateTransaction={(tx) =>
+                setTransacoes((prev) => prev.map((t) => (t.id === tx.id ? tx : t)))
+              }
+              onDeleteTransaction={(id) =>
+                setTransacoes((prev) => prev.filter((t) => t.id !== id))
+              }
               onNavigateTab={(t) => setProjectSubTab(t)}
             />
           )}
@@ -1349,7 +1614,43 @@ export function DemandasProjetosPanel() {
           {projectSubTab === "arquivos" && (
             <ProjectArquivos
               files={projectFiles}
-              onAddFile={(f) => setProjectFiles((prev) => [f, ...prev])}
+              onAddFile={(f) => {
+                setProjectFiles((prev) => [f, ...prev]);
+                setAuditEvents((prev) => [
+                  {
+                    id: `evt-${Date.now()}`,
+                    time: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
+                    dateGroup: "Hoje",
+                    user: "Usuário atual",
+                    avatarInitials: "UC",
+                    avatarBg: "bg-[#008B63]",
+                    actionText: `enviou o arquivo '${f.name}' para a pasta '${f.folder}'`,
+                    eventType: "Arquivo" as const,
+                    targetCode: f.linkedItem,
+                    targetTitle: f.name,
+                    newValue: `Arquivo adicionado: ${f.name} (${f.size})`,
+                    isImportant: false,
+                    fullDate: new Date().toLocaleString("pt-BR"),
+                  },
+                  ...prev,
+                ]);
+              }}
+              onDeleteFile={(id) =>
+                setProjectFiles((prev) => prev.filter((f) => f.id !== id))
+              }
+              onRenameFile={(id, newName) =>
+                setProjectFiles((prev) =>
+                  prev.map((f) => (f.id === id ? { ...f, name: newName } : f))
+                )
+              }
+              onUpdateFile={(file) =>
+                setProjectFiles((prev) =>
+                  prev.map((f) => (f.id === file.id ? file : f))
+                )
+              }
+              onAddAuditEvent={(event) =>
+                setAuditEvents((prev) => [event, ...prev])
+              }
               onNavigateTab={(t) => setProjectSubTab(t)}
             />
           )}

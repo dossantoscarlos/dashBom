@@ -68,7 +68,12 @@ export interface DemandaItem {
   expectedBenefits?: string;
   restrictions?: string;
   estimatedTimeline?: string;
+  hasBudget?: boolean;
   estimatedBudget?: number;
+  budgetSource?: string;
+  approvedBy?: string;
+  approvalDate?: string;
+  approvalRole?: string;
   decision?: string;
   decisionJustification?: string;
   convertedProjectId?: string;
@@ -176,7 +181,9 @@ export interface ProjectFileItem {
   type: string;
   size: string;
   folder: string;
+  url?: string;
   linkedItem: string;
+
   responsible: string;
   version: string;
   modifiedAt: string;

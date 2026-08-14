@@ -230,6 +230,56 @@ export function CampaignsPanel() {
           </Wizard>
         )}
 
+        {/* ── CARD: MARCOS E ENTREGAS DE PROJETOS VINCULADOS À CAMPANHA ── */}
+        <div className="rounded-2xl border border-blue-100 bg-gradient-to-r from-blue-50/60 to-indigo-50/40 p-4 dark:border-blue-950 dark:from-blue-950/30 dark:to-indigo-950/20 shadow-xs flex flex-col gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-blue-200/60 dark:border-blue-900/40 pb-2.5">
+            <div className="flex items-center gap-2">
+              <span className="text-base">📁</span>
+              <div>
+                <h3 className="text-xs font-black text-blue-950 dark:text-blue-100">
+                  Marcos e Entregas de Projetos Integrados à Agenda
+                </h3>
+                <span className="text-[11px] text-blue-700 dark:text-blue-300">
+                  Compromissos e vistorias dependentes do cronograma de infraestrutura e demandas
+                </span>
+              </div>
+            </div>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white dark:bg-zinc-900 border border-blue-200 dark:border-blue-800 rounded-lg text-[10px] font-extrabold text-blue-700 dark:text-blue-300">
+              <span className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
+              Sincronizado com Cronograma & Agenda
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="bg-white dark:bg-zinc-900 p-3 rounded-xl border border-blue-100 dark:border-blue-900 shadow-2xs flex flex-col gap-1">
+              <div className="flex items-center justify-between">
+                <span className="font-mono font-bold text-xs text-blue-600 dark:text-blue-400">PRJ-2026-0042</span>
+                <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 font-extrabold">15 AGO</span>
+              </div>
+              <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100 truncate">Vistoria Técnica de Iluminação</span>
+              <span className="text-[10px] text-zinc-500">Praça Central • Ana Martins</span>
+            </div>
+
+            <div className="bg-white dark:bg-zinc-900 p-3 rounded-xl border border-blue-100 dark:border-blue-900 shadow-2xs flex flex-col gap-1">
+              <div className="flex items-center justify-between">
+                <span className="font-mono font-bold text-xs text-purple-600 dark:text-purple-400">PRJ-2026-0042</span>
+                <span className="text-[9px] px-1.5 py-0.2 rounded bg-blue-100 text-blue-800 font-extrabold">20 AGO</span>
+              </div>
+              <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100 truncate">Inauguração da Etapa 1 - LED</span>
+              <span className="text-[10px] text-zinc-500">Bairro Primavera • Coordenação</span>
+            </div>
+
+            <div className="bg-white dark:bg-zinc-900 p-3 rounded-xl border border-blue-100 dark:border-blue-900 shadow-2xs flex flex-col gap-1">
+              <div className="flex items-center justify-between">
+                <span className="font-mono font-bold text-xs text-amber-600 dark:text-amber-400">DEM-2026-0115</span>
+                <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 font-extrabold">07 SET</span>
+              </div>
+              <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100 truncate">Audiência Pública com Moradores</span>
+              <span className="text-[10px] text-zinc-500">Comitê Setorial • Gestor de Projetos</span>
+            </div>
+          </div>
+        </div>
+
         <DataTable
           data={campaigns}
           keyExtractor={(c) => c.id}
