@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import type { OrcamentoCategoria, FinancialTransaction } from "./types";
+import type { OrcamentoCategoria, FinancialTransaction, ProjetoItem } from "./types";
 import { useToast } from "@/components/dashboard/Toast";
 import {
   Wallet,
@@ -24,6 +24,7 @@ import {
 interface ProjectOrcamentoProps {
   categorias: OrcamentoCategoria[];
   transacoes: FinancialTransaction[];
+  project?: ProjetoItem;
   onAddTransaction: (tx: FinancialTransaction) => void;
   onUpdateTransaction?: (tx: FinancialTransaction) => void;
   onDeleteTransaction?: (id: string) => void;
@@ -40,6 +41,7 @@ const STATUS_OPTIONS = [
 export function ProjectOrcamento({
   categorias,
   transacoes,
+  project,
   onAddTransaction,
   onUpdateTransaction,
   onDeleteTransaction,
@@ -55,7 +57,7 @@ export function ProjectOrcamento({
   const [docNumber, setDocNumber] = useState("");
   const [description, setDescription] = useState("");
   const [supplier, setSupplier] = useState("");
-  const [categoryName, setCategoryName] = useState("Obras e infraestrutura");
+  const [categoryName, setCategoryName] = useState(categorias[0]?.name || "Obras e infraestrutura");
   const [valueAmount, setValueAmount] = useState("");
   const [txStatus, setTxStatus] = useState<string>("Aguardando aprovação");
 
@@ -109,9 +111,9 @@ export function ProjectOrcamento({
         body: JSON.stringify({
           action: "sync_project_expense",
           transaction: tx,
-          projectCode: "PRJ-2026-0042",
-          projectName: "Modernização da Iluminação Pública",
-          actor: "Gestor de Projetos",
+          projectCode: project?.code || "PRJ-2026-0001",
+          projectName: project?.title || "Projeto da Demanda",
+          actor: project?.responsible || "Gestor de Projetos",
         }),
       });
       setLastSync(new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }));

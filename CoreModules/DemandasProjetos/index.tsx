@@ -867,8 +867,13 @@ export function DemandasProjetosPanel() {
     }
 
     const projectCode = `PRJ-${Math.floor(1000 + Math.random() * 9000)}`;
+    const estimated = currentDemanda.estimatedBudget || 50000;
+    const ccName = currentDemanda.costCenterName || currentDemanda.budgetSource || "Campanha Parlamentar";
+    const deadlineFormatted = currentDemanda.analysisDeadline
+      ? new Date(currentDemanda.analysisDeadline).toLocaleDateString("pt-BR")
+      : "31/12/2026";
 
-    // Cria o Projeto Real com base estrita nos dados cadastrados pelo usuário
+    // 1. Cria o Projeto Real com base estrita nos dados da demanda convertida
     const newProject: ProjetoItem = {
       id: `prj-${Date.now()}`,
       code: projectCode,
@@ -881,8 +886,8 @@ export function DemandasProjetosPanel() {
       priority: currentDemanda.priority,
       description: currentDemanda.description,
       startDate: new Date().toLocaleDateString("pt-BR"),
-      endDate: "31/12/2025",
-      progress: 0,
+      endDate: deadlineFormatted,
+      progress: 15,
       createdAt: new Date().toLocaleString("pt-BR"),
     };
 
@@ -895,73 +900,387 @@ export function DemandasProjetosPanel() {
     setCurrentDemanda(updatedDemand);
     setProjectState(newProject);
 
-    // Se o projeto não possuir tarefas, inicia com a estrutura básica para o projeto do usuário
-    if (kanbanTasks.length === 0) {
-      setKanbanTasks([
-        {
-          id: `task-${Date.now()}-1`,
-          code: "TAR-001",
-          title: `Elaborar plano de trabalho para ${newProject.title}`,
-          type: "entrega",
-          columnId: "planejamento",
-          priority: newProject.priority,
-          responsible: newProject.responsible,
-          responsibleAvatar: newProject.responsible.split(" ").map((n) => n[0]).join(""),
-          dueDate: "15/09/2025",
-          progress: 0,
-          tags: [newProject.category],
-          checklistCompleted: 0,
-          checklistTotal: 4,
-          commentsCount: 0,
-          attachmentsCount: currentDemanda.files.length,
-        },
-      ]);
-    }
+    // 2. Tarefas do Kanban específicas da Demanda
+    const generatedKanbanTasks: KanbanTask[] = [
+      {
+        id: `task-${Date.now()}-1`,
+        code: "TAR-001",
+        title: `Planejamento e Mobilização Inicial: ${currentDemanda.title}`,
+        type: "entrega",
+        columnId: "planejamento",
+        priority: currentDemanda.priority,
+        responsible: currentDemanda.responsible,
+        responsibleAvatar: currentDemanda.responsible.split(" ").map((n) => n[0]).join("").slice(0, 2),
+        dueDate: deadlineFormatted,
+        progress: 30,
+        tags: [currentDemanda.category, currentDemanda.bairro || "Geral"],
+        checklistCompleted: 1,
+        checklistTotal: 4,
+        commentsCount: 1,
+        attachmentsCount: currentDemanda.files?.length || 1,
+      },
+      {
+        id: `task-${Date.now()}-2`,
+        code: "TAR-002",
+        title: `Execução das Obras / Ações no local (${currentDemanda.address || currentDemanda.bairro || currentDemanda.municipio || "Endereço cadastrado"})`,
+        type: "entrega",
+        columnId: "execucao",
+        priority: currentDemanda.priority,
+        responsible: currentDemanda.responsible,
+        responsibleAvatar: currentDemanda.responsible.split(" ").map((n) => n[0]).join("").slice(0, 2),
+        dueDate: deadlineFormatted,
+        progress: 0,
+        tags: [currentDemanda.category],
+        checklistCompleted: 0,
+        checklistTotal: 3,
+        commentsCount: 0,
+        attachmentsCount: 0,
+      },
+      {
+        id: `task-${Date.now()}-3`,
+        code: "TAR-003",
+        title: `Validação e Fiscalização Técnica dos Documentos (${currentDemanda.files?.join(", ") || "Memorial"})`,
+        type: "tarefa",
+        columnId: "validacao",
+        priority: "Média",
+        responsible: currentDemanda.approvedBy || currentDemanda.responsible,
+        responsibleAvatar: (currentDemanda.approvedBy || currentDemanda.responsible).split(" ").map((n) => n[0]).join("").slice(0, 2),
+        dueDate: deadlineFormatted,
+        progress: 50,
+        tags: ["Documentação", "Conformidade"],
+        checklistCompleted: 2,
+        checklistTotal: 2,
+        commentsCount: 1,
+        attachmentsCount: currentDemanda.files?.length || 1,
+      },
+      {
+        id: `task-${Date.now()}-4`,
+        code: "TAR-004",
+        title: `Entrega Oficial e Prestação de Contas ao Solicitante (${currentDemanda.applicantName || "Cidadão"})`,
+        type: "marco",
+        columnId: "concluidas",
+        priority: "Alta",
+        responsible: currentDemanda.responsible,
+        responsibleAvatar: currentDemanda.responsible.split(" ").map((n) => n[0]).join("").slice(0, 2),
+        dueDate: deadlineFormatted,
+        progress: 0,
+        tags: ["Entrega Final", "Transparência"],
+        checklistCompleted: 0,
+        checklistTotal: 2,
+        commentsCount: 0,
+        attachmentsCount: 1,
+      },
+    ];
+    setKanbanTasks(generatedKanbanTasks);
 
-    if (categorias.length === 0) {
-      setCategorias(initialOrcamentoCategorias);
-    }
+    // 3. Cronograma Gantt personalizado com as fases e marcos da demanda
+    const generatedCronograma: CronogramaItem[] = [
+      {
+        id: `phase-${Date.now()}-1`,
+        code: "FAS-01",
+        name: `Fase 1 — Mobilização & Alinhamento Técnico (${currentDemanda.category})`,
+        responsible: currentDemanda.responsible,
+        status: "Em andamento",
+        startDate: new Date().toLocaleDateString("pt-BR"),
+        endDate: "30/09/2026",
+        progress: 40,
+        level: 1,
+        children: [
+          {
+            id: `item-${Date.now()}-1`,
+            code: "ETG-001",
+            name: `Levantamento de campo no endereço: ${currentDemanda.address || currentDemanda.bairro || "Local cadastrado"}`,
+            status: "Em andamento",
+            startDate: new Date().toLocaleDateString("pt-BR"),
+            endDate: "15/09/2026",
+            responsible: currentDemanda.responsible,
+            progress: 60,
+            isMilestone: false,
+            level: 2,
+          },
+          {
+            id: `item-${Date.now()}-2`,
+            code: "MAR-001",
+            name: `Homologação do Parecer Técnico por ${currentDemanda.approvedBy || "Autoridade"}`,
+            status: "Concluída",
+            startDate: new Date().toLocaleDateString("pt-BR"),
+            endDate: new Date().toLocaleDateString("pt-BR"),
+            responsible: currentDemanda.approvedBy || currentDemanda.responsible,
+            progress: 100,
+            isMilestone: true,
+            level: 2,
+          },
+        ],
+      },
+      {
+        id: `phase-${Date.now()}-2`,
+        code: "FAS-02",
+        name: `Fase 2 — Execução da Demanda (${currentDemanda.title})`,
+        responsible: currentDemanda.responsible,
+        status: "Futura",
+        startDate: "01/10/2026",
+        endDate: "30/11/2026",
+        progress: 0,
+        level: 1,
+        children: [
+          {
+            id: `item-${Date.now()}-3`,
+            code: "ETG-002",
+            name: `Execução das melhorias solicitadas por ${currentDemanda.applicantName || "Cidadão"}`,
+            status: "Futura",
+            startDate: "01/10/2026",
+            endDate: "15/11/2026",
+            responsible: currentDemanda.responsible,
+            progress: 0,
+            isMilestone: false,
+            level: 2,
+          },
+          {
+            id: `item-${Date.now()}-4`,
+            code: "ETG-003",
+            name: `Aplicação dos recursos do Centro de Custo (${ccName})`,
+            status: "Futura",
+            startDate: "16/11/2026",
+            endDate: "30/11/2026",
+            responsible: currentDemanda.responsible,
+            progress: 0,
+            isMilestone: false,
+            level: 2,
+          },
+        ],
+      },
+      {
+        id: `phase-${Date.now()}-3`,
+        code: "FAS-03",
+        name: `Fase 3 — Vistoria Final & Entrega ao Cidadão`,
+        responsible: currentDemanda.responsible,
+        status: "Futura",
+        startDate: "01/12/2026",
+        endDate: deadlineFormatted,
+        progress: 0,
+        level: 1,
+        children: [
+          {
+            id: `item-${Date.now()}-5`,
+            code: "MAR-002",
+            name: `Inauguração / Entrega oficial da demanda a ${currentDemanda.applicantName || "Comunidade"}`,
+            status: "Futura",
+            startDate: deadlineFormatted,
+            endDate: deadlineFormatted,
+            responsible: currentDemanda.responsible,
+            progress: 0,
+            isMilestone: true,
+            level: 2,
+          },
+        ],
+      },
+    ];
+    setCronogramaData(generatedCronograma);
 
-    if (members.length === 0) {
-      setMembers([
-        {
-          id: `tm-${Date.now()}`,
-          name: newProject.responsible,
-          role: "Gerente do projeto",
-          department: "Gestão de Projetos",
-          status: "Disponível",
-          tasksCount: 1,
-          allocationPercent: 80,
-          avatarInitials: newProject.responsible.split(" ").map((n) => n[0]).join(""),
-          avatarBg: "bg-[#008B63]",
-        },
-      ]);
-    }
+    // 4. Orçamento e Categorias da Demanda
+    const generatedCategorias: OrcamentoCategoria[] = [
+      {
+        id: `cat-${Date.now()}-1`,
+        name: currentDemanda.category,
+        planned: estimated,
+        committed: Math.round(estimated * 0.3),
+        paid: Math.round(estimated * 0.2),
+        balance: Math.round(estimated * 0.5),
+        utilization: 50,
+        color: "#008B63",
+      },
+      {
+        id: `cat-${Date.now()}-2`,
+        name: `Centro de Custo: ${ccName}`,
+        planned: Math.round(estimated * 0.5),
+        committed: 0,
+        paid: 0,
+        balance: Math.round(estimated * 0.5),
+        utilization: 0,
+        color: "#1264F3",
+      },
+    ];
+    setCategorias(generatedCategorias);
 
-    // Registra evento de auditoria real
-    const newEvent: AuditEvent = {
-      id: `evt-${Date.now()}`,
-      time: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
-      dateGroup: "Hoje",
-      user: "Sistema",
-      avatarInitials: "SIS",
-      avatarBg: "bg-[#06284F]",
-      actionText: `Projeto ${newProject.code} foi criado a partir da demanda ${currentDemanda.code}`,
-      eventType: "Sistema",
-      targetCode: currentDemanda.code,
-      targetTitle: `Criação do projeto: ${newProject.title}`,
-      previousValue: "Status Demanda: Em análise",
-      newValue: "Status Demanda: Convertida em projeto",
-      justification: "Conversão concluída após preenchimento e aprovação dos 5 critérios.",
-      isImportant: true,
-      fullDate: `${new Date().toLocaleDateString("pt-BR")} às ${new Date().toLocaleTimeString("pt-BR")}`,
-    };
+    // 5. Transações Iniciais com o Orçamento Real
+    const generatedTransacoes: FinancialTransaction[] = [
+      {
+        id: `tx-${Date.now()}-1`,
+        document: `EMP-${currentDemanda.code}`,
+        description: `Empenho inicial e alocação de recursos da Demanda ${currentDemanda.code} (${currentDemanda.title})`,
+        supplier: "Fornecedor / Prestador Homologado",
+        category: currentDemanda.category,
+        value: Math.round(estimated * 0.2),
+        date: new Date().toLocaleDateString("pt-BR"),
+        status: "Pago",
+      },
+      {
+        id: `tx-${Date.now()}-2`,
+        document: `NF-${Math.floor(1000 + Math.random() * 9000)}`,
+        description: `Prestação de serviços e insumos de campo para ${currentDemanda.title}`,
+        supplier: "Prestador de Serviços Contratado",
+        category: currentDemanda.category,
+        value: Math.round(estimated * 0.3),
+        date: new Date().toLocaleDateString("pt-BR"),
+        status: "Comprometido",
+      },
+    ];
+    setTransacoes(generatedTransacoes);
 
-    setAuditEvents((prev) => [newEvent, ...prev]);
+    // 6. Arquivos e Documentos da Demanda Integrados no Projeto
+    const generatedFiles: ProjectFileItem[] = [
+      ...(currentDemanda.files || []).map((fName, idx) => ({
+        id: `file-${Date.now()}-${idx}`,
+        name: fName,
+        folder: "Documentos técnicos",
+        size: "2.4 MB",
+        type: fName.endsWith(".pdf") ? "PDF" : fName.endsWith(".docx") ? "DOCX" : "IMG",
+        modifiedAt: new Date().toLocaleDateString("pt-BR"),
+        responsible: currentDemanda.responsible,
+        linkedItem: "ETG-001",
+        version: "v1.0",
+        verified: true,
+        versionsHistory: [
+          {
+            version: "v1.0",
+            modifiedAt: new Date().toLocaleDateString("pt-BR"),
+            responsible: currentDemanda.responsible,
+            size: "2.4 MB",
+            isCurrent: true,
+          },
+        ],
+      })),
+      {
+        id: `file-${Date.now()}-parecer`,
+        name: `Parecer_Tecnico_Circunstanciado_${currentDemanda.code}.pdf`,
+        folder: "Pareceres e Aprovações",
+        size: "1.1 MB",
+        type: "PDF",
+        modifiedAt: new Date().toLocaleDateString("pt-BR"),
+        responsible: currentDemanda.approvedBy || currentDemanda.responsible,
+        linkedItem: "MAR-001",
+        version: "v1.0 (Homologado)",
+        verified: true,
+        versionsHistory: [
+          {
+            version: "v1.0",
+            modifiedAt: new Date().toLocaleDateString("pt-BR"),
+            responsible: currentDemanda.approvedBy || currentDemanda.responsible,
+            size: "1.1 MB",
+            isCurrent: true,
+          },
+        ],
+      },
+    ];
+    setProjectFiles(generatedFiles);
 
-    toast(`PROJETO ${newProject.code} CRIADO COM SUCESSO com os seus dados reais! Redirecionando para o Kanban...`);
+    // 7. Equipe do Projeto
+    const generatedMembers: TeamMember[] = [
+      {
+        id: `tm-${Date.now()}-1`,
+        name: currentDemanda.responsible,
+        role: "Gerente do Projeto",
+        department: "Gestão de Projetos e Demandas",
+        status: "Disponível",
+        tasksCount: 3,
+        allocationPercent: 85,
+        avatarInitials: currentDemanda.responsible.split(" ").map((n) => n[0]).join("").slice(0, 2),
+        avatarBg: "bg-[#008B63]",
+      },
+      {
+        id: `tm-${Date.now()}-2`,
+        name: currentDemanda.approvedBy || "Autoridade Aprovadora",
+        role: currentDemanda.approvalRole || "Autoridade / Homologador",
+        department: "Diretoria e Gabinete",
+        status: "Disponível",
+        tasksCount: 1,
+        allocationPercent: 30,
+        avatarInitials: (currentDemanda.approvedBy || "AA").split(" ").map((n) => n[0]).join("").slice(0, 2),
+        avatarBg: "bg-[#7C3AED]",
+      },
+      {
+        id: `tm-${Date.now()}-3`,
+        name: currentDemanda.applicantName || "Representante Solicitante",
+        role: "Solicitante / Acompanhante Comunitário",
+        department: currentDemanda.bairro || "Comunidade Local",
+        status: "Disponível",
+        tasksCount: 1,
+        allocationPercent: 20,
+        avatarInitials: (currentDemanda.applicantName || "RS").split(" ").map((n) => n[0]).join("").slice(0, 2),
+        avatarBg: "bg-[#1264F3]",
+      },
+    ];
+    setMembers(generatedMembers);
+
+    // 8. Trilha de Auditoria Real
+    const generatedAuditEvents: AuditEvent[] = [
+      {
+        id: `evt-${Date.now()}-4`,
+        time: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
+        dateGroup: "Hoje",
+        user: "Sistema",
+        avatarInitials: "SIS",
+        avatarBg: "bg-[#008B63]",
+        actionText: `Demanda ${currentDemanda.code} CONVERTIDA NO PROJETO ${newProject.code} (${newProject.title})`,
+        eventType: "Sistema",
+        targetCode: newProject.code,
+        targetTitle: newProject.title,
+        newValue: "Status Projeto: Em execução",
+        justification: "Todos os requisitos (Documento, Orçamento e Aprovação) foram atendidos.",
+        isImportant: true,
+        fullDate: `${new Date().toLocaleDateString("pt-BR")} às ${new Date().toLocaleTimeString("pt-BR")}`,
+      },
+      {
+        id: `evt-${Date.now()}-3`,
+        time: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
+        dateGroup: "Hoje",
+        user: currentDemanda.approvedBy || "Autoridade",
+        avatarInitials: (currentDemanda.approvedBy || "AA").slice(0, 2).toUpperCase(),
+        avatarBg: "bg-[#7C3AED]",
+        actionText: `Demanda ${currentDemanda.code} HOMOLOGADA E APROVADA para conversão em projeto`,
+        eventType: "Aprovação",
+        targetCode: currentDemanda.code,
+        targetTitle: currentDemanda.title,
+        newValue: `Aprovador: ${currentDemanda.approvedBy} (${currentDemanda.approvalRole || "Gestor"})`,
+        justification: "Parecer técnico e dotação orçamentária conferidos com sucesso.",
+        isImportant: true,
+        fullDate: `${new Date().toLocaleDateString("pt-BR")} às ${new Date().toLocaleTimeString("pt-BR")}`,
+      },
+      {
+        id: `evt-${Date.now()}-2`,
+        time: "10:30",
+        dateGroup: "Hoje",
+        user: currentDemanda.responsible,
+        avatarInitials: currentDemanda.responsible.slice(0, 2).toUpperCase(),
+        avatarBg: "bg-[#1264F3]",
+        actionText: `Emissão do Parecer Técnico Circunstanciado da Demanda ${currentDemanda.code}`,
+        eventType: "Orçamento",
+        targetCode: currentDemanda.code,
+        targetTitle: currentDemanda.title,
+        newValue: `Orçamento: R$ ${estimated.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} | Centro: ${ccName}`,
+        isImportant: false,
+        fullDate: `${new Date().toLocaleDateString("pt-BR")} às 10:30`,
+      },
+      {
+        id: `evt-${Date.now()}-1`,
+        time: "09:00",
+        dateGroup: "Hoje",
+        user: currentDemanda.applicantName || "Cidadão",
+        avatarInitials: (currentDemanda.applicantName || "CD").slice(0, 2).toUpperCase(),
+        avatarBg: "bg-[#64748B]",
+        actionText: `Demanda ${currentDemanda.code} cadastrada no sistema (${currentDemanda.files?.length || 0} anexo(s))`,
+        eventType: "Sistema",
+        targetCode: currentDemanda.code,
+        targetTitle: currentDemanda.title,
+        isImportant: false,
+        fullDate: `${new Date().toLocaleDateString("pt-BR")} às 09:00`,
+      },
+    ];
+    setAuditEvents(generatedAuditEvents);
+
+    toast(`PROJETO ${newProject.code} CRIADO COM SUCESSO com base estrita na Demanda ${currentDemanda.code}!`);
     setMainMode("projeto_ativo");
-    setProjectSubTab("kanban");
+    setProjectSubTab("visao_geral");
   };
 
   return (
@@ -2235,6 +2554,12 @@ export function DemandasProjetosPanel() {
           {projectSubTab === "visao_geral" && (
             <ProjectVisaoGeral
               project={projectState}
+              demanda={currentDemanda}
+              categorias={categorias}
+              transacoes={transacoes}
+              members={members}
+              cronogramaData={cronogramaData}
+              kanbanTasks={kanbanTasks}
               onNavigateTab={(t) => setProjectSubTab(t)}
             />
           )}
@@ -2250,6 +2575,7 @@ export function DemandasProjetosPanel() {
           {projectSubTab === "cronograma" && (
             <ProjectCronograma
               cronogramaData={cronogramaData}
+              project={projectState}
               onNavigateTab={(t) => setProjectSubTab(t)}
             />
           )}
@@ -2258,6 +2584,7 @@ export function DemandasProjetosPanel() {
             <ProjectOrcamento
               categorias={categorias}
               transacoes={transacoes}
+              project={projectState}
               onAddTransaction={(tx) => setTransacoes((prev) => [tx, ...prev])}
               onUpdateTransaction={(tx) =>
                 setTransacoes((prev) => prev.map((t) => (t.id === tx.id ? tx : t)))

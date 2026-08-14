@@ -72,6 +72,8 @@ export interface DemandaItem {
   estimatedBudget?: number;
   budgetSource?: string;
   budgetDestination?: string;
+  costCenterId?: string;
+  costCenterName?: string;
   costCenterContext?: "mandato" | "campanha" | "partido" | "interno";
   approvedBy?: string;
   approvalDate?: string;

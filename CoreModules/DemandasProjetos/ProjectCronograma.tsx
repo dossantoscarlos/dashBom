@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import type { CronogramaItem } from "./types";
+import type { CronogramaItem, ProjetoItem } from "./types";
 import { useToast } from "@/components/dashboard/Toast";
 import {
   Calendar as CalendarIcon,
@@ -23,14 +23,18 @@ import {
 
 interface ProjectCronogramaProps {
   cronogramaData: CronogramaItem[];
+  project?: ProjetoItem;
   onNavigateTab: (tab: any) => void;
 }
 
 export function ProjectCronograma({
   cronogramaData,
+  project,
   onNavigateTab,
 }: ProjectCronogramaProps) {
   const { toast } = useToast();
+  const currentProjectCode = project?.code || "PRJ-2026-0001";
+  const currentProjectTitle = project?.title || "Projeto da Demanda";
   const [searchQuery, setSearchQuery] = useState("");
   const [zoomLevel, setZoomLevel] = useState<"dia" | "semana" | "mes">("semana");
   const [expandedFases, setExpandedFases] = useState<Record<string, boolean>>({
@@ -50,7 +54,7 @@ export function ProjectCronograma({
   const [agendaEventTitle, setAgendaEventTitle] = useState("");
   const [agendaEventType, setAgendaEventType] = useState<string>("inauguracao");
   const [agendaEventDate, setAgendaEventDate] = useState("2026-08-15");
-  const [agendaEventLocation, setAgendaEventLocation] = useState("Praça Central - Bairro Primavera");
+  const [agendaEventLocation, setAgendaEventLocation] = useState("São Paulo - Zona Sul");
   const [agendaEventResponsible, setAgendaEventResponsible] = useState("Coordenação de Campanha");
 
   const toggleFase = (id: string) => {
@@ -83,15 +87,15 @@ export function ProjectCronograma({
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
-                titulo: `[PRJ-2026-0042] ${item.name}`,
-                descricao: `Entrega vinculada ao cronograma da fase '${fase.name}'. Responsável: ${item.responsible}`,
+                titulo: `[${currentProjectCode}] ${item.name}`,
+                descricao: `Entrega vinculada ao cronograma da fase '${fase.name}' do ${currentProjectTitle}. Responsável: ${item.responsible}`,
                 dataCompleta: "2026-08-20",
                 dataInicio: "2026-08-20",
-                local: "Praça Central - São Paulo",
+                local: "Praça Central",
                 tipo: item.isMilestone ? "marco_projeto" : "entrega_projeto",
                 status: item.status === "Concluída" ? "realizado" : "confirmado",
-                responsavel: item.responsible || "Equipe de Gestão de Projetos",
-                projectCode: "PRJ-2026-0042",
+                responsavel: item.responsible || project?.responsible || "Equipe de Gestão de Projetos",
+                projectCode: currentProjectCode,
                 deliveryCode: item.code || "ETG-001",
                 isProjectMilestone: Boolean(item.isMilestone),
               }),
@@ -112,11 +116,11 @@ export function ProjectCronograma({
   // Abrir modal para agendar evento na campanha a partir de uma entrega
   const handleOpenScheduleModal = (item: any, faseName: string) => {
     setSelectedTaskForAgenda({ ...item, faseName });
-    setAgendaEventTitle(`[PRJ-2026-0042] ${item.name}`);
+    setAgendaEventTitle(`[${currentProjectCode}] ${item.name}`);
     setAgendaEventType(item.isMilestone ? "inauguracao" : "vistoria");
     setAgendaEventDate("2026-08-15");
-    setAgendaEventLocation("São Paulo - Zona Sul");
-    setAgendaEventResponsible(item.responsible || "Coordenação de Campanha");
+    setAgendaEventLocation("Comitê Central");
+    setAgendaEventResponsible(item.responsible || project?.responsible || "Coordenação de Campanha");
     setShowScheduleEventModal(true);
   };
 
@@ -132,14 +136,14 @@ export function ProjectCronograma({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           titulo: agendaEventTitle.trim(),
-          descricao: `Compromisso de campanha vinculado à entrega ${selectedTaskForAgenda?.code || ""} do Projeto PRJ-2026-0042.`,
+          descricao: `Compromisso de campanha vinculado à entrega ${selectedTaskForAgenda?.code || ""} do Projeto ${currentProjectCode} (${currentProjectTitle}).`,
           dataCompleta: agendaEventDate,
           dataInicio: agendaEventDate,
           local: agendaEventLocation,
           tipo: agendaEventType,
           status: "confirmado",
           responsavel: agendaEventResponsible,
-          projectCode: "PRJ-2026-0042",
+          projectCode: currentProjectCode,
           deliveryCode: selectedTaskForAgenda?.code || "ETG-001",
           isProjectMilestone: Boolean(selectedTaskForAgenda?.isMilestone),
         }),
