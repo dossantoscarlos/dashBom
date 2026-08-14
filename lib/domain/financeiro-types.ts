@@ -35,6 +35,9 @@ export type CostCenter = {
   contextType: FinancialContextType;
   budgetLimit: number;
   status: "ativo" | "inativo";
+  committed?: number;
+  realized?: number;
+  available?: number;
 };
 
 export type Budget = {

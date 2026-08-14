@@ -2337,68 +2337,109 @@ export function FinanceiroPanel() {
               </div>
             </div>
 
-            {/* 4 CARDS DE KPIS DE ORÇAMENTO */}
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <div className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950 shadow-xs flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-950/60 shrink-0">
-                  <Target className="h-6 w-6" strokeWidth={1.75} />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-[11px] font-bold text-zinc-500 dark:text-zinc-400">Total Planejado / Orçado</span>
-                  <span className="text-xl font-black text-zinc-900 dark:text-zinc-100 mt-0.5">
-                    {formatCurrencyBR(summary.totalOrcado || budgets.reduce((acc, b) => acc + b.planned, 0))}
-                  </span>
-                  <span className="text-[10px] text-zinc-400 font-medium">
-                    {budgets.length} dotações cadastradas
-                  </span>
-                </div>
-              </div>
+            {/* 4 CARDS DE KPIS DE ORÇAMENTO COM CÁLCULO PRECISO EM TEMPO REAL */}
+            {(() => {
+              const totalTetoCentros = costCenters.reduce((acc, c) => acc + (c.budgetLimit || 0), 0);
+              const totalOrcadoCalculado = budgets.reduce((acc, b) => acc + (b.planned || 0), 0) || totalTetoCentros || summary.totalOrcado;
 
-              <div className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950 shadow-xs flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-purple-50 text-purple-600 dark:bg-purple-950/60 shrink-0">
-                  <Building className="h-6 w-6" strokeWidth={1.75} />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-[11px] font-bold text-zinc-500 dark:text-zinc-400">Teto Centros de Custo</span>
-                  <span className="text-xl font-black text-purple-600 mt-0.5">
-                    {formatCurrencyBR(costCenters.reduce((acc, c) => acc + (c.budgetLimit || 0), 0))}
-                  </span>
-                  <span className="text-[10px] text-purple-600 font-medium">
-                    {costCenters.length} centros de custo
-                  </span>
-                </div>
-              </div>
+              const totalComprometidoCalculado = Math.max(
+                summary.totalComprometido,
+                costCenters.reduce((acc, cc: any) => {
+                  const expComp = expenses.filter((e) => e.status === "solicitada" || e.status === "em_validacao" || e.status === "aprovada").reduce((sum, exp) => {
+                    const alloc = exp.allocations?.find((a) => a.costCenterId === cc.id || a.costCenterName === cc.name);
+                    const directMatch = (exp as any).costCenterId === cc.id || (exp as any).costCenterName === cc.name;
+                    return sum + (alloc ? alloc.amount : directMatch ? exp.finalAmount : 0);
+                  }, 0);
+                  return acc + (cc.committed || expComp || 0);
+                }, 0),
+                budgets.reduce((acc, b) => acc + (b.committed || 0), 0)
+              );
 
-              <div className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950 shadow-xs flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 dark:bg-amber-950/60 shrink-0">
-                  <Lock className="h-6 w-6" strokeWidth={1.75} />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-[11px] font-bold text-zinc-500 dark:text-zinc-400">Orçamento Comprometido</span>
-                  <span className="text-xl font-black text-amber-600 mt-0.5">
-                    {formatCurrencyBR(summary.totalComprometido)}
-                  </span>
-                  <span className="text-[10px] text-amber-600 font-medium">
-                    {summary.pctValorComprometido ?? 0}% em execução
-                  </span>
-                </div>
-              </div>
+              const totalRealizadoCalculado = Math.max(
+                summary.totalDespesas,
+                costCenters.reduce((acc, cc: any) => {
+                  const expPaid = expenses.filter((e) => e.status === "paga" || e.status === "conciliada").reduce((sum, exp) => {
+                    const alloc = exp.allocations?.find((a) => a.costCenterId === cc.id || a.costCenterName === cc.name);
+                    const directMatch = (exp as any).costCenterId === cc.id || (exp as any).costCenterName === cc.name;
+                    return sum + (alloc ? alloc.amount : directMatch ? exp.finalAmount : 0);
+                  }, 0);
+                  return acc + (cc.realized || expPaid || 0);
+                }, 0),
+                budgets.reduce((acc, b) => acc + (b.paid || 0), 0)
+              );
 
-              <div className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950 shadow-xs flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 shrink-0">
-                  <Coins className="h-6 w-6" strokeWidth={1.75} />
+              const baseTotal = totalTetoCentros > 0 ? totalTetoCentros : totalOrcadoCalculado;
+              const saldoDisponivelCalculado = baseTotal > 0
+                ? Math.max(0, baseTotal - totalRealizadoCalculado - totalComprometidoCalculado)
+                : summary.totalDisponivel;
+
+              const pctComprometidoCalculado = baseTotal > 0 ? Math.min(100, Math.round((totalComprometidoCalculado / baseTotal) * 100)) : (summary.pctValorComprometido ?? 0);
+              const pctDisponivelCalculado = baseTotal > 0 ? Math.max(0, Math.min(100, Math.round((saldoDisponivelCalculado / baseTotal) * 100))) : (summary.pctSaldoDisponivel ?? 100);
+
+              return (
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                  <div className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950 shadow-xs flex items-center gap-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-950/60 shrink-0">
+                      <Target className="h-6 w-6" strokeWidth={1.75} />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[11px] font-bold text-zinc-500 dark:text-zinc-400">Total Planejado / Orçado</span>
+                      <span className="text-xl font-black text-zinc-900 dark:text-zinc-100 mt-0.5">
+                        {formatCurrencyBR(totalOrcadoCalculado)}
+                      </span>
+                      <span className="text-[10px] text-zinc-400 font-medium">
+                        {budgets.length > 0 ? `${budgets.length} dotações cadastradas` : `${costCenters.length} centros vinculados`}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950 shadow-xs flex items-center gap-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-purple-50 text-purple-600 dark:bg-purple-950/60 shrink-0">
+                      <Building className="h-6 w-6" strokeWidth={1.75} />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[11px] font-bold text-zinc-500 dark:text-zinc-400">Teto Centros de Custo</span>
+                      <span className="text-xl font-black text-purple-600 mt-0.5">
+                        {formatCurrencyBR(totalTetoCentros)}
+                      </span>
+                      <span className="text-[10px] text-purple-600 font-medium">
+                        {costCenters.length} centros de custo
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950 shadow-xs flex items-center gap-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 dark:bg-amber-950/60 shrink-0">
+                      <Lock className="h-6 w-6" strokeWidth={1.75} />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[11px] font-bold text-zinc-500 dark:text-zinc-400">Orçamento Comprometido</span>
+                      <span className="text-xl font-black text-amber-600 mt-0.5">
+                        {formatCurrencyBR(totalComprometidoCalculado)}
+                      </span>
+                      <span className="text-[10px] text-amber-600 font-medium">
+                        {pctComprometidoCalculado}% do teto alocado
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950 shadow-xs flex items-center gap-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 shrink-0">
+                      <Coins className="h-6 w-6" strokeWidth={1.75} />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[11px] font-bold text-zinc-500 dark:text-zinc-400">Saldo Disponível</span>
+                      <span className="text-xl font-black text-emerald-600 mt-0.5">
+                        {formatCurrencyBR(saldoDisponivelCalculado)}
+                      </span>
+                      <span className="text-[10px] text-emerald-600 font-medium">
+                        {pctDisponivelCalculado}% livre para novas demandas
+                      </span>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex flex-col">
-                  <span className="text-[11px] font-bold text-zinc-500 dark:text-zinc-400">Saldo Disponível</span>
-                  <span className="text-xl font-black text-emerald-600 mt-0.5">
-                    {formatCurrencyBR(summary.totalDisponivel)}
-                  </span>
-                  <span className="text-[10px] text-emerald-600 font-medium">
-                    Livre para novas dotações
-                  </span>
-                </div>
-              </div>
-            </div>
+              );
+            })()}
 
             {/* SEÇÃO 1: CARDS DE CENTROS DE CUSTO */}
             <div className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950 shadow-xs flex flex-col gap-4">
@@ -2424,13 +2465,24 @@ export function FinanceiroPanel() {
                   </div>
                 ) : (
                   costCenters.map((cc) => {
-                    const totalSpent = expenses.reduce((sum, exp) => {
+                    const expPaid = expenses.filter((e) => e.status === "paga" || e.status === "conciliada").reduce((sum, exp) => {
                       const alloc = exp.allocations?.find((a) => a.costCenterId === cc.id || a.costCenterName === cc.name);
-                      return sum + (alloc ? alloc.amount : 0);
+                      const directMatch = (exp as any).costCenterId === cc.id || (exp as any).costCenterName === cc.name;
+                      return sum + (alloc ? alloc.amount : directMatch ? exp.finalAmount : 0);
                     }, 0);
+
+                    const expCommitted = expenses.filter((e) => e.status === "solicitada" || e.status === "em_validacao" || e.status === "aprovada").reduce((sum, exp) => {
+                      const alloc = exp.allocations?.find((a) => a.costCenterId === cc.id || a.costCenterName === cc.name);
+                      const directMatch = (exp as any).costCenterId === cc.id || (exp as any).costCenterName === cc.name;
+                      return sum + (alloc ? alloc.amount : directMatch ? exp.finalAmount : 0);
+                    }, 0);
+
+                    const totalCommitted = (cc.committed || 0) + expCommitted;
+                    const totalRealized = (cc.realized || 0) + expPaid;
                     const limit = cc.budgetLimit || 0;
-                    const pct = limit > 0 ? Math.min(100, Math.round((totalSpent / limit) * 100)) : 0;
-                    const available = Math.max(0, limit - totalSpent);
+                    const totalUsed = totalRealized + totalCommitted;
+                    const pct = limit > 0 ? Math.min(100, Math.round((totalUsed / limit) * 100)) : 0;
+                    const available = Math.max(0, limit - totalUsed);
 
                     return (
                       <div key={cc.id} className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/30 flex flex-col gap-3 shadow-2xs">
@@ -2454,8 +2506,16 @@ export function FinanceiroPanel() {
                             <span className="font-bold text-zinc-900 dark:text-zinc-100">{formatCurrencyBR(limit)}</span>
                           </div>
                           <div>
-                            <span className="text-[10px] text-zinc-400 block">Utilizado:</span>
-                            <span className="font-bold text-rose-600">{formatCurrencyBR(totalSpent)}</span>
+                            <span className="text-[10px] text-amber-600 block">Comprometido:</span>
+                            <span className="font-bold text-amber-600">{formatCurrencyBR(totalCommitted)}</span>
+                          </div>
+                          <div>
+                            <span className="text-[10px] text-rose-600 block">Liquidado:</span>
+                            <span className="font-bold text-rose-600">{formatCurrencyBR(totalRealized)}</span>
+                          </div>
+                          <div>
+                            <span className="text-[10px] text-emerald-600 block">Saldo Disponível:</span>
+                            <span className="font-bold text-emerald-600">{formatCurrencyBR(available)}</span>
                           </div>
                         </div>
 

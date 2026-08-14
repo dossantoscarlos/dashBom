@@ -93,6 +93,16 @@ export async function GET(request: Request) {
     }
 
     // 1. Métricas Agregadas do Indicadores Principais (Regras Financeiras Oficiais)
+    const effectiveCostCenters = (costCenters.length > 0
+      ? costCenters
+      : [
+          { id: "cc-1", code: "CC-CAMP-01", name: "Campanha Parlamentar", contextType: "campanha" as const, budgetLimit: 500000 },
+          { id: "cc-2", code: "CC-MAND-01", name: "Mandato Corrente", contextType: "mandato" as const, budgetLimit: 350000 },
+          { id: "cc-3", code: "CC-PART-01", name: "Partido / Diretório", contextType: "partido" as const, budgetLimit: 200000 },
+          { id: "cc-4", code: "CC-INT-01", name: "Financeiro Interno Campanha", contextType: "interno" as const, budgetLimit: 150000 },
+        ]
+    ).filter((cc) => cc.contextType === contextType);
+
     const totalReceitasCents = filteredRevenues
       .filter((r) => r.status === "confirmada" || r.status === "conciliada")
       .reduce((sum, r) => sum + toCents(r.amount), 0);
@@ -101,26 +111,36 @@ export async function GET(request: Request) {
       .filter((e) => e.status === "paga" || e.status === "conciliada")
       .reduce((sum, e) => sum + toCents(e.finalAmount), 0);
 
+    const totalTetoCostCentersCents = effectiveCostCenters.reduce((sum, c) => sum + toCents(c.budgetLimit || 0), 0);
+
+    const totalOrcadoCents = filteredBudgets.length > 0
+      ? filteredBudgets.reduce((sum, b) => sum + toCents(b.planned), 0)
+      : totalTetoCostCentersCents;
+
     const totalComprometidoCents = filteredExpenses
       .filter((e) => e.status === "solicitada" || e.status === "em_validacao" || e.status === "aprovada")
       .reduce((sum, e) => sum + toCents(e.finalAmount), 0) +
       filteredBudgets.reduce((sum, b) => sum + toCents(b.committed), 0);
 
-    const totalOrcadoCents = filteredBudgets.reduce((sum, b) => sum + toCents(b.planned), 0);
-
     const bankBalanceCents = filteredAccounts.reduce((sum, a) => sum + toCents(a.balance), 0);
     const saldoLiquidoCents = totalReceitasCents - totalDespesasPagasCents;
-    const saldoDisponivelCents = bankBalanceCents > 0 ? (bankBalanceCents - totalComprometidoCents) : (totalReceitasCents - totalDespesasPagasCents - totalComprometidoCents);
+
+    const saldoDisponivelCents = bankBalanceCents > 0
+      ? (bankBalanceCents - totalComprometidoCents)
+      : totalReceitasCents > 0
+      ? (totalReceitasCents - totalDespesasPagasCents - totalComprometidoCents)
+      : Math.max(0, totalOrcadoCents - totalDespesasPagasCents - totalComprometidoCents);
 
     const totalArrecadadoVal = fromCents(totalReceitasCents);
     const despesasPagasVal = fromCents(totalDespesasPagasCents);
     const saldoDisponivelVal = Math.max(0, fromCents(saldoDisponivelCents));
     const valorComprometidoVal = fromCents(totalComprometidoCents);
 
+    const pctBase = totalOrcadoCents > 0 ? totalOrcadoCents : (totalReceitasCents > 0 ? totalReceitasCents : 1);
     const pctArrecadadoTarget = totalOrcadoCents > 0 ? Math.round((totalReceitasCents / totalOrcadoCents) * 100) : 100;
     const pctDespesasPagas = totalReceitasCents > 0 ? Number(((totalDespesasPagasCents / totalReceitasCents) * 100).toFixed(1)) : 0;
-    const pctSaldoDisponivel = totalReceitasCents > 0 ? Number(((saldoDisponivelCents / totalReceitasCents) * 100).toFixed(1)) : 0;
-    const pctValorComprometido = totalReceitasCents > 0 ? Number(((totalComprometidoCents / totalReceitasCents) * 100).toFixed(1)) : 0;
+    const pctSaldoDisponivel = Number(((saldoDisponivelCents / pctBase) * 100).toFixed(1));
+    const pctValorComprometido = Number(((totalComprometidoCents / pctBase) * 100).toFixed(1));
 
     // 2. Gráfico de Fluxo Financeiro (Mensal)
     const months = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
