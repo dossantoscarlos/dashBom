@@ -884,6 +884,7 @@ const OFFICIAL_TSE_CANDIDATES = [
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
 
+  const idParam = searchParams.get("id")?.trim();
   const qParam = (
     searchParams.get("q") ??
     searchParams.get("nome") ??
@@ -892,11 +893,50 @@ export async function GET(request: Request) {
     ""
   ).trim();
 
+  const numeroParam = searchParams.get("numero")?.trim();
   const siglaPartidoParam = (searchParams.get("siglaPartido") ?? searchParams.get("partido") ?? "").trim();
   const anoParam = (searchParams.get("ano") ?? "").trim();
   const cargoParam = (searchParams.get("cargo") ?? "").trim();
   const normQ = normalizeStr(qParam);
   const normSigla = normalizeStr(siglaPartidoParam);
+
+  // Se buscou diretamente por ID
+  if (idParam) {
+    const cand = OFFICIAL_TSE_CANDIDATES.find((c) => c.id === idParam);
+    if (cand) {
+      // Calcula comparativo com a eleição anterior
+      const hist = cand.historicoComparativoAnos || [];
+      const anterior = hist.find((h) => h.ano < 2026);
+      const atual = hist.find((h) => h.ano === 2026) || {
+        ano: 2026,
+        votos: cand.votosUltimaEleicao || 0,
+        percentual: 50.0,
+      };
+
+      const diffVotos = anterior ? atual.votos - anterior.votos : 0;
+      const pctCrescimento = anterior && anterior.votos > 0
+        ? ((diffVotos / anterior.votos) * 100).toFixed(1)
+        : null;
+
+      const enriquecido = {
+        ...cand,
+        comparativoAnoAnterior: {
+          anoAtual: 2026,
+          votosAtual: atual.votos,
+          anoAnterior: anterior?.ano || (cand.temHistoricoAnterior ? 2022 : null),
+          votosAnterior: anterior?.votos || 0,
+          diferencaVotos: diffVotos,
+          percentualCrescimento: pctCrescimento ? parseFloat(pctCrescimento) : null,
+          tendencia: diffVotos >= 0 ? "crescimento" : "queda",
+        },
+      };
+
+      return NextResponse.json({
+        fonte: "TSE - Base Oficial de Candidaturas (Detalhe Individual)",
+        candidato: enriquecido,
+      });
+    }
+  }
 
   // Parâmetros de Paginação
   const pageParam = parseInt(searchParams.get("page") ?? searchParams.get("pagina") ?? "1", 10);
@@ -917,7 +957,12 @@ export async function GET(request: Request) {
     filtered = filtered.filter((c) => matchCargoFlexible(c.cargoDisputado, cargoParam));
   }
 
-  // 3. Filtro por Ano da Eleição (2026, 2024, 2022)
+  // 3. Filtro por Número específico do candidato
+  if (numeroParam && numeroParam !== "todos") {
+    filtered = filtered.filter((c) => String(c.numero).includes(numeroParam));
+  }
+
+  // 4. Filtro por Ano da Eleição (2026, 2024, 2022)
   if (anoParam && anoParam !== "todos") {
     const targetAno = parseInt(anoParam, 10);
     if (!isNaN(targetAno)) {
@@ -930,7 +975,7 @@ export async function GET(request: Request) {
     }
   }
 
-  // 4. Filtro de Texto (Nome, Urna, Partido, Número, UF)
+  // 5. Filtro de Texto Global (Nome, Urna, Partido, Número, UF)
   if (normQ && normQ !== "todos" && normQ !== normSigla) {
     filtered = filtered.filter((c) => {
       const siglaNorm = normalizeStr(c.siglaPartido);
@@ -947,22 +992,52 @@ export async function GET(request: Request) {
         nomeNorm.includes(normQ) ||
         urnaNorm.includes(normQ) ||
         matchCargoFlexible(cargoNorm, normQ) ||
-        numeroStr === normQ ||
+        numeroStr.includes(normQ) ||
         ufNorm === normQ
       );
     });
   }
 
+  // Enriquecer cada candidato com comparativo de votos do ano atual vs eleição anterior
+  const enrichedList = filtered.map((cand) => {
+    const hist = cand.historicoComparativoAnos || [];
+    const anterior = hist.find((h) => h.ano < 2026);
+    const atual = hist.find((h) => h.ano === 2026) || {
+      ano: 2026,
+      votos: cand.votosUltimaEleicao || 0,
+      percentual: 50.0,
+    };
+
+    const diffVotos = anterior ? atual.votos - anterior.votos : 0;
+    const pctCrescimento = anterior && anterior.votos > 0
+      ? ((diffVotos / anterior.votos) * 100).toFixed(1)
+      : null;
+
+    return {
+      ...cand,
+      comparativoAnoAnterior: {
+        anoAtual: 2026,
+        votosAtual: atual.votos,
+        anoAnterior: anterior?.ano || (cand.temHistoricoAnterior ? 2022 : null),
+        votosAnterior: anterior?.votos || 0,
+        diferencaVotos: diffVotos,
+        percentualCrescimento: pctCrescimento ? parseFloat(pctCrescimento) : null,
+        tendencia: diffVotos >= 0 ? "crescimento" : "queda",
+      },
+    };
+  });
+
   // Cálculo da Paginação
-  const totalEncontrados = filtered.length;
+  const totalEncontrados = enrichedList.length;
   const totalPaginas = Math.ceil(totalEncontrados / pageSize) || 1;
   const paginaAtual = Math.min(page, totalPaginas);
 
   const startIndex = (paginaAtual - 1) * pageSize;
-  const paginatedList = filtered.slice(startIndex, startIndex + pageSize);
+  const paginatedList = enrichedList.slice(startIndex, startIndex + pageSize);
 
   return NextResponse.json({
-    fonte: "TSE - Tribunal Superior Eleitoral (Base Oficial de Candidaturas Paginada por Partido)",
+    fonte: "TSE - Tribunal Superior Eleitoral (Base Oficial de Candidaturas Paginada com Comparativo Anual)",
+    anoCorrente: 2026,
     totalEncontrados,
     paginaAtual,
     totalPaginas,
