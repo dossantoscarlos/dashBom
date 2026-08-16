@@ -979,7 +979,7 @@ export async function GET(request: Request) {
     });
   }
 
-  // Enriquecer cada candidato com comparativo da última eleição realizada vs anterior (2026 = pleito em andamento)
+  // Enriquecer cada candidato com comparativo da última eleição e concorrente direto
   const enrichedList = filtered.map((cand) => {
     const hist = (cand.historicoComparativoAnos || []).filter((h) => h.ano < 2026);
     const ultimaEleicao = hist[hist.length - 1]; // ex: 2022 ou 2020
@@ -990,10 +990,39 @@ export async function GET(request: Request) {
       ? ((diffVotos / penultimaEleicao.votos) * 100).toFixed(1)
       : null;
 
+    // Encontra concorrente direto (mesmo cargo, mesma UF ou disputa nacional)
+    const concorrente = OFFICIAL_TSE_CANDIDATES.find(
+      (other) =>
+        other.id !== cand.id &&
+        (other.cargoDisputado === cand.cargoDisputado || matchCargoFlexible(other.cargoDisputado, cand.cargoDisputado)) &&
+        (other.uf === cand.uf || cand.uf === "BR" || other.uf === "BR")
+    );
+
+    let concorrenteDiretoData = cand.concorrenteDireto;
+    if (!concorrenteDiretoData && concorrente) {
+      const votosCand = cand.votosUltimaEleicao || 0;
+      const votosAdv = concorrente.votosUltimaEleicao || 0;
+      const totalConfronto = (votosCand + votosAdv) || 1;
+      const diffNominal = votosCand - votosAdv;
+
+      concorrenteDiretoData = {
+        nomeAdversario: concorrente.nomeUrna,
+        partidoAdversario: concorrente.siglaPartido,
+        votosAdversario: votosAdv,
+        percentualAdversario: parseFloat(((votosAdv / totalConfronto) * 100).toFixed(1)),
+        diferencaVotos: diffNominal,
+        situacaoAdversario: concorrente.situacao,
+        observacaoComparativa: diffNominal >= 0
+          ? `Vantagem de ${Math.abs(diffNominal).toLocaleString("pt-BR")} votos sobre ${concorrente.nomeUrna} (${concorrente.siglaPartido}) no último pleito direto.`
+          : `Desvantagem de ${Math.abs(diffNominal).toLocaleString("pt-BR")} votos em relação a ${concorrente.nomeUrna} (${concorrente.siglaPartido}) no último pleito direto.`,
+      };
+    }
+
     return {
       ...cand,
       anoEleicao: 2026,
       statusEleicao2026: "CANDIDATURA REGISTRADA / PLEITO EM ANDAMENTO",
+      concorrenteDireto: concorrenteDiretoData,
       comparativoAnoAnterior: {
         anoAtual: 2026,
         status2026: "Candidatura Registrada (Pleito em Andamento)",

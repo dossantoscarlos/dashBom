@@ -1135,6 +1135,19 @@ export function TrePanel() {
                                       <span>Região: {c.maiorRegiaoVotosAnterior}</span>
                                     </span>
                                   )}
+
+                                  {/* COMPARATIVO COM CONCORRENTE DIRETO */}
+                                  {c.concorrenteDireto && (
+                                    <span className="bg-indigo-50 text-indigo-800 border border-indigo-200 px-2 py-0.5 rounded-md font-extrabold flex items-center gap-1">
+                                      <span>⚔️</span>
+                                      <span>
+                                        Concorrente Direto: {c.concorrenteDireto.nomeAdversario} ({c.concorrenteDireto.partidoAdversario}) • {c.concorrenteDireto.votosAdversario?.toLocaleString("pt-BR")} votos
+                                      </span>
+                                      <span className={c.concorrenteDireto.diferencaVotos >= 0 ? "text-emerald-700 font-mono" : "text-rose-700 font-mono"}>
+                                        ({c.concorrenteDireto.diferencaVotos >= 0 ? "+" : ""}{c.concorrenteDireto.diferencaVotos?.toLocaleString("pt-BR")})
+                                      </span>
+                                    </span>
+                                  )}
                                 </div>
                               )}
 
@@ -1327,6 +1340,58 @@ export function TrePanel() {
                         )}
                       </div>
                     )}
+                  </div>
+                )}
+
+                {/* PAINEL DE CONFRONTO E COMPARATIVO COM O CONCORRENTE DIRETO */}
+                {cand.concorrenteDireto && (
+                  <div className="p-4 rounded-xl border border-indigo-200 bg-indigo-50/40 flex flex-col gap-3 shadow-2xs">
+                    <div className="flex items-center justify-between border-b border-indigo-200 pb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-base">⚔️</span>
+                        <h4 className="text-xs font-black text-indigo-950 uppercase tracking-wider">
+                          Comparativo Direto com Adversário / Concorrente Direto ({cand.cargoDisputado})
+                        </h4>
+                      </div>
+                      <span className="text-[10px] font-bold text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded">
+                        Disputa Eleitoral Direta
+                      </span>
+                    </div>
+
+                    <div className="grid gap-3 sm:grid-cols-2 text-xs">
+                      {/* Candidato Atual */}
+                      <div className="p-3 rounded-lg bg-white border border-indigo-200 flex flex-col justify-between gap-2">
+                        <div className="flex items-center justify-between">
+                          <span className="font-extrabold text-[#10213D] text-sm">{cand.nomeUrna}</span>
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800">{cand.siglaPartido}</span>
+                        </div>
+                        <div className="text-xl font-black text-[#10213D]">
+                          {(cand.votosUltimaEleicao || 0).toLocaleString("pt-BR")} <span className="text-xs font-normal text-[#64748B]">votos</span>
+                        </div>
+                        <span className="text-[10px] font-bold text-[#008B63]">Situação: {cand.situacao}</span>
+                      </div>
+
+                      {/* Concorrente Direto */}
+                      <div className="p-3 rounded-lg bg-white border border-rose-200 flex flex-col justify-between gap-2">
+                        <div className="flex items-center justify-between">
+                          <span className="font-extrabold text-[#10213D] text-sm">{cand.concorrenteDireto.nomeAdversario}</span>
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800">{cand.concorrenteDireto.partidoAdversario}</span>
+                        </div>
+                        <div className="text-xl font-black text-[#10213D]">
+                          {(cand.concorrenteDireto.votosAdversario || 0).toLocaleString("pt-BR")} <span className="text-xs font-normal text-[#64748B]">votos</span>
+                        </div>
+                        <span className="text-[10px] font-bold text-rose-700">Situação: {cand.concorrenteDireto.situacaoAdversario || "Candidato Concorrente"}</span>
+                      </div>
+                    </div>
+
+                    <div className="p-2.5 rounded-lg bg-white border border-indigo-200 text-xs flex items-center justify-between">
+                      <span className="text-[#64748B]">{cand.concorrenteDireto.observacaoComparativa}</span>
+                      <span className={`font-mono font-black text-xs ${
+                        cand.concorrenteDireto.diferencaVotos >= 0 ? "text-emerald-700" : "text-rose-700"
+                      }`}>
+                        Diferença: {cand.concorrenteDireto.diferencaVotos >= 0 ? "+" : ""}{cand.concorrenteDireto.diferencaVotos?.toLocaleString("pt-BR")} votos
+                      </span>
+                    </div>
                   </div>
                 )}
 
