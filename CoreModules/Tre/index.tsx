@@ -107,9 +107,11 @@ export type ApiTseCandidate = {
   };
   comparativoAnoAnterior?: {
     anoAtual: number;
-    votosAtual: number;
-    anoAnterior: number | null;
-    votosAnterior: number;
+    status2026?: string;
+    anoUltimaEleicao?: number | null;
+    votosUltimaEleicao?: number;
+    anoPenultimaEleicao?: number | null;
+    votosPenultimaEleicao?: number;
     diferencaVotos: number;
     percentualCrescimento: number | null;
     tendencia: "crescimento" | "queda";
@@ -1092,7 +1094,14 @@ export function TrePanel() {
                               {/* COMPARATIVO DE VOTOS ANO ATUAL VS ANO ANTERIOR & REGIÃO */}
                               {c.comparativoAnoAnterior && (
                                 <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[10px]">
-                                  {c.comparativoAnoAnterior.anoAnterior ? (
+                                  {/* STATUS 2026 */}
+                                  <span className="bg-amber-50 text-amber-800 border border-amber-300 px-2 py-0.5 rounded-md font-extrabold flex items-center gap-1">
+                                    <span>🗳️</span>
+                                    <span>2026: Candidatura Registrada (Aguardando Votação)</span>
+                                  </span>
+
+                                  {/* COMPARATIVO DE VOTOS DOS PLEITOS ANTERIORES */}
+                                  {c.comparativoAnoAnterior.anoUltimaEleicao && c.comparativoAnoAnterior.votosUltimaEleicao ? (
                                     <span className={`px-2 py-0.5 rounded-md font-extrabold flex items-center gap-1 ${
                                       c.comparativoAnoAnterior.diferencaVotos >= 0
                                         ? "bg-emerald-50 text-emerald-700 border border-emerald-300"
@@ -1100,17 +1109,22 @@ export function TrePanel() {
                                     }`}>
                                       <span>{c.comparativoAnoAnterior.diferencaVotos >= 0 ? "▲" : "▼"}</span>
                                       <span>
-                                        2026 ({c.comparativoAnoAnterior.votosAtual.toLocaleString("pt-BR")} votos) vs {c.comparativoAnoAnterior.anoAnterior} ({c.comparativoAnoAnterior.votosAnterior.toLocaleString("pt-BR")} votos):
+                                        Histórico: {c.comparativoAnoAnterior.anoUltimaEleicao} ({c.comparativoAnoAnterior.votosUltimaEleicao.toLocaleString("pt-BR")} votos)
+                                        {c.comparativoAnoAnterior.anoPenultimaEleicao && (
+                                          <> vs {c.comparativoAnoAnterior.anoPenultimaEleicao} ({(c.comparativoAnoAnterior.votosPenultimaEleicao || 0).toLocaleString("pt-BR")} votos): </>
+                                        )}
                                       </span>
-                                      <span className="font-mono">
-                                        {c.comparativoAnoAnterior.diferencaVotos >= 0 ? "+" : ""}
-                                        {c.comparativoAnoAnterior.diferencaVotos.toLocaleString("pt-BR")} votos
-                                        {c.comparativoAnoAnterior.percentualCrescimento !== null && ` (${c.comparativoAnoAnterior.percentualCrescimento > 0 ? "+" : ""}${c.comparativoAnoAnterior.percentualCrescimento}%)`}
-                                      </span>
+                                      {c.comparativoAnoAnterior.anoPenultimaEleicao && (
+                                        <span className="font-mono">
+                                          {c.comparativoAnoAnterior.diferencaVotos >= 0 ? "+" : ""}
+                                          {c.comparativoAnoAnterior.diferencaVotos.toLocaleString("pt-BR")} votos
+                                          {c.comparativoAnoAnterior.percentualCrescimento !== null && ` (${c.comparativoAnoAnterior.percentualCrescimento > 0 ? "+" : ""}${c.comparativoAnoAnterior.percentualCrescimento}%)`}
+                                        </span>
+                                      )}
                                     </span>
                                   ) : (
                                     <span className="bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-md font-bold">
-                                      ✨ Pleito 2026: 1ª Disputa Eleitoral (Sem histórico de votos anteriores)
+                                      ✨ 1ª Disputa Eleitoral (Sem histórico anterior)
                                     </span>
                                   )}
 
@@ -1261,28 +1275,22 @@ export function TrePanel() {
                 {cand.comparativoAnoAnterior && (
                   <div className="p-4 rounded-xl border border-[#1264F3]/30 bg-gradient-to-r from-[#EAF2FF] to-[#F6F8FB] flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-2xs">
                     <div className="flex items-center gap-3">
-                      <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl font-black text-xl ${
-                        cand.comparativoAnoAnterior.diferencaVotos >= 0 ? "bg-emerald-600 text-white" : "bg-rose-600 text-white"
-                      }`}>
-                        {cand.comparativoAnoAnterior.diferencaVotos >= 0 ? "▲" : "▼"}
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#1264F3] text-white font-black text-xl">
+                        🗳️
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
                           <span className="text-xs font-black text-[#10213D] uppercase tracking-wider">
-                            Comparativo de Votos: Eleição Atual (2026) vs {cand.comparativoAnoAnterior.anoAnterior || "Eleição Anterior"}
+                            Eleições 2026: Candidatura Registrada no TSE (Pleito em Andamento)
                           </span>
-                          <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${
-                            cand.comparativoAnoAnterior.diferencaVotos >= 0
-                              ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
-                              : "bg-rose-100 text-rose-800 border border-rose-300"
-                          }`}>
-                            {cand.comparativoAnoAnterior.diferencaVotos >= 0 ? "Evolução Positiva" : "Oscilação Negativa"}
+                          <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-300">
+                            Aguardando Votação 2026
                           </span>
                         </div>
                         <p className="text-[11px] text-[#64748B] mt-0.5">
-                          {cand.comparativoAnoAnterior.anoAnterior
-                            ? `Em ${cand.comparativoAnoAnterior.anoAnterior}, o candidato obteve ${cand.comparativoAnoAnterior.votosAnterior.toLocaleString("pt-BR")} votos válidos. Para 2026, registra projeção/base de ${cand.comparativoAnoAnterior.votosAtual.toLocaleString("pt-BR")} votos.`
-                            : "Primeira eleição disputada pelo candidato perante o TSE (estreante sem histórico eleitoral anterior)."}
+                          {cand.comparativoAnoAnterior.anoUltimaEleicao
+                            ? `Para as Eleições 2026 a apuração ocorrerá na data do pleito. Na última eleição disputada (${cand.comparativoAnoAnterior.anoUltimaEleicao}), o candidato registrou ${cand.comparativoAnoAnterior.votosUltimaEleicao?.toLocaleString("pt-BR")} votos válidos.`
+                            : "Primeira eleição oficial disputada pelo candidato perante a Justiça Eleitoral (sem histórico prévio)."}
                         </p>
                         {cand.maiorRegiaoVotosAnterior && (
                           <div className="mt-1.5 flex items-center gap-1.5 text-[11px] font-bold text-purple-800">
@@ -1293,10 +1301,12 @@ export function TrePanel() {
                       </div>
                     </div>
 
-                    {cand.comparativoAnoAnterior.anoAnterior && (
+                    {cand.comparativoAnoAnterior.anoUltimaEleicao && cand.comparativoAnoAnterior.anoPenultimaEleicao && (
                       <div className="flex items-center gap-4 bg-white p-3 rounded-lg border border-[#E2E8F0] shrink-0">
                         <div className="text-right">
-                          <span className="text-[10px] font-bold text-[#64748B] uppercase block">Diferença Nominal</span>
+                          <span className="text-[10px] font-bold text-[#64748B] uppercase block">
+                            Evolução ({cand.comparativoAnoAnterior.anoUltimaEleicao} vs {cand.comparativoAnoAnterior.anoPenultimaEleicao})
+                          </span>
                           <span className={`text-base font-black ${
                             cand.comparativoAnoAnterior.diferencaVotos >= 0 ? "text-emerald-700" : "text-rose-700"
                           }`}>

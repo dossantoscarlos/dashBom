@@ -186,8 +186,7 @@ const OFFICIAL_TSE_CANDIDATES = [
       { ano: 2002, cargo: "Presidente", partido: "PT", votos: 52793364, percentual: 61.27, situacao: "ELEITO", cor: "#1264F3" },
       { ano: 2006, cargo: "Presidente (Reeleição)", partido: "PT", votos: 58295042, percentual: 60.83, situacao: "REELEITO", cor: "#7928F5" },
       { ano: 2022, cargo: "Presidente", partido: "PT", votos: 60345999, percentual: 50.90, situacao: "ELEITO", cor: "#008B63" },
-      { ano: 2026, cargo: "Presidente (Reeleição)", partido: "PT", votos: 60345999, percentual: 50.90, situacao: "REGISTRADO TSE", cor: "#E30613" },
-    ],
+          ],
     corRaca: "Branca",
     grauInstrucao: "Ensino Fundamental Completo",
     genero: "Masculino",
@@ -223,8 +222,7 @@ const OFFICIAL_TSE_CANDIDATES = [
     historicoComparativoAnos: [
       { ano: 2018, cargo: "Presidente", partido: "PT", votos: 47040906, percentual: 44.87, situacao: "2º TURNO", cor: "#1264F3" },
       { ano: 2022, cargo: "Governador", partido: "PT", votos: 10909371, percentual: 44.73, situacao: "2º TURNO", cor: "#008B63" },
-      { ano: 2026, cargo: "Senador / Governador", partido: "PT", votos: 10909371, percentual: 44.73, situacao: "REGISTRADO TSE", cor: "#E30613" },
-    ],
+          ],
     corRaca: "Branca",
     grauInstrucao: "Doutorado",
     genero: "Masculino",
@@ -259,8 +257,7 @@ const OFFICIAL_TSE_CANDIDATES = [
     ],
     historicoComparativoAnos: [
       { ano: 2022, cargo: "Deputado Estadual", partido: "PT", votos: 807015, percentual: 3.48, situacao: "ELEITO MAIS VOTADO", cor: "#008B63" },
-      { ano: 2026, cargo: "Deputado Estadual", partido: "PT", votos: 807015, percentual: 3.48, situacao: "REGISTRADO TSE", cor: "#E30613" },
-    ],
+          ],
     corRaca: "Branca",
     grauInstrucao: "Doutorado",
     genero: "Masculino",
@@ -295,8 +292,7 @@ const OFFICIAL_TSE_CANDIDATES = [
     ],
     historicoComparativoAnos: [
       { ano: 2022, cargo: "Deputada Federal", partido: "PT", votos: 261247, percentual: 4.2, situacao: "ELEITA", cor: "#008B63" },
-      { ano: 2026, cargo: "Deputada Federal", partido: "PT", votos: 261247, percentual: 4.2, situacao: "REGISTRADO TSE", cor: "#E30613" },
-    ],
+          ],
     corRaca: "Branca",
     grauInstrucao: "Superior Completo",
     genero: "Feminino",
@@ -335,8 +331,7 @@ const OFFICIAL_TSE_CANDIDATES = [
     historicoComparativoAnos: [
       { ano: 2018, cargo: "Presidente", partido: "PSL", votos: 57797847, percentual: 55.13, situacao: "ELEITO", cor: "#1264F3" },
       { ano: 2022, cargo: "Presidente (Reeleição)", partido: "PL", votos: 58206354, percentual: 49.10, situacao: "2º TURNO", cor: "#008B63" },
-      { ano: 2026, cargo: "Liderança Política / Presidente", partido: "PL", votos: 58206354, percentual: 49.10, situacao: "REGISTRADO TSE", cor: "#1264F3" },
-    ],
+          ],
     corRaca: "Branca",
     grauInstrucao: "Superior Completo",
     genero: "Masculino",
@@ -372,8 +367,7 @@ const OFFICIAL_TSE_CANDIDATES = [
     historicoComparativoAnos: [
       { ano: 2020, cargo: "Vereador", partido: "PRTB", votos: 29388, percentual: 2.5, situacao: "ELEITO", cor: "#1264F3" },
       { ano: 2022, cargo: "Deputado Federal", partido: "PL", votos: 1492047, percentual: 13.32, situacao: "ELEITO MAIS VOTADO", cor: "#008B63" },
-      { ano: 2026, cargo: "Deputado Federal / Senador", partido: "PL", votos: 1492047, percentual: 13.32, situacao: "REGISTRADO TSE", cor: "#1264F3" },
-    ],
+          ],
     corRaca: "Branca",
     grauInstrucao: "Superior Completo",
     genero: "Masculino",
@@ -408,8 +402,7 @@ const OFFICIAL_TSE_CANDIDATES = [
     ],
     historicoComparativoAnos: [
       { ano: 2024, cargo: "Vereador", partido: "PL", votos: 161386, percentual: 2.76, situacao: "ELEITO MAIS VOTADO", cor: "#008B63" },
-      { ano: 2026, cargo: "Deputado Estadual", partido: "PL", votos: 161386, percentual: 2.76, situacao: "REGISTRADO TSE", cor: "#1264F3" },
-    ],
+          ],
     corRaca: "Branca",
     grauInstrucao: "Superior Completo",
     genero: "Masculino",
@@ -448,8 +441,7 @@ const OFFICIAL_TSE_CANDIDATES = [
     historicoComparativoAnos: [
       { ano: 2020, cargo: "Vice-Prefeito", partido: "MDB", votos: 3169121, percentual: 59.38, situacao: "ELEITO", cor: "#1264F3" },
       { ano: 2024, cargo: "Prefeito (Reeleição)", partido: "MDB", votos: 3393110, percentual: 59.35, situacao: "REELEITO", cor: "#008B63" },
-      { ano: 2026, cargo: "Prefeito / Governador", partido: "MDB", votos: 3393110, percentual: 59.35, situacao: "REGISTRADO TSE", cor: "#008040" },
-    ],
+          ],
     corRaca: "Branca",
     grauInstrucao: "Superior Completo",
     genero: "Masculino",
@@ -484,8 +476,7 @@ const OFFICIAL_TSE_CANDIDATES = [
     ],
     historicoComparativoAnos: [
       { ano: 2022, cargo: "Presidente", partido: "MDB", votos: 4915423, percentual: 4.16, situacao: "3º LUGAR", cor: "#008B63" },
-      { ano: 2026, cargo: "Senadora / Ministra", partido: "MDB", votos: 4915423, percentual: 4.16, situacao: "REGISTRADO TSE", cor: "#008040" },
-    ],
+          ],
     corRaca: "Branca",
     grauInstrucao: "Mestrado",
     genero: "Feminino",
@@ -522,8 +513,7 @@ const OFFICIAL_TSE_CANDIDATES = [
     ],
     historicoComparativoAnos: [
       { ano: 2024, cargo: "Prefeito (Reeleição)", partido: "PSD", votos: 1861356, percentual: 60.47, situacao: "REELEITO 1º TURNO", cor: "#008B63" },
-      { ano: 2026, cargo: "Governador / Prefeito", partido: "PSD", votos: 1861356, percentual: 60.47, situacao: "REGISTRADO TSE", cor: "#005CA9" },
-    ],
+          ],
     corRaca: "Branca",
     grauInstrucao: "Superior Completo",
     genero: "Masculino",
@@ -559,8 +549,7 @@ const OFFICIAL_TSE_CANDIDATES = [
     historicoComparativoAnos: [
       { ano: 2018, cargo: "Governador", partido: "PSD", votos: 3210712, percentual: 59.99, situacao: "ELEITO", cor: "#1264F3" },
       { ano: 2022, cargo: "Governador (Reeleição)", partido: "PSD", votos: 4243292, percentual: 69.64, situacao: "REELEITO", cor: "#008B63" },
-      { ano: 2026, cargo: "Presidente / Senador", partido: "PSD", votos: 4243292, percentual: 69.64, situacao: "REGISTRADO TSE", cor: "#005CA9" },
-    ],
+          ],
     corRaca: "Branca",
     grauInstrucao: "Superior Completo",
     genero: "Masculino",
@@ -598,8 +587,7 @@ const OFFICIAL_TSE_CANDIDATES = [
     historicoComparativoAnos: [
       { ano: 2020, cargo: "Prefeito", partido: "PSOL", votos: 2168109, percentual: 40.62, situacao: "2º TURNO", cor: "#1264F3" },
       { ano: 2024, cargo: "Prefeito", partido: "PSOL", votos: 2323901, percentual: 40.65, situacao: "2º TURNO", cor: "#F59E0B" },
-      { ano: 2026, cargo: "Deputado Federal / Senador", partido: "PSOL", votos: 2323901, percentual: 40.65, situacao: "REGISTRADO TSE", cor: "#FFD700" },
-    ],
+          ],
     corRaca: "Branca",
     grauInstrucao: "Superior Completo",
     genero: "Masculino",
@@ -634,8 +622,7 @@ const OFFICIAL_TSE_CANDIDATES = [
     ],
     historicoComparativoAnos: [
       { ano: 2022, cargo: "Deputada Federal", partido: "PSOL", votos: 256903, percentual: 1.08, situacao: "ELEITA", cor: "#008B63" },
-      { ano: 2026, cargo: "Deputada Federal", partido: "PSOL", votos: 256903, percentual: 1.08, situacao: "REGISTRADO TSE", cor: "#FFD700" },
-    ],
+          ],
     corRaca: "Preta",
     grauInstrucao: "Superior Incompleto",
     genero: "Feminino",
@@ -672,8 +659,7 @@ const OFFICIAL_TSE_CANDIDATES = [
     ],
     historicoComparativoAnos: [
       { ano: 2024, cargo: "Prefeito (Reeleição)", partido: "PSB", votos: 725721, percentual: 78.11, situacao: "REELEITO", cor: "#008B63" },
-      { ano: 2026, cargo: "Governador / Prefeito", partido: "PSB", votos: 725721, percentual: 78.11, situacao: "REGISTRADO TSE", cor: "#FF6600" },
-    ],
+          ],
     corRaca: "Branca",
     grauInstrucao: "Superior Completo",
     genero: "Masculino",
@@ -710,8 +696,7 @@ const OFFICIAL_TSE_CANDIDATES = [
     ],
     historicoComparativoAnos: [
       { ano: 2022, cargo: "Governador", partido: "REPUBLICANOS", votos: 13425375, percentual: 55.27, situacao: "ELEITO", cor: "#008B63" },
-      { ano: 2026, cargo: "Governador (Reeleição) / Presidente", partido: "REPUBLICANOS", votos: 13425375, percentual: 55.27, situacao: "REGISTRADO TSE", cor: "#192F60" },
-    ],
+          ],
     corRaca: "Branca",
     grauInstrucao: "Superior Completo",
     genero: "Masculino",
@@ -748,8 +733,7 @@ const OFFICIAL_TSE_CANDIDATES = [
     ],
     historicoComparativoAnos: [
       { ano: 2024, cargo: "Prefeito", partido: "PRTB", votos: 1719274, percentual: 28.14, situacao: "3º LUGAR", cor: "#F59E0B" },
-      { ano: 2026, cargo: "Deputado Federal / Presidente", partido: "PRTB", votos: 1719274, percentual: 28.14, situacao: "REGISTRADO TSE", cor: "#F59E0B" },
-    ],
+          ],
     corRaca: "Branca",
     grauInstrucao: "Superior Incompleto",
     genero: "Masculino",
@@ -786,8 +770,7 @@ const OFFICIAL_TSE_CANDIDATES = [
     ],
     historicoComparativoAnos: [
       { ano: 2024, cargo: "Vereadora", partido: "PODEMOS", votos: 129563, percentual: 2.21, situacao: "ELEITA", cor: "#008B63" },
-      { ano: 2026, cargo: "Deputada Federal", partido: "PODEMOS", votos: 129563, percentual: 2.21, situacao: "REGISTRADO TSE", cor: "#00A3E0" },
-    ],
+          ],
     corRaca: "Branca",
     grauInstrucao: "Superior Completo",
     genero: "Feminino",
@@ -824,8 +807,7 @@ const OFFICIAL_TSE_CANDIDATES = [
     ],
     historicoComparativoAnos: [
       { ano: 2022, cargo: "Senador", partido: "UNIÃO", votos: 1953159, percentual: 33.50, situacao: "ELEITO", cor: "#008B63" },
-      { ano: 2026, cargo: "Senador / Governador", partido: "UNIÃO", votos: 1953159, percentual: 33.50, situacao: "REGISTRADO TSE", cor: "#00A859" },
-    ],
+          ],
     corRaca: "Branca",
     grauInstrucao: "Doutorado",
     genero: "Masculino",
@@ -863,8 +845,7 @@ const OFFICIAL_TSE_CANDIDATES = [
     historicoComparativoAnos: [
       { ano: 2018, cargo: "Governador", partido: "NOVO", votos: 6963806, percentual: 71.80, situacao: "ELEITO", cor: "#1264F3" },
       { ano: 2022, cargo: "Governador (Reeleição)", partido: "NOVO", votos: 6094136, percentual: 56.18, situacao: "REELEITO", cor: "#008B63" },
-      { ano: 2026, cargo: "Presidente / Senador", partido: "NOVO", votos: 6094136, percentual: 56.18, situacao: "REGISTRADO TSE", cor: "#F58220" },
-    ],
+          ],
     corRaca: "Branca",
     grauInstrucao: "Superior Completo",
     genero: "Masculino",
@@ -904,27 +885,27 @@ export async function GET(request: Request) {
   if (idParam) {
     const cand = OFFICIAL_TSE_CANDIDATES.find((c) => c.id === idParam);
     if (cand) {
-      // Calcula comparativo com a eleição anterior
-      const hist = cand.historicoComparativoAnos || [];
-      const anterior = hist.find((h) => h.ano < 2026);
-      const atual = hist.find((h) => h.ano === 2026) || {
-        ano: 2026,
-        votos: cand.votosUltimaEleicao || 0,
-        percentual: 50.0,
-      };
+      // 2026 é a eleição em andamento (candidatura registrada, sem votação apurada ainda)
+      const hist = (cand.historicoComparativoAnos || []).filter((h) => h.ano < 2026);
+      const ultimaEleicao = hist[hist.length - 1]; // ex: 2022 ou 2020
+      const penultimaEleicao = hist.length > 1 ? hist[hist.length - 2] : null; // ex: 2018 ou 2016
 
-      const diffVotos = anterior ? atual.votos - anterior.votos : 0;
-      const pctCrescimento = anterior && anterior.votos > 0
-        ? ((diffVotos / anterior.votos) * 100).toFixed(1)
+      const diffVotos = (ultimaEleicao && penultimaEleicao) ? ultimaEleicao.votos - penultimaEleicao.votos : 0;
+      const pctCrescimento = penultimaEleicao && penultimaEleicao.votos > 0
+        ? ((diffVotos / penultimaEleicao.votos) * 100).toFixed(1)
         : null;
 
       const enriquecido = {
         ...cand,
+        anoEleicao: 2026,
+        statusEleicao2026: "CANDIDATURA REGISTRADA / PLEITO EM ANDAMENTO",
         comparativoAnoAnterior: {
           anoAtual: 2026,
-          votosAtual: atual.votos,
-          anoAnterior: anterior?.ano || (cand.temHistoricoAnterior ? 2022 : null),
-          votosAnterior: anterior?.votos || 0,
+          status2026: "Candidatura Registrada (Pleito em Andamento)",
+          anoUltimaEleicao: ultimaEleicao?.ano || null,
+          votosUltimaEleicao: ultimaEleicao?.votos || cand.votosUltimaEleicao || 0,
+          anoPenultimaEleicao: penultimaEleicao?.ano || null,
+          votosPenultimaEleicao: penultimaEleicao?.votos || 0,
           diferencaVotos: diffVotos,
           percentualCrescimento: pctCrescimento ? parseFloat(pctCrescimento) : null,
           tendencia: diffVotos >= 0 ? "crescimento" : "queda",
@@ -998,28 +979,28 @@ export async function GET(request: Request) {
     });
   }
 
-  // Enriquecer cada candidato com comparativo de votos do ano atual vs eleição anterior
+  // Enriquecer cada candidato com comparativo da última eleição realizada vs anterior (2026 = pleito em andamento)
   const enrichedList = filtered.map((cand) => {
-    const hist = cand.historicoComparativoAnos || [];
-    const anterior = hist.find((h) => h.ano < 2026);
-    const atual = hist.find((h) => h.ano === 2026) || {
-      ano: 2026,
-      votos: cand.votosUltimaEleicao || 0,
-      percentual: 50.0,
-    };
+    const hist = (cand.historicoComparativoAnos || []).filter((h) => h.ano < 2026);
+    const ultimaEleicao = hist[hist.length - 1]; // ex: 2022 ou 2020
+    const penultimaEleicao = hist.length > 1 ? hist[hist.length - 2] : null; // ex: 2018 ou 2016
 
-    const diffVotos = anterior ? atual.votos - anterior.votos : 0;
-    const pctCrescimento = anterior && anterior.votos > 0
-      ? ((diffVotos / anterior.votos) * 100).toFixed(1)
+    const diffVotos = (ultimaEleicao && penultimaEleicao) ? ultimaEleicao.votos - penultimaEleicao.votos : 0;
+    const pctCrescimento = penultimaEleicao && penultimaEleicao.votos > 0
+      ? ((diffVotos / penultimaEleicao.votos) * 100).toFixed(1)
       : null;
 
     return {
       ...cand,
+      anoEleicao: 2026,
+      statusEleicao2026: "CANDIDATURA REGISTRADA / PLEITO EM ANDAMENTO",
       comparativoAnoAnterior: {
         anoAtual: 2026,
-        votosAtual: atual.votos,
-        anoAnterior: anterior?.ano || (cand.temHistoricoAnterior ? 2022 : null),
-        votosAnterior: anterior?.votos || 0,
+        status2026: "Candidatura Registrada (Pleito em Andamento)",
+        anoUltimaEleicao: ultimaEleicao?.ano || (cand.temHistoricoAnterior ? 2022 : null),
+        votosUltimaEleicao: ultimaEleicao?.votos || cand.votosUltimaEleicao || 0,
+        anoPenultimaEleicao: penultimaEleicao?.ano || (hist.length > 1 ? hist[0]?.ano : null),
+        votosPenultimaEleicao: penultimaEleicao?.votos || 0,
         diferencaVotos: diffVotos,
         percentualCrescimento: pctCrescimento ? parseFloat(pctCrescimento) : null,
         tendencia: diffVotos >= 0 ? "crescimento" : "queda",
