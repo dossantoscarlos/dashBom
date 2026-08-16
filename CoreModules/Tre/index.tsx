@@ -1089,7 +1089,7 @@ export function TrePanel() {
                               </div>
                               <div className="text-[10px] text-[#64748B]">{c.nome}</div>
 
-                              {/* COMPARATIVO DE VOTOS ANO ATUAL VS ANO ANTERIOR ABAIXO DO NOME */}
+                              {/* COMPARATIVO DE VOTOS ANO ATUAL VS ANO ANTERIOR & REGIÃO */}
                               {c.comparativoAnoAnterior && (
                                 <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[10px]">
                                   {c.comparativoAnoAnterior.anoAnterior ? (
@@ -1111,6 +1111,14 @@ export function TrePanel() {
                                   ) : (
                                     <span className="bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-md font-bold">
                                       ✨ Pleito 2026: 1ª Disputa Eleitoral (Sem histórico de votos anteriores)
+                                    </span>
+                                  )}
+
+                                  {/* REGIÃO DE MAIOR VOTAÇÃO */}
+                                  {c.maiorRegiaoVotosAnterior && (
+                                    <span className="bg-purple-50 text-purple-700 border border-purple-200 px-2 py-0.5 rounded-md font-bold flex items-center gap-1">
+                                      <span>📍</span>
+                                      <span>Região: {c.maiorRegiaoVotosAnterior}</span>
                                     </span>
                                   )}
                                 </div>
@@ -1276,6 +1284,12 @@ export function TrePanel() {
                             ? `Em ${cand.comparativoAnoAnterior.anoAnterior}, o candidato obteve ${cand.comparativoAnoAnterior.votosAnterior.toLocaleString("pt-BR")} votos válidos. Para 2026, registra projeção/base de ${cand.comparativoAnoAnterior.votosAtual.toLocaleString("pt-BR")} votos.`
                             : "Primeira eleição disputada pelo candidato perante o TSE (estreante sem histórico eleitoral anterior)."}
                         </p>
+                        {cand.maiorRegiaoVotosAnterior && (
+                          <div className="mt-1.5 flex items-center gap-1.5 text-[11px] font-bold text-purple-800">
+                            <span>📍 Principal Região de Votação:</span>
+                            <span className="bg-purple-100/80 px-2 py-0.5 rounded-md border border-purple-200">{cand.maiorRegiaoVotosAnterior}</span>
+                          </div>
+                        )}
                       </div>
                     </div>
 
