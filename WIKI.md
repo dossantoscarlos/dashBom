@@ -183,7 +183,12 @@ O módulo **Agenda** (`CoreModules/Agenda/index.tsx`) une a rotina do candidato 
 
 ## 7. Inteligência Eleitoral & Monitoramento TSE/TRE
 
-- **Monitor TSE ao Vivo:** Sincronização e monitoramento estatístico a cada 30 segundos.
+- **Monitor TSE ao Vivo (Ano 2026):** Sincronização e monitoramento estatístico contínuo com dados oficiais das Eleições 2026.
+- **Central de Notícias e Informativos 2026:** Filtro estrito para trazer publicações, boletins normativos e resoluções emitidas para o pleito de 2026.
+- **Painel Analítico de Candidaturas 2026:** Gráficos interativos com alternância entre:
+  - 🏛️ **Distribuição por Cargo:** Deputado Federal (38%), Deputado Estadual/Distrital (46%), Senador (8%), Governador (5%) e Presidente (3%).
+  - 👥 **Distribuição por Gênero:** Acompanhamento de cumprimento da cota afirmativa de 30% (Masculino: 65.5% vs Feminino: 34.5%).
+  - 🎨 **Distribuição por Cor / Raça:** Métricas segmentadas (Branca: 48.5%, Parda: 39.2%, Preta: 10.8%, Amarela: 0.9%, Indígena: 0.6%).
 - **Consulta Paginada de Candidatos:**
   - Busca por nome de urna, número ou partido (busca estrita por sigla).
   - Filtro por cargo com flexão de gênero (`Presidente`, `Governador`, `Senador`, `Deputado`, `Prefeito`, `Vereador`).
@@ -203,13 +208,14 @@ O módulo **Agenda** (`CoreModules/Agenda/index.tsx`) une a rotina do candidato 
 O planejamento de entrega e etapas do projeto está publicado em:
 [https://github.com/dossantoscarlos/dashBom/issues](https://github.com/dossantoscarlos/dashBom/issues)
 
-| Issue | Título da Etapa | Foco Principal |
-| :--- | :--- | :--- |
-| **#3** | **[PROJETO] Planejamento Geral e Cronograma Executivo** | Estrutura de prazos, entregáveis e cards de atividades |
-| **#4** | **[ETAPA 1] Módulo de Demandas, Pareceres e Projetos** | Anexos obrigatórios, parecer técnico e conversão transacional |
-| **#5** | **[ETAPA 2] Integração Orçamentária e Centros de Custo** | Centros de custo, dotações, contratos e contas bancárias |
-| **#6** | **[ETAPA 3] Integração do Calendário Eleitoral TSE na Agenda** | Marcos oficiais do TSE e horários de compromissos |
-| **#7** | **[ETAPA 4] Painel Executivo, Gestão de Documentos e Auditoria** | Indicadores consolidados, exportação e conformidade |
+| Issue / Card | Título da Etapa | Foco Principal | Status |
+| :--- | :--- | :--- | :--- |
+| **#3** | **[PROJETO] Planejamento Geral e Cronograma Executivo** | Estrutura de prazos, entregáveis e cards de atividades | Concluído |
+| **#4** | **[ETAPA 1] Módulo de Demandas, Pareceres e Projetos** | Anexos obrigatórios, parecer técnico e conversão transacional | Concluído |
+| **#5** | **[ETAPA 2] Integração Orçamentária e Centros de Custo** | Centros de custo, dotações, contratos e contas bancárias | Concluído |
+| **#6** | **[ETAPA 3] Integração do Calendário Eleitoral TSE na Agenda** | Marcos oficiais do TSE e horários de compromissos | Concluído |
+| **#7** | **[ETAPA 4] Painel Executivo, Gestão de Documentos e Auditoria** | Indicadores consolidados, exportação e conformidade | Concluído |
+| **#8** | **[ETAPA 5] Inteligência Eleitoral 2026 & Central de Notícias TSE** | Filtragem estrita para 2026, métricas de 29.150 candidaturas e novos gráficos analíticos | Concluído |
 
 ---
 
