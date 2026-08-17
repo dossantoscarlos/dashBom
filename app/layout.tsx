@@ -13,10 +13,17 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "CampanhaPro — Gestão de Campanha Eleitoral",
+  title: "campanhaPRO — Gestão de Campanha & Inteligência Eleitoral",
   description:
-    "Painel de gestão de campanhas eleitorais com CRM político, consulta TRE e relatórios",
+    "Plataforma oficial de inteligência eleitoral, gestão de comitês, voluntários e monitoramento TSE em tempo real.",
+  icons: {
+    icon: "/icon.svg",
+    shortcut: "/icon.svg",
+    apple: "/icon.svg",
+  },
 };
+
+import { ReactQueryProvider } from "@/components/providers/ReactQueryProvider";
 
 export default function RootLayout({
   children,
@@ -28,7 +35,10 @@ export default function RootLayout({
       lang="pt-BR"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <ReactQueryProvider>{children}</ReactQueryProvider>
+      </body>
     </html>
   );
 }
+

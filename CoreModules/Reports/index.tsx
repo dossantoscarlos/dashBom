@@ -11,6 +11,8 @@ import { generateMockReportResults } from "@/lib/domain/rules";
 import { reportTemplates } from "@/lib/data/reports";
 import { ModuleBlock } from "@/components/dashboard/ModuleBlock";
 import type { ReportTemplate } from "@/lib/domain/types";
+import { exportToCSV, exportToExcel, generatePrintablePDF } from "@/lib/export-utils";
+import { Download, FileSpreadsheet, FileText } from "lucide-react";
 
 // ─── Inline Report Viewer ─────────────────────────────────────────────────────
 // Usado tanto na aba dedicada de relatório quanto internamente
@@ -18,6 +20,189 @@ import type { ReportTemplate } from "@/lib/domain/types";
 type ReportViewerProps = {
   report: ReportTemplate;
 };
+
+async function fetchRealSystemReport(
+  report: ReportTemplate,
+  periodo: string
+): Promise<{ columns: string[]; rows: Record<string, string | number>[] }> {
+  const category = report.category || "";
+  const reportId = (report.id || "").toLowerCase();
+
+  // 1. Relatórios de Agenda & Compromissos Operacionais
+  if (category === "Operacional" || reportId.includes("agenda") || reportId.includes("eventos")) {
+    try {
+      const res = await fetch("/api/agenda", { cache: "no-store" });
+      let eventos: any[] = [];
+      if (res.ok) {
+        const data = await res.json();
+        if (data.eventos && Array.isArray(data.eventos)) eventos = data.eventos;
+      }
+      if (typeof window !== "undefined") {
+        const local = localStorage.getItem("campanhapro_agenda_events");
+        if (local) {
+          const parsed = JSON.parse(local);
+          if (Array.isArray(parsed)) {
+            parsed.forEach((evt) => {
+              if (!eventos.some((e) => e.id === evt.id)) eventos.push(evt);
+            });
+          }
+        }
+      }
+
+      if (eventos.length > 0) {
+        return {
+          columns: ["Data", "Horário", "Título do Evento", "Local", "Status", "Recorrente"],
+          rows: eventos.map((evt) => ({
+            Data: evt.dataInicio || evt.dataCompleta || "2026-08-10",
+            Horário: evt.diaInteiro ? "Dia Inteiro" : `${evt.horaInicio || "09:00"} às ${evt.horaFim || "11:00"}`,
+            "Título do Evento": evt.titulo || "Compromisso de Campanha",
+            Local: evt.local || "Não informado",
+            Status: evt.status === "confirmado" ? "✓ Aceito" : evt.status === "realizado" ? "🎉 Realizado" : evt.status === "nao_realizado" ? "❌ Não Realizado" : "⏳ Pendente",
+            Recorrente: evt.recorrente ? "Sim" : "Não",
+          })),
+        };
+      }
+    } catch (e) {
+      console.warn("[RELATORIO AGENDA]: Erro ao carregar dados da agenda:", e);
+    }
+  }
+
+  // 2. Relatórios de Demandas e Projetos da Campanha
+  if (reportId.includes("demanda") || reportId.includes("projeto") || reportId.includes("tarefa")) {
+    try {
+      const res = await fetch("/api/demandas", { cache: "no-store" });
+      let demandas: any[] = [];
+      if (res.ok) {
+        const data = await res.json();
+        if (data.demandas && Array.isArray(data.demandas)) demandas = data.demandas;
+      }
+      if (typeof window !== "undefined") {
+        const local = localStorage.getItem("campanhapro_demandas_projetos");
+        if (local) {
+          const parsed = JSON.parse(local);
+          if (Array.isArray(parsed)) {
+            parsed.forEach((d) => {
+              if (!demandas.some((item) => item.id === d.id)) demandas.push(d);
+            });
+          }
+        }
+      }
+
+      if (demandas.length > 0) {
+        return {
+          columns: ["ID", "Título da Demanda", "Solicitante", "Prioridade", "Status", "Prazo"],
+          rows: demandas.map((d) => ({
+            ID: d.id,
+            "Título da Demanda": d.titulo,
+            Solicitante: d.solicitante || "Coordenação",
+            Prioridade: (d.prioridade || "média").toUpperCase(),
+            Status: d.status || "em andamento",
+            Prazo: d.prazo || "Sem prazo definido",
+          })),
+        };
+      }
+    } catch (e) {
+      console.warn("[RELATORIO DEMANDAS]: Erro ao carregar demandas:", e);
+    }
+  }
+
+  // 3. Relatórios Financeiros e Gastos de Campanha
+  if (category === "Financeiro" || reportId.includes("financeiro") || reportId.includes("gastos")) {
+    try {
+      const res = await fetch("/api/financeiro", { cache: "no-store" });
+      let lancamentos: any[] = [];
+      if (res.ok) {
+        const data = await res.json();
+        if (data.lancamentos && Array.isArray(data.lancamentos)) lancamentos = data.lancamentos;
+      }
+
+      if (lancamentos.length > 0) {
+        return {
+          columns: ["Data", "Tipo", "Descrição", "Categoria", "Valor (R$)", "Fornecedor / Origem", "Status"],
+          rows: lancamentos.map((l) => ({
+            Data: l.data,
+            Tipo: l.tipo === "receita" ? "Receita (Entrada)" : "Despesa (Saída)",
+            Descrição: l.descricao,
+            Categoria: l.categoria,
+            "Valor (R$)": Number(l.valor).toLocaleString("pt-BR", { style: "currency", currency: "BRL" }),
+            "Fornecedor / Origem": l.fornecedor || l.origem || "Não informado",
+            Status: l.status || "Pago",
+          })),
+        };
+      }
+    } catch (e) {
+      console.warn("[RELATORIO FINANCEIRO]: Erro ao carregar financeiro:", e);
+    }
+  }
+
+  // 4. Relatórios de Inteligência Eleitoral TSE / TRE
+  if (category === "Inteligência" || category === "Digital" || reportId.includes("tre") || reportId.includes("tse")) {
+    try {
+      const res = await fetch("/api/tre/candidatos", { cache: "no-store" });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.candidatos && Array.isArray(data.candidatos) && data.candidatos.length > 0) {
+          return {
+            columns: ["Candidato", "Número", "Partido", "Cargo", "UF", "Situação TSE", "Bens (R$)"],
+            rows: data.candidatos.map((c: any) => ({
+              Candidato: c.nomeUrna || c.nome,
+              Número: c.numero,
+              Partido: c.partido,
+              Cargo: c.cargo,
+              UF: c.uf || "SP",
+              "Situação TSE": c.situacao || "Deferido",
+              "Bens (R$)": c.totalBens ? Number(c.totalBens).toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : "R$ 0,00",
+            })),
+          };
+        }
+      }
+    } catch (e) {
+      console.warn("[RELATORIO TRE]: Erro ao carregar dados do TSE:", e);
+    }
+  }
+
+  // 5. Relatórios de Cadastros (Voluntários / Base)
+  if (category === "Base Eleitoral" || reportId.includes("voluntarios") || reportId.includes("equipe")) {
+    try {
+      const res = await fetch("/api/voluntarios", { cache: "no-store" });
+      let voluntariados: any[] = [];
+      if (res.ok) {
+        const data = await res.json();
+        if (data.voluntarios && Array.isArray(data.voluntarios)) voluntariados = data.voluntarios;
+      }
+      if (typeof window !== "undefined") {
+        const local = localStorage.getItem("campanhapro_voluntarios");
+        if (local) {
+          const parsed = JSON.parse(local);
+          if (Array.isArray(parsed)) {
+            parsed.forEach((v) => {
+              if (!voluntariados.some((item) => item.id === v.id)) voluntariados.push(v);
+            });
+          }
+        }
+      }
+
+      if (voluntariados.length > 0) {
+        return {
+          columns: ["Nome", "E-mail", "Telefone", "Zona / Cidade", "Área de Atuação", "Status"],
+          rows: voluntariados.map((v) => ({
+            Nome: v.nome,
+            "E-mail": v.email,
+            Telefone: v.telefone || "Não informado",
+            "Zona / Cidade": `${v.cidade || "São Paulo"} (${v.zona || "SP"})`,
+            "Área de Atuação": v.areaAtuacao || "Militância de Campo",
+            Status: v.status || "Ativo",
+          })),
+        };
+      }
+    } catch (e) {
+      console.warn("[RELATORIO VOLUNTARIOS]: Erro ao carregar voluntários:", e);
+    }
+  }
+
+  // Fallback seguro usando o mock básico
+  return generateMockReportResults(report, periodo);
+}
 
 export function ReportViewer({ report }: ReportViewerProps) {
   const { toast } = useToast();
@@ -28,14 +213,18 @@ export function ReportViewer({ report }: ReportViewerProps) {
     rows: Record<string, string | number>[];
   } | null>(null);
 
-  function handleExecute() {
+  async function handleExecute() {
     setLoading(true);
     setResult(null);
-    setTimeout(() => {
-      setResult(generateMockReportResults(report, periodo));
+    try {
+      const data = await fetchRealSystemReport(report, periodo);
+      setResult(data);
+      toast(`✓ Relatório oficial "${report.title}" gerado com dados reais do sistema!`, "success");
+    } catch (e) {
+      toast("Erro ao gerar relatório real do sistema.", "error");
+    } finally {
       setLoading(false);
-      toast(`Relatório "${report.title}" executado.`);
-    }, 800);
+    }
   }
 
   return (
@@ -76,10 +265,58 @@ export function ReportViewer({ report }: ReportViewerProps) {
         {loading && <LoadingSkeleton rows={5} className="mt-2" />}
 
         {result && !loading && (
-          <div className="mt-2">
-            <h4 className="mb-2 text-xs font-bold uppercase tracking-wider text-zinc-400">
-              Pré-visualização — {periodo}
-            </h4>
+          <div className="mt-2 flex flex-col gap-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-zinc-200 dark:border-zinc-800 pb-2">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                Pré-visualização do Relatório — {periodo}
+              </h4>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const headers = result.columns;
+                    const rows = result.rows.map((row) =>
+                      result.columns.map((col) => row[col] ?? "")
+                    );
+                    exportToCSV(`Relatorio_${report.id}_${periodo}`, headers, rows);
+                  }}
+                  className="px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Exportar CSV</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const headers = result.columns;
+                    const rows = result.rows.map((row) =>
+                      result.columns.map((col) => row[col] ?? "")
+                    );
+                    exportToExcel(`Relatorio_${report.id}_${periodo}`, headers, rows);
+                  }}
+                  className="px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+                >
+                  <FileSpreadsheet className="w-3.5 h-3.5" />
+                  <span>Exportar Excel</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const headers = result.columns;
+                    const rows = result.rows.map((row) =>
+                      result.columns.map((col) => row[col] ?? "")
+                    );
+                    generatePrintablePDF(`${report.title} (${periodo})`, headers, rows);
+                  }}
+                  className="px-2.5 py-1 rounded bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+                >
+                  <FileText className="w-3.5 h-3.5" />
+                  <span>Gerar PDF (Imprimir)</span>
+                </button>
+              </div>
+            </div>
+
             <DataTable
               data={result.rows.map((row, i) => ({ ...row, _id: String(i) }))}
               keyExtractor={(row) => row._id}

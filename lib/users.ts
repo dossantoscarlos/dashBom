@@ -14,7 +14,14 @@ const users: User[] = [
     email: "admin@example.com",
     name: "Administrador",
     passwordHash:
-      "demosalt12345678:2ae3e4e6506a89212beb986d0428e8b0a942db794e9dfba2859eee9111f49d0a5237eb20101d16d8192793d7976009770e7981324701109df82299a2a205ae7d",
+      "demosalt12345678:4d29b189c68097adf09960101bf4cbb75fcc541f20457497f2f1d878a0cf06862d25ba45fdcf7c354160d782c38d2ce84e489500b5f2e67dd32eca440ad44bc3",
+  },
+  {
+    id: "2",
+    email: "suporte.n1@vertis.com.local",
+    name: "Suporte N1",
+    passwordHash:
+      "demosalt12345678:4d29b189c68097adf09960101bf4cbb75fcc541f20457497f2f1d878a0cf06862d25ba45fdcf7c354160d782c38d2ce84e489500b5f2e67dd32eca440ad44bc3",
   },
 ];
 

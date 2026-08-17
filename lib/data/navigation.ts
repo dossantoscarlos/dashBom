@@ -16,12 +16,19 @@ export const navItems: NavItem[] = [
     group: "operacao",
   },
   {
+    href: "/modulos?tab=demandas",
+    label: "Demandas e Projetos",
+    icon: "📂",
+    group: "operacao",
+  },
+  {
     href: "/modulos?tab=campanhas",
     label: "Campanhas",
     icon: "📣",
     group: "operacao",
     permission: PERMISSIONS.CAMPANHAS_GERENCIAR,
   },
+
   {
     href: "/modulos?tab=usuarios",
     label: "Usuários",
